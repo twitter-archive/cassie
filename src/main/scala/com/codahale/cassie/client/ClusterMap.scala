@@ -6,11 +6,12 @@ import java.net.InetSocketAddress
 import com.codahale.logula.Logging
 
 /**
- * Given a ClientProvider, returns a set of nodes in the cluster.
+ * Given a seed host and port, returns a set of nodes in the cluster.
  *
  * @author coda
  */
-class ClusterMap(seed: ClientProvider, defaultPort: Int) extends Logging {
+class ClusterMap(seedHost: String, seedPort: Int) extends Logging {
+  private val seed = new SingleClientProvider(new InetSocketAddress(seedHost, seedPort))
 
   /**
    * Returns a set of nodes in the cluster.
@@ -22,7 +23,7 @@ class ClusterMap(seed: ClientProvider, defaultPort: Int) extends Logging {
     JSON.parse(json) match {
       case Some(keysAndNodes: List[_]) =>
         val nodes = keysAndNodes.map { h =>
-          new InetSocketAddress(h.asInstanceOf[(String, String)]._2, defaultPort)
+          new InetSocketAddress(h.asInstanceOf[(String, String)]._2, seedPort)
         }.toSet
         log.info("Found %d nodes: %s", nodes.size, nodes)
         nodes
