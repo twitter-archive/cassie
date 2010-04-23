@@ -9,7 +9,7 @@ import java.util.logging.Level
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
-    Logging.configure(Level.INFO)
+    Logging.configure(Level.ALL)
 
     implicit val clock = MicrosecondEpochClock
 
@@ -68,5 +68,13 @@ object CassieRun extends Logging {
 
     log.info("removing a row")
     cass.remove("yay for me", WriteConsistency.Quorum)
+
+    log.info("Batching up some stuff")
+    cass.batch(WriteConsistency.Quorum) { cf =>
+      cf.remove("yay for you", "name")
+      cf.remove("yay for us", Set("name", "motto"))
+      cf.insert("yay for nobody", Column("name", "Burt"))
+      cf.insert("yay for nobody", Column("motto", "'S funny."))
+    }
   }
 }
