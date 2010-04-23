@@ -109,6 +109,19 @@ Remove a row:
     people.remove("codahale", WriteConsistency.Quorum)
 
 
+Things What Ain't Done Yet
+==========================
+
+* Anything relating to super columns
+* Batch mutations
+* Range queries
+* Authentication
+* Counting
+* Meta data (e.g., `describe_*`)
+
+Why? I don't need it yet.
+
+
 License
 -------
 
