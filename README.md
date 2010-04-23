@@ -38,15 +38,13 @@ How To Use
     val selector = new RoundRobinHostSelector(map)
     val provider = new PooledClientProvider(selector, 1, 5, 10)
 
-**Third**, set up your column family:
+**Third**, let Cassie know how it should be handling column names and values:
     
-    // create a cluster
     val cluster = new Cluster(provider)
-
-    // create a keyspace
     val keyspace = cluster.keyspace("MyCassieApp")
 
-    // create a column family with column names and values as UTF-8 strings
+    // access the "People" column family with column names and values as UTF-8
+    // strings
     val people = keyspace.columnFamily("People", Utf8Codec, Utf8Codec)
     
 **Fourth**, interact with Cassandra:
