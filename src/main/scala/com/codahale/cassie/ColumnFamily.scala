@@ -105,6 +105,25 @@ class ColumnFamily[Name, Value](val keyspace: String,
   }
 
   /**
+   * Removes a set of columns from a key.
+   */
+  def remove(key: String,
+             columnNames: Set[Name],
+             consistency: WriteConsistency)
+            (implicit clock: Clock) {
+    remove(key, columnNames, clock.timestamp, consistency)
+  }
+
+  /**
+   * Removes a set of columns from a key with a specific timestamp.
+   */
+  def remove(key: String, columnNames: Set[Name], timestamp: Long, consistency: WriteConsistency) {
+    batch(consistency) { cf =>
+      cf.remove(key, columnNames, timestamp)
+    }
+  }
+
+  /**
    * Removes a key.
    */
   def remove(key: String,
@@ -120,6 +139,17 @@ class ColumnFamily[Name, Value](val keyspace: String,
     val cp = new thrift.ColumnPath(name)
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
+  }
+
+  /**
+   * Performs a series of actions in a single request.
+   */
+  def batch(consistency: WriteConsistency)(mutation: BatchMutationBuilder[Name, Value] => Unit) {
+    val builder = new BatchMutationBuilder(this)
+    mutation(builder)
+    val mutations = builder.mutations
+    log.fine("batch_mutate(%s, %s, %s", keyspace, mutations, consistency.level)
+    provider.map { _.batch_mutate(keyspace, mutations, consistency.level) }
   }
 
   private def convert(colOrSCol: thrift.ColumnOrSuperColumn): Column[Name, Value] = {

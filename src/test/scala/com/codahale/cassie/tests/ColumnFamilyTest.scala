@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor
 import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamily}
 import java.util.ArrayList
 import com.codahale.cassie.clocks.Clock
+import thrift.Mutation
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
@@ -268,6 +269,68 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       cp.getValue.getColumn_family must equal("cf")
       cp.getValue.getColumn must be(null)
+    }
+  }
+
+  describe("removing a set of columns from a row with an implicit timestamp") {
+    val (client, cf) = setup
+    implicit val clock = new Clock {
+      def timestamp = 445
+    }
+
+    it("performs a batch mutate") {
+      cf.remove("key", Set("one", "two"), WriteConsistency.Quorum)
+
+      val map = ArgumentCaptor.forClass(classOf[java.util.Map[String, java.util.Map[String, java.util.List[Mutation]]]])
+
+      verify(client).batch_mutate(matchEq("ks"), map.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
+
+      val mutations = map.getValue
+      val mutation = mutations.get("key").get("cf").get(0)
+      val deletion = mutation.getDeletion
+
+      deletion.getTimestamp must equal(445)
+      deletion.getPredicate.getColumn_names.asScala.map { new String(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+    }
+  }
+
+  describe("removing a set of columns from a row with an explicit timestamp") {
+    val (client, cf) = setup
+
+    it("performs a batch mutate") {
+      cf.remove("key", Set("one", "two"), 33, WriteConsistency.Quorum)
+
+      val map = ArgumentCaptor.forClass(classOf[java.util.Map[String, java.util.Map[String, java.util.List[Mutation]]]])
+
+      verify(client).batch_mutate(matchEq("ks"), map.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
+
+      val mutations = map.getValue
+      val mutation = mutations.get("key").get("cf").get(0)
+      val deletion = mutation.getDeletion
+
+      deletion.getTimestamp must equal(33)
+      deletion.getPredicate.getColumn_names.asScala.map { new String(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+    }
+  }
+
+  describe("performing a batch mutation") {
+    val (client, cf) = setup
+
+    it("performs a batch_mutate") {
+      cf.batch(WriteConsistency.All) { batch =>
+        batch.insert("key", Column("name", "value", 201))
+      }
+
+      val map = ArgumentCaptor.forClass(classOf[java.util.Map[String, java.util.Map[String, java.util.List[Mutation]]]])
+
+      verify(client).batch_mutate(matchEq("ks"), map.capture, matchEq(thrift.ConsistencyLevel.ALL))
+
+      val mutations = map.getValue
+      val mutation = mutations.get("key").get("cf").get(0)
+      val col = mutation.getColumn_or_supercolumn.getColumn
+      new String(col.getName) must equal("name")
+      new String(col.getValue) must equal("value")
+      col.getTimestamp must equal(201)
     }
   }
 }
