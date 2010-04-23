@@ -15,5 +15,5 @@ class Keyspace(val name: String, val provider: ClientProvider) {
   def columnFamily[A, B](name: String,
                          columnCodec: Codec[A],
                          valueCodec: Codec[B]): ColumnFamily[A, B] =
-    new ColumnFamilyImpl(this.name, name, provider, columnCodec, valueCodec)
+    new ColumnFamily(this.name, name, provider, columnCodec, valueCodec)
 }

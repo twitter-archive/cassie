@@ -11,9 +11,9 @@ import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
 import scalaj.collection.Imports._
 import org.mockito.ArgumentCaptor
-import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamilyImpl}
+import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamily}
 
-class ColumnFamilyImplTest extends Spec with MustMatchers with MockitoSugar {
+class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
     def map[A](f: (Client) => A) = f(client)
   }
@@ -30,7 +30,7 @@ class ColumnFamilyImplTest extends Spec with MustMatchers with MockitoSugar {
   def setup = {
     val client = mock[Client]
     val provider = SimpleProvider(client)
-    val cf = new ColumnFamilyImpl("ks", "cf", provider, Utf8Codec, Utf8Codec)
+    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec)
 
     (client, cf)
   }
