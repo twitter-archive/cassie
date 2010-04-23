@@ -102,16 +102,27 @@ Remove a column:
 
     people.remove("codahale", "motto", WriteConsistency.Quorum)
 
+Or a set of columns:
+    
+    people.remove("codahale", Set("name", "motto"), WriteConsistency.Quorum)
+
 Remove a row:
     
     people.remove("codahale", WriteConsistency.Quorum)
+
+Or batch up a whole bunch of mutations and send 'em down the pipe at once:
+    
+    people.batch(WriteConsistency.Quorum) { batch =>
+      batch.insert("ursusbourbonia", Column("name", "Drinky Bear"))
+      batch.insert("ursusbourbonia", Column("motto", "Arghalhafflg."))
+      batch.remove("tinkles", Set("name", "motto", "carpetstain"))
+    }
 
 
 Things What Ain't Done Yet
 ==========================
 
 * Anything relating to super columns
-* Batch mutations
 * Range queries
 * Authentication
 * Counting
