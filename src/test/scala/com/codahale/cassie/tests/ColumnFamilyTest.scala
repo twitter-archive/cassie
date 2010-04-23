@@ -12,6 +12,7 @@ import org.apache.cassandra.thrift
 import scalaj.collection.Imports._
 import org.mockito.ArgumentCaptor
 import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamily}
+import java.util.ArrayList
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
@@ -33,6 +34,36 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec)
 
     (client, cf)
+  }
+
+  describe("getting a columns for a key") {
+    val (client, cf) = setup
+
+    it("performs a get_slice with a set of column names") {
+      cf.get("key", "name", ReadConsistency.Quorum)
+
+      val cp = new thrift.ColumnParent("cf")
+
+      val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
+
+      verify(client).get_slice(matchEq("ks"), matchEq("key"), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
+
+      pred.getValue.getColumn_names.asScala.map { new String(_) } must equal(List("name"))
+    }
+
+    it("returns a option of a column if it exists") {
+      val columns = newColumn("name".getBytes, "Coda".getBytes, 2292L) :: Nil
+
+      when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
+
+      cf.get("key", "name", ReadConsistency.Quorum) must equal(Some(Column("name", "Coda", 2292L)))
+    }
+
+    it("returns none if the column doesn't exist") {
+      when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new ArrayList[thrift.ColumnOrSuperColumn])
+
+      cf.get("key", "name", ReadConsistency.Quorum) must equal(None)
+    }
   }
 
   describe("getting all columns for a key") {
