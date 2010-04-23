@@ -13,6 +13,7 @@ import scalaj.collection.Imports._
 import org.mockito.ArgumentCaptor
 import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamily}
 import java.util.ArrayList
+import com.codahale.cassie.clocks.Clock
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
@@ -208,7 +209,24 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
-  describe("removing a column") {
+  describe("removing a column with an implicit timestamp") {
+    val (client, cf) = setup
+    implicit val clock = new Clock {
+      def timestamp = 445
+    }
+
+    it("performs a remove") {
+      cf.remove("key", "age", WriteConsistency.Quorum)
+
+      val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445), matchEq(thrift.ConsistencyLevel.QUORUM))
+
+      cp.getValue.getColumn_family must equal("cf")
+      new String(cp.getValue.getColumn) must equal("age")
+    }
+  }
+
+  describe("removing a column with a specific timestamp") {
     val (client, cf) = setup
 
     it("performs a remove") {
@@ -222,7 +240,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
-  describe("removing a row") {
+  describe("removing a row with a specific timestamp") {
     val (client, cf) = setup
 
     it("performs a remove") {
@@ -230,6 +248,23 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
       verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(55), matchEq(thrift.ConsistencyLevel.QUORUM))
+
+      cp.getValue.getColumn_family must equal("cf")
+      cp.getValue.getColumn must be(null)
+    }
+  }
+
+  describe("removing a row with an implicit timestamp") {
+    val (client, cf) = setup
+    implicit val clock = new Clock {
+      def timestamp = 445
+    }
+
+    it("performs a remove") {
+      cf.remove("key", WriteConsistency.Quorum)
+
+      val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       cp.getValue.getColumn must be(null)
