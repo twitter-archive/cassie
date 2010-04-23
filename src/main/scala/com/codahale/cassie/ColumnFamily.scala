@@ -1,6 +1,7 @@
 package com.codahale.cassie
 
 import client.ClientProvider
+import clocks.Clock
 import codecs.Codec
 import scalaj.collection.Imports._
 import org.apache.cassandra.thrift
@@ -12,17 +13,23 @@ import com.codahale.logula.Logging
  * @author coda
  */
 class ColumnFamily[Name, Value](val keyspace: String,
-                                    val name: String,
-                                    val provider: ClientProvider,
-                                    val columnCodec: Codec[Name],
-                                    val valueCodec: Codec[Value])
-        extends ReadableColumnFamily[Name, Value]
-           with WritableColumnFamily[Name, Value]
-           with Logging {
+                                val name: String,
+                                val provider: ClientProvider,
+                                val columnCodec: Codec[Name],
+                                val valueCodec: Codec[Value]) extends Logging {
 
-  /*
-   * Does a get_slice with a maximum count. Could potentially return a bunch
-   * of data. Don't misuse.
+  /**
+   * Returns the optional value of a given column for a given key.
+   */
+  def get(key: String,
+          columnName: Name,
+          consistency: ReadConsistency): Option[Column[Name, Value]] = {
+    get(key, Set(columnName), consistency).get(columnName)
+  }
+
+  /**
+   * Returns a map of all column names to the columns for a given key. If your
+   * rows contain a huge number of columns, this will be slow and horrible.
    */
   def get(key: String, consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
     val cp = new thrift.ColumnParent(name)
@@ -33,6 +40,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
   }
 
+  /**
+   * Returns a map of the given column names to the columns for a given key.
+   */
   def get(key: String, columnNames: Set[Name], consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
@@ -42,6 +52,19 @@ class ColumnFamily[Name, Value](val keyspace: String,
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
   }
 
+  /**
+   * Returns a map of keys to given column for a set of keys.
+   */
+  def multiget(keys: Set[String],
+               columnName: Name,
+               consistency: ReadConsistency): Map[String, Column[Name, Value]] = {
+    multiget(keys, Set(columnName), consistency).map { case (k, v) => (k, v.valuesIterator.next) }
+  }
+
+  /**
+   * Returns a map of keys to a map of column names to the columns for a given
+   * set of keys and columns.
+   */
   def multiget(keys: Set[String], columnNames: Set[Name], consistency: ReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
@@ -51,6 +74,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
     return result.map { case (k, v) => (k, v.asScala.map { r => val x = convert(r); (x.name, x) }.toMap) }.toMap
   }
 
+  /**
+   * Inserts a column.
+   */
   def insert(key: String, column: Column[Name, Value], consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(columnCodec.encode(column.name))
@@ -58,6 +84,19 @@ class ColumnFamily[Name, Value](val keyspace: String,
     provider.map { _.insert(keyspace, key, cp, valueCodec.encode(column.value), column.timestamp, consistency.level) }
   }
 
+  /**
+   * Removes a column from a key.
+   */
+  def remove(key: String,
+             columnName: Name,
+             consistency: WriteConsistency)
+            (implicit clock: Clock) {
+    remove(key, columnName, clock.timestamp, consistency)
+  }
+
+  /**
+   * Removes a column from a key with a specific timestamp.
+   */
   def remove(key: String, columnName: Name, timestamp: Long, consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(columnCodec.encode(columnName))
@@ -65,6 +104,18 @@ class ColumnFamily[Name, Value](val keyspace: String,
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
   }
 
+  /**
+   * Removes a key.
+   */
+  def remove(key: String,
+             consistency: WriteConsistency)
+            (implicit clock: Clock) {
+    remove(key, clock.timestamp, consistency)
+  }
+
+  /**
+   * Removes a key with a specific timestamp.
+   */
   def remove(key: String, timestamp: Long, consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
