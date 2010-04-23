@@ -122,6 +122,36 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
+  describe("getting a column for a set of keys") {
+    val (client, cf) = setup
+
+    it("performs a multiget_slice with a column name") {
+      cf.multiget(Set("key1", "key2"), "name", ReadConsistency.One)
+
+      val keys = List("key1", "key2").asJava
+      val cp = new thrift.ColumnParent("cf")
+      val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
+
+      verify(client).multiget_slice(matchEq("ks"), matchEq(keys), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.ONE))
+
+      pred.getValue.getColumn_names.asScala.map { new String(_) } must equal(List("name"))
+    }
+
+    it("returns a map of keys to a map of column names to columns") {
+      val results = Map(
+        "key1" -> (newColumn("name".getBytes, "Coda".getBytes, 2292L) :: Nil).asJava,
+        "key2" -> (newColumn("name".getBytes, "Niki".getBytes, 422L) :: Nil).asJava
+      ).asJava
+
+      when(client.multiget_slice(anyString, anyListOf(classOf[String]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(results)
+
+      cf.multiget(Set("key1", "key2"), "name", ReadConsistency.Quorum) must equal(Map(
+        "key1" -> Column("name", "Coda", 2292L),
+        "key2" -> Column("name", "Niki", 422L)
+      ))
+    }
+  }
+
   describe("getting a set of columns for a set of keys") {
     val (client, cf) = setup
 
