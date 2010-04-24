@@ -32,11 +32,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * rows contain a huge number of columns, this will be slow and horrible.
    */
   def get(key: String, consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
-    val cp = new thrift.ColumnParent(name)
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
-    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
-    val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
+    val result = getSlice(key, Array(), Array(), Int.MaxValue, consistency)
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
   }
 
@@ -50,6 +46,14 @@ class ColumnFamily[Name, Value](val keyspace: String,
     log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
+  }
+
+  private[cassie] def getSlice(key: String, startColumnName: Array[Byte], endColumnName: Array[Byte], count: Int, consistency: ReadConsistency) = {
+    val cp = new thrift.ColumnParent(name)
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startColumnName, endColumnName, false, Int.MaxValue))
+    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
+    provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
   }
 
   /**
