@@ -18,6 +18,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
                                 val columnCodec: Codec[Name],
                                 val valueCodec: Codec[Value]) extends Logging {
 
+  // TODO: refactor the hell out of the way I'm interacting with Thrift here.
+  // The maid needs a maid, man.
+
   /**
    * Returns the optional value of a given column for a given key.
    */
@@ -156,7 +159,43 @@ class ColumnFamily[Name, Value](val keyspace: String,
     provider.map { _.batch_mutate(keyspace, mutations, consistency.level) }
   }
 
-  private def convert(colOrSCol: thrift.ColumnOrSuperColumn): Column[Name, Value] = {
+  /**
+   * Returns a column iterator which iterates over all columns of all rows in
+   * the column family with the given batch size and consistency level.
+   */
+  def iterator(batchSize: Int, consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
+    val pred = new thrift.SlicePredicate
+    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
+    new ColumnIterator(this, "", "", batchSize, pred, consistency)
+  }
+
+  /**
+   * Returns a column iterator which iterates over the given column of all rows
+   * in the column family with the given batch size and consistency level.
+   */
+  def iterator(batchSize: Int, columnName: Name, consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] =
+    iterator(batchSize, Set(columnName), consistency)
+
+  /**
+   * Returns a column iterator which iterates over the given columns of all rows
+   * in the column family with the given batch size and consistency level.
+   */
+  def iterator(batchSize: Int, columnNames: Set[Name], consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
+    val pred = new thrift.SlicePredicate
+    pred.setColumn_names(columnNames.toList.map { columnCodec.encode(_) }.asJava)
+    new ColumnIterator(this, "", "", batchSize, pred, consistency)
+  }
+
+  private[cassie] def getRangeSlice(startKey: String, endKey: String, count: Int, predicate: thrift.SlicePredicate, consistency: ReadConsistency) = {
+    val cp = new thrift.ColumnParent(name)
+    val range = new thrift.KeyRange(count)
+    range.setStart_key(startKey)
+    range.setEnd_key(endKey)
+    log.fine("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, consistency.level)
+    provider.map { _.get_range_slices(keyspace, cp, predicate, range, consistency.level) }.asScala
+  }
+
+  private[cassie] def convert(colOrSCol: thrift.ColumnOrSuperColumn): Column[Name, Value] = {
     Column(
       columnCodec.decode(colOrSCol.column.name),
       valueCodec.decode(colOrSCol.column.value),

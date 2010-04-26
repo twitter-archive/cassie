@@ -118,6 +118,12 @@ Or batch up a whole bunch of mutations and send 'em down the pipe at once:
       batch.remove("tinkles", Set("name", "motto", "carpetstain"))
     }
 
+And then iterate over the whole mess:
+    
+    for ((key, col) <- people.iterator(100, Set("name", "motto")) {
+      println(" Found column %s in row %s", col, key)
+    }
+
 
 Things What Ain't Done Yet
 ==========================

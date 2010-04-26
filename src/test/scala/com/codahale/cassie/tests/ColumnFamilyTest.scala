@@ -11,10 +11,10 @@ import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
 import scalaj.collection.Imports._
 import org.mockito.ArgumentCaptor
-import com.codahale.cassie.{WriteConsistency, Column, ReadConsistency, ColumnFamily}
 import java.util.ArrayList
 import com.codahale.cassie.clocks.Clock
 import thrift.Mutation
+import com.codahale.cassie._
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
@@ -331,6 +331,51 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       new String(col.getName) must equal("name")
       new String(col.getValue) must equal("value")
       col.getTimestamp must equal(201)
+    }
+  }
+
+  describe("iterating through all columns of all rows") {
+    val (client, cf) = setup
+
+    it("returns a ColumnIterator with an all-column predicate") {
+      val iterator = cf.iterator(16, ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String]]
+
+      iterator.cf must equal(cf)
+      iterator.startKey must equal("")
+      iterator.endKey must equal("")
+      iterator.batchSize must equal(16)
+      iterator.predicate.getColumn_names must be(null)
+      iterator.predicate.getSlice_range.getStart must equal(Array[Byte]())
+      iterator.predicate.getSlice_range.getFinish must equal(Array[Byte]())
+      iterator.predicate.getSlice_range.getCount must equal(Int.MaxValue)
+    }
+  }
+
+  describe("iterating through one column of all rows") {
+    val (client, cf) = setup
+
+    it("returns a ColumnIterator with a single-column predicate") {
+      val iterator = cf.iterator(16, "name", ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String]]
+
+      iterator.cf must equal(cf)
+      iterator.startKey must equal("")
+      iterator.endKey must equal("")
+      iterator.batchSize must equal(16)
+      iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) } must be(List("name"))
+    }
+  }
+
+  describe("iterating through a set of columns of all rows") {
+    val (client, cf) = setup
+
+    it("returns a ColumnIterator with a column-list predicate") {
+      val iterator = cf.iterator(16, Set("name", "motto"), ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String]]
+
+      iterator.cf must equal(cf)
+      iterator.startKey must equal("")
+      iterator.endKey must equal("")
+      iterator.batchSize must equal(16)
+      iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }
   }
 }

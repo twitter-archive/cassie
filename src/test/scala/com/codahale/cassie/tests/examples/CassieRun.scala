@@ -63,6 +63,11 @@ object CassieRun extends Logging {
     log.info("getting a set of columns from a set of keys: %s", cass.multiget(Set("yay for me", "yay for you"), Set("name", "motto"), ReadConsistency.Quorum))
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
+    log.info("Iterating!")
+    for ((key, col) <- cass.iterator(2, ReadConsistency.Quorum)) {
+      log.info("Found: %s", col)
+    }
+
     log.info("removing a column")
     cass.remove("yay for me", "motto", WriteConsistency.Quorum)
 
