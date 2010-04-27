@@ -20,7 +20,7 @@ class BatchMutationBuilder[Name, Value](cf: ColumnFamily[Name, Value]) {
     val cosc = new ColumnOrSuperColumn
     cosc.setColumn(
       new TColumn(
-        cf.columnCodec.encode(column.name),
+        cf.nameCodec.encode(column.name),
         cf.valueCodec.encode(column.value),
         column.timestamp
       )
@@ -58,7 +58,7 @@ class BatchMutationBuilder[Name, Value](cf: ColumnFamily[Name, Value]) {
    */
   def remove(key: String, columnNames: Set[Name], timestamp: Long) {
     val pred = new SlicePredicate
-    pred.setColumn_names(columnNames.toList.map { cf.columnCodec.encode(_) }.asJava)
+    pred.setColumn_names(columnNames.toList.map { cf.nameCodec.encode(_) }.asJava)
 
     val deletion = new Deletion(timestamp)
     deletion.setPredicate(pred)

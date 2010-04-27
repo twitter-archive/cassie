@@ -14,15 +14,15 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
     val keyspace = new Keyspace("MyApp", provider)
 
     it("builds a column family with the same ClientProvider") {
-      val (columnCodec, valueCodec) = (mock[Codec[String]], mock[Codec[Long]])
+      val (nameCodec, valueCodec) = (mock[Codec[String]], mock[Codec[Long]])
 
-      val cf = keyspace.columnFamily("People", columnCodec, valueCodec)
+      val cf = keyspace.columnFamily("People", nameCodec, valueCodec)
       cf.isInstanceOf[ColumnFamily[_, _]] must be(true)
 
       val cfi = cf.asInstanceOf[ColumnFamily[String, Long]]
       cfi.keyspace must equal("MyApp")
       cfi.name must equal("People")
-      cfi.columnCodec must equal(columnCodec)
+      cfi.nameCodec must equal(nameCodec)
       cfi.valueCodec must equal(valueCodec)
       cfi.provider must equal(provider)
     }

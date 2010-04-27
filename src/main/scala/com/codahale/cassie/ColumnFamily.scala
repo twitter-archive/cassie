@@ -15,7 +15,7 @@ import com.codahale.logula.Logging
 class ColumnFamily[Name, Value](val keyspace: String,
                                 val name: String,
                                 val provider: ClientProvider,
-                                val columnCodec: Codec[Name],
+                                val nameCodec: Codec[Name],
                                 val valueCodec: Codec[Value]) extends Logging {
 
   // TODO: refactor the hell out of the way I'm interacting with Thrift here.
@@ -45,7 +45,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def get(key: String, columnNames: Set[Name], consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(columnNames.toList.map { columnCodec.encode(_) }.asJava)
+    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
@@ -75,7 +75,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def multiget(keys: Set[String], columnNames: Set[Name], consistency: ReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(columnNames.toList.map { columnCodec.encode(_) }.asJava)
+    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     log.fine("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
     val result = provider.map { _.multiget_slice(keyspace, keys.toList.asJava, cp, pred, consistency.level).asScala }
     return result.map { case (k, v) => (k, v.asScala.map { r => val x = convert(r); (x.name, x) }.toMap) }.toMap
@@ -86,7 +86,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def insert(key: String, column: Column[Name, Value], consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
-    cp.setColumn(columnCodec.encode(column.name))
+    cp.setColumn(nameCodec.encode(column.name))
     log.fine("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value, column.timestamp, consistency.level)
     provider.map { _.insert(keyspace, key, cp, valueCodec.encode(column.value), column.timestamp, consistency.level) }
   }
@@ -106,7 +106,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def remove(key: String, columnName: Name, timestamp: Long, consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
-    cp.setColumn(columnCodec.encode(columnName))
+    cp.setColumn(nameCodec.encode(columnName))
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
   }
@@ -182,7 +182,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def iterator(batchSize: Int, columnNames: Set[Name], consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
     val pred = new thrift.SlicePredicate
-    pred.setColumn_names(columnNames.toList.map { columnCodec.encode(_) }.asJava)
+    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     new ColumnIterator(this, "", "", batchSize, pred, consistency)
   }
 
@@ -197,7 +197,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
 
   private[cassie] def convert(colOrSCol: thrift.ColumnOrSuperColumn): Column[Name, Value] = {
     Column(
-      columnCodec.decode(colOrSCol.column.name),
+      nameCodec.decode(colOrSCol.column.name),
       valueCodec.decode(colOrSCol.column.value),
       colOrSCol.column.timestamp
     )

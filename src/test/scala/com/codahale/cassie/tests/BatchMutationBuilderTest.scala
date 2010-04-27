@@ -12,7 +12,7 @@ import com.codahale.cassie.clocks.Clock
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar {
   val cf = mock[ColumnFamily[String, String]]
   when(cf.name).thenReturn("People")
-  when(cf.columnCodec).thenReturn(Utf8Codec)
+  when(cf.nameCodec).thenReturn(Utf8Codec)
   when(cf.valueCodec).thenReturn(Utf8Codec)
 
   implicit val clock = new Clock {
