@@ -34,7 +34,8 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a map of all column names to the columns for a given key. If your
    * rows contain a huge number of columns, this will be slow and horrible.
    */
-  def get(key: String, consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
+  def get(key: String,
+          consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
     val result = getSlice(key, Array(), Array(), Int.MaxValue, consistency)
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
   }
@@ -42,21 +43,15 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Returns a map of the given column names to the columns for a given key.
    */
-  def get(key: String, columnNames: Set[Name], consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
+  def get(key: String,
+          columnNames: Set[Name],
+          consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
     result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
-  }
-
-  private[cassie] def getSlice(key: String, startColumnName: Array[Byte], endColumnName: Array[Byte], count: Int, consistency: ReadConsistency) = {
-    val cp = new thrift.ColumnParent(name)
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(startColumnName, endColumnName, false, Int.MaxValue))
-    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
-    provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
   }
 
   /**
@@ -72,7 +67,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a map of keys to a map of column names to the columns for a given
    * set of keys and columns.
    */
-  def multiget(keys: Set[String], columnNames: Set[Name], consistency: ReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
+  def multiget(keys: Set[String],
+               columnNames: Set[Name],
+               consistency: ReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
@@ -84,7 +81,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Inserts a column.
    */
-  def insert(key: String, column: Column[Name, Value], consistency: WriteConsistency) {
+  def insert(key: String,
+             column: Column[Name, Value],
+             consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(column.name))
     log.fine("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value, column.timestamp, consistency.level)
@@ -104,7 +103,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Removes a column from a key with a specific timestamp.
    */
-  def remove(key: String, columnName: Name, timestamp: Long, consistency: WriteConsistency) {
+  def remove(key: String,
+             columnName: Name,
+             timestamp: Long,
+             consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(columnName))
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
@@ -124,7 +126,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Removes a set of columns from a key with a specific timestamp.
    */
-  def remove(key: String, columnNames: Set[Name], timestamp: Long, consistency: WriteConsistency) {
+  def remove(key: String,
+             columnNames: Set[Name],
+             timestamp: Long,
+             consistency: WriteConsistency) {
     batch(consistency) { cf =>
       cf.remove(key, columnNames, timestamp)
     }
@@ -142,7 +147,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Removes a key with a specific timestamp.
    */
-  def remove(key: String, timestamp: Long, consistency: WriteConsistency) {
+  def remove(key: String,
+             timestamp: Long,
+             consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
@@ -151,7 +158,8 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Performs a series of actions in a single request.
    */
-  def batch(consistency: WriteConsistency)(mutation: BatchMutationBuilder[Name, Value] => Unit) {
+  def batch(consistency: WriteConsistency)
+           (mutation: BatchMutationBuilder[Name, Value] => Unit) {
     val builder = new BatchMutationBuilder(this)
     mutation(builder)
     val mutations = builder.mutations
@@ -163,7 +171,8 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a column iterator which iterates over all columns of all rows in
    * the column family with the given batch size and consistency level.
    */
-  def iterator(batchSize: Int, consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
+  def iterator(batchSize: Int,
+               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
     new ColumnIterator(this, "", "", batchSize, pred, consistency)
@@ -173,17 +182,29 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a column iterator which iterates over the given column of all rows
    * in the column family with the given batch size and consistency level.
    */
-  def iterator(batchSize: Int, columnName: Name, consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] =
+  def iterator(batchSize: Int,
+               columnName: Name,
+               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] =
     iterator(batchSize, Set(columnName), consistency)
 
   /**
    * Returns a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size and consistency level.
    */
-  def iterator(batchSize: Int, columnNames: Set[Name], consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
+  def iterator(batchSize: Int,
+               columnNames: Set[Name],
+               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
     val pred = new thrift.SlicePredicate
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     new ColumnIterator(this, "", "", batchSize, pred, consistency)
+  }
+
+  private[cassie] def getSlice(key: String, startColumnName: Array[Byte], endColumnName: Array[Byte], count: Int, consistency: ReadConsistency) = {
+    val cp = new thrift.ColumnParent(name)
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startColumnName, endColumnName, false, Int.MaxValue))
+    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
+    provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
   }
 
   private[cassie] def getRangeSlice(startKey: String, endKey: String, count: Int, predicate: thrift.SlicePredicate, consistency: ReadConsistency) = {
