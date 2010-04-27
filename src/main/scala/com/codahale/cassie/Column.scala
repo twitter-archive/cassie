@@ -16,4 +16,6 @@ object Column {
  *
  * @author coda
  */
-case class Column[A, B](name: A, value: B, timestamp: Long)
+case class Column[A, B](name: A, value: B, timestamp: Long) {
+  def pair = name -> this
+}

@@ -36,8 +36,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def get(key: String,
           consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
-    val result = getSlice(key, Array(), Array(), Int.MaxValue, consistency)
-    result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
+    getSlice(key, pred, consistency)
   }
 
   /**
@@ -46,12 +47,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def get(key: String,
           columnNames: Set[Name],
           consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
-    val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
-    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
-    val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
-    result.asScala.map { r => val x = convert(r); (x.name, x) }.toMap
+    getSlice(key, pred, consistency)
+
   }
 
   /**
@@ -75,7 +74,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     log.fine("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
     val result = provider.map { _.multiget_slice(keyspace, keys.toList.asJava, cp, pred, consistency.level).asScala }
-    return result.map { case (k, v) => (k, v.asScala.map { r => val x = convert(r); (x.name, x) }.toMap) }.toMap
+    return result.map { case (k, v) => (k, v.asScala.map { r => convert(r).pair }.toMap) }.toMap
   }
 
   /**
@@ -199,12 +198,11 @@ class ColumnFamily[Name, Value](val keyspace: String,
     new ColumnIterator(this, "", "", batchSize, pred, consistency)
   }
 
-  private[cassie] def getSlice(key: String, startColumnName: Array[Byte], endColumnName: Array[Byte], count: Int, consistency: ReadConsistency) = {
+  private def getSlice(key: String, pred: thrift.SlicePredicate, consistency: ReadConsistency) = {
     val cp = new thrift.ColumnParent(name)
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(startColumnName, endColumnName, false, Int.MaxValue))
     log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
-    provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
+    val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
+    result.asScala.map { r => convert(r).pair }.toMap
   }
 
   private[cassie] def getRangeSlice(startKey: String, endKey: String, count: Int, predicate: thrift.SlicePredicate, consistency: ReadConsistency) = {
