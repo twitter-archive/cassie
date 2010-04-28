@@ -18,9 +18,6 @@ class ColumnFamily[Name, Value](val keyspace: String,
                    val defaultNameCodec: Codec[Name],
                    val defaultValueCodec: Codec[Value]) extends Logging {
 
-  // TODO: refactor the hell out of the way I'm interacting with Thrift here.
-  // The maid needs a maid, man.
-
   /**
    * Returns the optional value of a given column for a given key as the given
    * types.
