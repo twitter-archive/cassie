@@ -59,7 +59,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def multiget(keys: Set[String],
                columnName: Name,
                consistency: ReadConsistency): Map[String, Column[Name, Value]] = {
-    multiget(keys, Set(columnName), consistency).map { case (k, v) => (k, v.valuesIterator.next) }
+    multiget(keys, Set(columnName), consistency).map {
+      case (k, v) => (k, v.valuesIterator.next)
+    }
   }
 
   /**
@@ -73,8 +75,12 @@ class ColumnFamily[Name, Value](val keyspace: String,
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     log.fine("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
-    val result = provider.map { _.multiget_slice(keyspace, keys.toList.asJava, cp, pred, consistency.level).asScala }
-    return result.map { case (k, v) => (k, v.asScala.map { r => convert(r).pair }.toMap) }.toMap
+    val result = provider.map {
+      _.multiget_slice(keyspace, keys.toList.asJava, cp, pred, consistency.level).asScala
+    }
+    return result.map {
+      case (k, v) => (k, v.asScala.map { r => convert(r).pair }.toMap)
+    }.toMap
   }
 
   /**
@@ -85,8 +91,11 @@ class ColumnFamily[Name, Value](val keyspace: String,
              consistency: WriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(column.name))
-    log.fine("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value, column.timestamp, consistency.level)
-    provider.map { _.insert(keyspace, key, cp, valueCodec.encode(column.value), column.timestamp, consistency.level) }
+    log.fine("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
+      column.timestamp, consistency.level)
+    provider.map {
+      _.insert(keyspace, key, cp, valueCodec.encode(column.value), column.timestamp, consistency.level)
+    }
   }
 
   /**
