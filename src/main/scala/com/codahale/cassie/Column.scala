@@ -19,3 +19,14 @@ object Column {
 case class Column[A, B](name: A, value: B, timestamp: Long) {
   def pair = name -> this
 }
+
+/*
+
+Or does it make more sense to define a series of implicit codecs?
+
+Encoding, say, Long instances would suck ass. But one potential way of getting
+around this would be to just create a wrapper class to go with the codec:
+
+chunks.insert(chunk.id, Column("gc-marker", VarLong(clock.timestamp)))
+
+*/

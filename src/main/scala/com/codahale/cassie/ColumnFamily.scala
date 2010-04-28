@@ -98,6 +98,13 @@ class ColumnFamily[Name, Value](val keyspace: String,
     }
   }
 
+  def ambiInsert[A, B](key: String,
+                       column: Column[A, B],
+                       consistency: WriteConsistency)
+                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]) {
+
+  }
+
   /**
    * Removes a column from a key.
    */

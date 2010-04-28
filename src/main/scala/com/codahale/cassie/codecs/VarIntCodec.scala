@@ -1,16 +1,23 @@
 package com.codahale.cassie.codecs
 
 /**
+ * A 32-bit integer.
+ *
+ * @author coda
+ */
+case class VarInt(value: Int)
+
+/**
  * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length
  * encoding.
  *
  * @author coda
  */
-object VarIntCodec extends Codec[Int] {
+object VarIntCodec extends Codec[VarInt] {
   private val maxLength = 5
 
-  def encode(obj: Int) = {
-    var n = obj
+  def encode(obj: VarInt) = {
+    var n = obj.value
     val b = Array.fill[Byte](maxLength)(0)
     var pos = 0
 
@@ -54,6 +61,6 @@ object VarIntCodec extends Codec[Int] {
         }
       }
     }
-    (n >>> 1) ^ -(n & 1) // back to two's-complement
+    VarInt((n >>> 1) ^ -(n & 1)) // back to two's-complement
   }
 }
