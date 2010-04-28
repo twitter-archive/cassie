@@ -207,14 +207,20 @@ class ColumnFamily[Name, Value](val keyspace: String,
     new ColumnIterator(this, "", "", batchSize, pred, consistency)
   }
 
-  private def getSlice(key: String, pred: thrift.SlicePredicate, consistency: ReadConsistency) = {
+  private def getSlice(key: String,
+                       pred: thrift.SlicePredicate,
+                       consistency: ReadConsistency) = {
     val cp = new thrift.ColumnParent(name)
     log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
     result.asScala.map { r => convert(r).pair }.toMap
   }
 
-  private[cassie] def getRangeSlice(startKey: String, endKey: String, count: Int, predicate: thrift.SlicePredicate, consistency: ReadConsistency) = {
+  private[cassie] def getRangeSlice(startKey: String,
+                                    endKey: String,
+                                    count: Int,
+                                    predicate: thrift.SlicePredicate,
+                                    consistency: ReadConsistency) = {
     val cp = new thrift.ColumnParent(name)
     val range = new thrift.KeyRange(count)
     range.setStart_key(startKey)
