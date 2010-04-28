@@ -5,5 +5,5 @@ package com.codahale.cassie
  * for its mutations.
  */
 object Mutations {
-  def apply(builder: BatchMutationBuilder[_, _]) = builder.mutations
+  def apply(builder: BatchMutationBuilder) = builder.mutations
 }

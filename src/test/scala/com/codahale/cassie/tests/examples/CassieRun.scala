@@ -1,9 +1,9 @@
 package com.codahale.cassie.tests.examples
 
 import com.codahale.cassie._
+import codecs.{FixedLong, Utf8Codec}
 import client.{RoundRobinHostSelector, PooledClientProvider, ClusterMap}
 import clocks.MicrosecondEpochClock
-import codecs.Utf8Codec
 import com.codahale.logula.Logging
 import java.util.logging.Level
 
@@ -80,6 +80,7 @@ object CassieRun extends Logging {
       cf.remove("yay for us", Set("name", "motto"))
       cf.insert("yay for nobody", Column("name", "Burt"))
       cf.insert("yay for nobody", Column("motto", "'S funny."))
+      cf.insert("bits!", Column("motto", FixedLong(20019L)))
     }
   }
 }

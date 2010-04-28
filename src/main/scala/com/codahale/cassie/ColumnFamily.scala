@@ -134,8 +134,8 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def remove(key: String,
              columnNames: Set[Name],
              consistency: WriteConsistency)
-            (implicit clock: Clock) {
-    remove(key, columnNames, clock.timestamp, consistency)
+            (implicit clock: Clock, nameCodec: Codec[Name]) {
+    remove(key, columnNames, clock.timestamp, consistency)(nameCodec)
   }
 
   /**
@@ -144,9 +144,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def remove(key: String,
              columnNames: Set[Name],
              timestamp: Long,
-             consistency: WriteConsistency) {
+             consistency: WriteConsistency)
+            (implicit nameCodec: Codec[Name]) {
     batch(consistency) { cf =>
-      cf.remove(key, columnNames, timestamp)
+      cf.remove(key, columnNames, timestamp)(nameCodec)
     }
   }
 
@@ -174,9 +175,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Performs a series of actions in a single request.
    */
   def batch(consistency: WriteConsistency)
-           (mutation: BatchMutationBuilder[Name, Value] => Unit) {
-    val builder = new BatchMutationBuilder(this)
-    mutation(builder)
+           (build: BatchMutationBuilder => Unit) {
+    val builder = new BatchMutationBuilder(name)
+    build(builder)
     val mutations = builder.mutations
     log.fine("batch_mutate(%s, %s, %s", keyspace, mutations, consistency.level)
     provider.map { _.batch_mutate(keyspace, mutations, consistency.level) }
