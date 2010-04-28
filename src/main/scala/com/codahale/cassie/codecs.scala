@@ -1,11 +1,13 @@
-package com.codahale.cassie.codecs
+package com.codahale.cassie
+
+import codecs._
 
 /**
- * A combined set of codecs.
+ * A collection of codecs for all the types supported by Cassie.
  *
  * @author coda
  */
-object Codecs {
+package object codecs {
   implicit val utf8 = Utf8Codec
   implicit val ascii = AsciiCodec
   implicit val bytes = ByteArrayCodec
