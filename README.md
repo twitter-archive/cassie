@@ -29,6 +29,7 @@ How To Use
     import com.codahale.cassie._
     import com.codahale.cassie.client._
     import com.codahale.cassie.clocks._
+    import com.codahale.cassie.codecs._
     
     // pull down data about all the nodes in the cluster
     val map = new ClusterMap("localhost", 9160)
@@ -45,7 +46,7 @@ How To Use
 
     // access the "People" column family with column names and values as UTF-8
     // strings
-    val people = keyspace.columnFamily("People", Utf8Codec, Utf8Codec)
+    val people = keyspace.columnFamily[String, String]("People")
     
 **Fourth**, interact with Cassandra:
 
@@ -66,11 +67,19 @@ Insert some columns:
 
     people.insert("louiefoof", Column("name", "Louie"), WriteConsistency.Quorum)
     people.insert("louiefoof", Column("motto", "Swish!"), WriteConsistency.Quorum)
+
+Insert a column of a different type:
+    
+    people.insert("digits", Column[VarInt, VarInt](1, 300), WriteConsistency.Quorum)
     
 Select a single column:
     
     people.get("codahale", "name", ReadConsistency.Quorum)
     // Some(Column(name,Coda,1271789761374109))
+
+Select a single column of a different type:
+    
+    people.getAs[VarInt, VarInt]("digits", 1, ReadConsistency.One)
 
 Select a column what don't exist:
     

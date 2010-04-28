@@ -1,9 +1,9 @@
 package com.codahale.cassie.tests.examples
 
 import com.codahale.cassie._
-import codecs.{FixedLong, Utf8Codec}
 import client.{RoundRobinHostSelector, PooledClientProvider, ClusterMap}
 import clocks.MicrosecondEpochClock
+import codecs.{VarInt, AsciiString, FixedLong}
 import com.codahale.logula.Logging
 import java.util.logging.Level
 
@@ -27,7 +27,7 @@ object CassieRun extends Logging {
     val keyspace = cluster.keyspace("Keyspace1")
 
     // create a column family
-    val cass = keyspace.columnFamily("Standard1", Utf8Codec, Utf8Codec)
+    val cass = keyspace.columnFamily[String, String]("Standard1")
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda"), WriteConsistency.Quorum)
@@ -62,6 +62,9 @@ object CassieRun extends Logging {
 
     log.info("getting a set of columns from a set of keys: %s", cass.multiget(Set("yay for me", "yay for you"), Set("name", "motto"), ReadConsistency.Quorum))
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
+
+    cass.getAs[FixedLong, AsciiString]("key", 2, ReadConsistency.Quorum)
+    cass.insert("digits", Column[VarInt, VarInt](1, 300), WriteConsistency.Quorum)
 
     log.info("Iterating!")
     for ((key, col) <- cass.iterator(2, ReadConsistency.Quorum)) {

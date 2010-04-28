@@ -12,8 +12,8 @@ class Keyspace(val name: String, val provider: ClientProvider) {
   /**
    * Returns a ColumnFamily with the given name and column/value codecs.
    */
-  def columnFamily[A, B](name: String,
-                         columnCodec: Codec[A],
-                         valueCodec: Codec[B]): ColumnFamily[A, B] =
-    new ColumnFamily(this.name, name, provider, columnCodec, valueCodec)
+  def columnFamily[Name, Value](name: String)
+                               (implicit defaultNameCodec: Codec[Name],
+                                         defaultValueCodec: Codec[Value]) =
+    new ColumnFamily(this.name, name, provider, defaultNameCodec, defaultValueCodec)
 }

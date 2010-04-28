@@ -7,11 +7,9 @@ import org.scalatest.{OneInstancePerTest, Spec}
 import collection.mutable.ArrayBuffer
 import com.codahale.cassie.{Column, ReadConsistency, ColumnFamily, ColumnIterator}
 import org.mockito.Mockito.{when, inOrder => inOrderVerify}
-import org.mockito.Matchers.{eq => matchEq, anyString, anyInt, any}
+import org.mockito.Matchers.{eq => matchEq, anyString, anyInt}
 import org.apache.cassandra.thrift
-import com.codahale.cassie.codecs.Utf8Codec
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
+import com.codahale.cassie.codecs.{Utf8Codec}
 
 class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
   def newColumn(name: String, value: String, timestamp: Long) = {
@@ -47,18 +45,8 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
       List(slice3),
       List(slice3)
     )
-    when(cf.convert(any(classOf[thrift.ColumnOrSuperColumn]))).thenAnswer(new Answer[Column[String, String]]() {
-      def answer(invocation: InvocationOnMock) = {
-        val csoc = invocation.getArguments()(0).asInstanceOf[thrift.ColumnOrSuperColumn]
-        Column(
-          Utf8Codec.decode(csoc.column.name),
-          Utf8Codec.decode(csoc.column.value),
-          csoc.column.timestamp
-        )
-      }
-    })
 
-    val iterator = new ColumnIterator(cf, "start", "end", 5, predicate, ReadConsistency.Quorum)
+    val iterator = new ColumnIterator(cf, "start", "end", 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec)
 
     it("does a buffered iteration over the columns in the rows in the range") {
       val results = new ArrayBuffer[(String, Column[String, String])]
