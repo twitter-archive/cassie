@@ -99,34 +99,22 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   describe("getting all columns with query options") {
     val (client, cf) = setup
 
-    it("performs a get_slice with the specified count, reversedness, startKey and endKey") {
-      val startKey = "somewhere"
-      val endKey   = "overTheRainbow"
+    it("performs a get_slice with the specified count, reversedness, start column name and end column name") {
+      val startColumnName = "somewhere"
+      val endColumnName   = "overTheRainbow"
       cf.getRow("key", count       = 100,
                        reversed    = true,
-                       startKey    = Some(startKey),
-                       endKey      = Some(endKey),
+                       startColumnName    = Some(startColumnName),
+                       endColumnName      = Some(endColumnName),
                        consistency = ReadConsistency.Quorum)
 
       val cp = new thrift.ColumnParent("cf")
 
-      val range = new thrift.SliceRange(startKey.getBytes, endKey.getBytes, true, 100)
+      val range = new thrift.SliceRange(startColumnName.getBytes, endColumnName.getBytes, true, 100)
       val pred  = new thrift.SlicePredicate()
       pred.setSlice_range(range)
 
       verify(client).get_slice("ks", "key", cp, pred, thrift.ConsistencyLevel.QUORUM)
-    }
-
-    it("returns a map of column names to columns") {
-      val columns = newColumn("name".getBytes, "Coda".getBytes, 2292L) ::
-                    newColumn("age".getBytes, "old".getBytes, 11919L) :: Nil
-
-      when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
-
-      cf.getRow("key", count=100, consistency=ReadConsistency.Quorum) must equal(Map(
-        "name" -> Column("name", "Coda", 2292L),
-        "age" -> Column("age", "old", 11919L)
-      ))
     }
   }
 

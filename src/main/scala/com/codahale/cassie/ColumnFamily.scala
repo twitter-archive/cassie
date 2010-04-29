@@ -49,14 +49,14 @@ class ColumnFamily[Name, Value](val keyspace: String,
   def getRowAs[A, B](key: String,
                      count: Int                   = Int.MaxValue,
                      reversed: Boolean            = false,
-                     startKey: Option[A]          = None,
-                     endKey:   Option[A]          = None,
+                     startColumnName: Option[A]   = None,
+                     endColumnName: Option[A]     = None,
                      consistency: ReadConsistency = defaultReadConsistency)
                     (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
-    val startBytes = optionToBytes(startKey, nameCodec)
-    val endBytes   = optionToBytes(endKey, nameCodec)
-    val pred       = new thrift.SlicePredicate()
 
+    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
+    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
+    val pred = new thrift.SlicePredicate()
     pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, reversed, count))
     getSlice(key, pred, consistency, nameCodec, valueCodec)
   }
@@ -67,16 +67,12 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * slow and horrible.
    */
   def getRow(key: String,
-             count: Int                   = Int.MaxValue,
-             reversed: Boolean            = false,
-             startKey: Option[Name]       = None,
-             endKey:   Option[Name]       = None,
-             consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
-    getRowAs[Name, Value](key, count       = count,
-                               reversed    = reversed,
-                               startKey    = startKey,
-                               endKey      = endKey,
-                               consistency = consistency)(defaultNameCodec, defaultValueCodec)
+             count: Int                    = Int.MaxValue,
+             reversed: Boolean             = false,
+             startColumnName: Option[Name] = None,
+             endColumnName: Option[Name]   = None,
+             consistency: ReadConsistency  = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
+    getRowAs[Name, Value](key, count, reversed, startColumnName, endColumnName, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**
@@ -348,12 +344,5 @@ class ColumnFamily[Name, Value](val keyspace: String,
       valueCodec.decode(colOrSCol.column.value),
       colOrSCol.column.timestamp
     )
-  }
-
-  private def optionToBytes[A](value: Option[A], codec: Codec[A]): Array[Byte] = {
-    value match {
-      case None    => Array()
-      case Some(v) => codec.encode(v)
-    }
   }
 }
