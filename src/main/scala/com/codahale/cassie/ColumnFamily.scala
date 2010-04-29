@@ -47,12 +47,17 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * slow and horrible.
    */
   def getRowAs[A, B](key: String,
-                     count: Int = Int.MaxValue,
-                     reversed: Boolean = false,
+                     count: Int                   = Int.MaxValue,
+                     reversed: Boolean            = false,
+                     startKey: Option[A]          = None,
+                     endKey:   Option[A]          = None,
                      consistency: ReadConsistency = defaultReadConsistency)
                     (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), reversed, count))
+    val startBytes = optionToBytes(startKey, nameCodec)
+    val endBytes   = optionToBytes(endKey, nameCodec)
+    val pred       = new thrift.SlicePredicate()
+
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, reversed, count))
     getSlice(key, pred, consistency, nameCodec, valueCodec)
   }
 
@@ -62,11 +67,15 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * slow and horrible.
    */
   def getRow(key: String,
-             count: Int = Int.MaxValue,
-             reversed: Boolean = false,
+             count: Int                   = Int.MaxValue,
+             reversed: Boolean            = false,
+             startKey: Option[Name]       = None,
+             endKey:   Option[Name]       = None,
              consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
     getRowAs[Name, Value](key, count       = count,
                                reversed    = reversed,
+                               startKey    = startKey,
+                               endKey      = endKey,
                                consistency = consistency)(defaultNameCodec, defaultValueCodec)
   }
 
@@ -339,5 +348,12 @@ class ColumnFamily[Name, Value](val keyspace: String,
       valueCodec.decode(colOrSCol.column.value),
       colOrSCol.column.timestamp
     )
+  }
+
+  private def optionToBytes[A](value: Option[A], codec: Codec[A]): Array[Byte] = {
+    value match {
+      case None    => Array()
+      case Some(v) => codec.encode(v)
+    }
   }
 }
