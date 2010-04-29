@@ -72,7 +72,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("performs a get_slice with a maxed-out count") {
-      cf.getRow("key", ReadConsistency.Quorum)
+      cf.getRow("key", consistency=ReadConsistency.Quorum)
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -89,7 +89,35 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
 
-      cf.getRow("key", ReadConsistency.Quorum) must equal(Map(
+      cf.getRow("key", consistency=ReadConsistency.Quorum) must equal(Map(
+        "name" -> Column("name", "Coda", 2292L),
+        "age" -> Column("age", "old", 11919L)
+      ))
+    }
+  }
+
+  describe("getting all columns with query options") {
+    val (client, cf) = setup
+
+    it("performs a get_slice with the specified count") {
+      cf.getRow("key", count = 100, ReadConsistency.Quorum)
+
+      val cp = new thrift.ColumnParent("cf")
+
+      val range = new thrift.SliceRange(Array(), Array(), false, 100)
+      val pred  = new thrift.SlicePredicate()
+      pred.setSlice_range(range)
+
+      verify(client).get_slice("ks", "key", cp, pred, thrift.ConsistencyLevel.QUORUM)
+    }
+
+    it("returns a map of column names to columns") {
+      val columns = newColumn("name".getBytes, "Coda".getBytes, 2292L) ::
+                    newColumn("age".getBytes, "old".getBytes, 11919L) :: Nil
+
+      when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
+
+      cf.getRow("key", count=100, ReadConsistency.Quorum) must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       ))
