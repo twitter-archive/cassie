@@ -17,5 +17,6 @@ class Keyspace(val name: String, val provider: ClientProvider) {
                                 defaultWriteConsistency: WriteConsistency = WriteConsistency.Quorum)
                                (implicit defaultNameCodec: Codec[Name],
                                          defaultValueCodec: Codec[Value]) =
-    new ColumnFamily(this.name, name, provider, defaultNameCodec, defaultValueCodec)
+    new ColumnFamily(this.name, name, provider, defaultNameCodec,
+      defaultValueCodec, defaultReadConsistency, defaultWriteConsistency)
 }
