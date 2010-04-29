@@ -48,10 +48,11 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def getRowAs[A, B](key: String,
                      count: Int = Int.MaxValue,
+                     reversed: Boolean = false,
                      consistency: ReadConsistency = defaultReadConsistency)
                     (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
     val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, count))
+    pred.setSlice_range(new thrift.SliceRange(Array(), Array(), reversed, count))
     getSlice(key, pred, consistency, nameCodec, valueCodec)
   }
 
@@ -62,8 +63,11 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def getRow(key: String,
              count: Int = Int.MaxValue,
+             reversed: Boolean = false,
              consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
-    getRowAs[Name, Value](key, count=count, consistency=consistency)(defaultNameCodec, defaultValueCodec)
+    getRowAs[Name, Value](key, count       = count,
+                               reversed    = reversed,
+                               consistency = consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**

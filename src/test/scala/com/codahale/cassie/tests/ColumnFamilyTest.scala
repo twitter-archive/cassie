@@ -99,12 +99,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   describe("getting all columns with query options") {
     val (client, cf) = setup
 
-    it("performs a get_slice with the specified count") {
-      cf.getRow("key", count = 100, ReadConsistency.Quorum)
+    it("performs a get_slice with the specified count, and reversedness") {
+      cf.getRow("key", count = 100, reversed = true, ReadConsistency.Quorum)
 
       val cp = new thrift.ColumnParent("cf")
 
-      val range = new thrift.SliceRange(Array(), Array(), false, 100)
+      val range = new thrift.SliceRange(Array(), Array(), true, 100)
       val pred  = new thrift.SlicePredicate()
       pred.setSlice_range(range)
 
@@ -117,7 +117,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
 
-      cf.getRow("key", count=100, ReadConsistency.Quorum) must equal(Map(
+      cf.getRow("key", count=100, consistency=ReadConsistency.Quorum) must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       ))
