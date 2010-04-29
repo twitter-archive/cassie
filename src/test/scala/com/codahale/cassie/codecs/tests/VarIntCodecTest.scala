@@ -1,9 +1,9 @@
 package com.codahale.cassie.codecs.tests
 
-
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.{VarInt, VarIntCodec}
+import com.codahale.cassie.codecs.VarIntCodec
+import com.codahale.cassie.types.VarInt
 
 class VarIntCodecTest extends Spec with MustMatchers {
   describe("encoding an int") {

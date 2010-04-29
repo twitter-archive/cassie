@@ -2,7 +2,8 @@ package com.codahale.cassie.codecs.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.{FixedInt, FixedIntCodec}
+import com.codahale.cassie.codecs.FixedIntCodec
+import com.codahale.cassie.types.FixedInt
 
 class FixedIntCodecTest extends Spec with MustMatchers {
   describe("encoding an int") {

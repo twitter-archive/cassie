@@ -1,11 +1,6 @@
 package com.codahale.cassie.codecs
 
-/**
- * A 32-bit integer.
- *
- * @author coda
- */
-case class FixedInt(value: Int)
+import com.codahale.cassie.types.FixedInt
 
 /**
  * Encodes and decodes 32-bit integers as 4-byte, big-endian byte arrays.

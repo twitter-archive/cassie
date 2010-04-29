@@ -3,7 +3,7 @@ package com.codahale.cassie.tests.examples
 import com.codahale.cassie._
 import client.{RoundRobinHostSelector, PooledClientProvider, ClusterMap}
 import clocks.MicrosecondEpochClock
-import codecs.{VarInt, AsciiString, FixedLong}
+import types.{VarInt, AsciiString, FixedLong}
 import com.codahale.logula.Logging
 import java.util.logging.Level
 

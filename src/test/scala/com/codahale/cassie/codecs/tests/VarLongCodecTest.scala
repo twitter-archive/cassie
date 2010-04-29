@@ -1,9 +1,9 @@
 package com.codahale.cassie.codecs.tests
 
-
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.{VarLong, VarLongCodec}
+import com.codahale.cassie.codecs.VarLongCodec
+import com.codahale.cassie.types.VarLong
 
 class VarLongCodecTest extends Spec with MustMatchers {
   describe("encoding a long") {

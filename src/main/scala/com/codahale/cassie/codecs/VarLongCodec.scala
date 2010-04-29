@@ -1,11 +1,6 @@
 package com.codahale.cassie.codecs
 
-/**
- * A 64-bit integer.
- *
- * @author coda
- */
-case class VarLong(value: Long)
+import com.codahale.cassie.types.VarLong
 
 /**
  * Encodes and decodes 64-bit integers using Avro's zig-zag variable-length
@@ -14,7 +9,7 @@ case class VarLong(value: Long)
  * @author coda
  */
 object VarLongCodec extends Codec[VarLong] {
-private val maxLength = 10
+  private val maxLength = 10
 
   def encode(obj: VarLong) = {
     var n = obj.value

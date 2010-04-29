@@ -1,11 +1,6 @@
 package com.codahale.cassie.codecs
 
-/**
- * A 32-bit integer.
- *
- * @author coda
- */
-case class VarInt(value: Int)
+import com.codahale.cassie.types.VarInt
 
 /**
  * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length

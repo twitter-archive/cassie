@@ -1,11 +1,6 @@
 package com.codahale.cassie.codecs
 
-/**
- * A 64-bit integer.
- *
- * @author coda
- */
-case class FixedLong(value: Long)
+import com.codahale.cassie.types.FixedLong
 
 /**
  * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays.
