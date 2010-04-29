@@ -76,7 +76,7 @@ For example, take adding a column to a column family of UTF-8 strings:
 The `insert` method looks for an implicit parameter of type `Codec[String]` to
 convert both the name and the value to byte arrays. In this case, the `codecs`
 package already provides `Utf8Codec` as an implicit parameter, so the conversion
-is seamless. Cassie handles `String` and `Byte[Array]` instances out of the box,
+is seamless. Cassie handles `String` and `Array[Byte]` instances out of the box,
 and also provides some useful non-standard types:
 
 * `AsciiString`: character sequence encoded with `US-ASCII`
@@ -139,7 +139,7 @@ This returns a `Map[Name, Column[Name, Value]]`, where each column is mapped by
 its name. Again, `getColumnsAs` provides a way for reading column names and
 values of different types:
     
-    people.getColumnsAs[FixedLong, Byte[Array]]("things", Set(1, 2, 3))
+    people.getColumnsAs[FixedLong, Array[Byte]]("things", Set(1, 2, 3))
 
 If you want to get all columns of a row, that's cool too:
     
