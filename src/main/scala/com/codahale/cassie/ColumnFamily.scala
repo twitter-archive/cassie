@@ -13,12 +13,13 @@ import com.codahale.logula.Logging
  * @author coda
  */
 class ColumnFamily[Name, Value](val keyspace: String,
-                   val name: String,
-                   val provider: ClientProvider,
-                   val defaultNameCodec: Codec[Name],
-                   val defaultValueCodec: Codec[Value],
-                   val defaultReadConsistency: ReadConsistency = ReadConsistency.Quorum,
-                   val defaultWriteConsistency: WriteConsistency = WriteConsistency.Quorum) extends Logging {
+                                val name: String,
+                                val provider: ClientProvider,
+                                val defaultNameCodec: Codec[Name],
+                                val defaultValueCodec: Codec[Value],
+                                val defaultReadConsistency: ReadConsistency,
+                                val defaultWriteConsistency: WriteConsistency)
+        extends Logging {
 
   /**
    * Returns the optional value of a given column for a given key as the given
@@ -46,19 +47,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * given types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def getRowAs[A, B](key: String,
-                     count: Int                   = Int.MaxValue,
-                     reversed: Boolean            = false,
-                     startColumnName: Option[A]   = None,
-                     endColumnName: Option[A]     = None,
-                     consistency: ReadConsistency = defaultReadConsistency)
+  def getRowAs[A, B](key: String, consistency: ReadConsistency = defaultReadConsistency)
                     (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
-
-    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
-    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, reversed, count))
-    getSlice(key, pred, consistency, nameCodec, valueCodec)
+    getRowSliceAs[A, B](key, None, None, Int.MaxValue, Order.Normal, consistency)(nameCodec, valueCodec)
   }
 
   /**
@@ -66,13 +57,37 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * default types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def getRow(key: String,
-             count: Int                    = Int.MaxValue,
-             reversed: Boolean             = false,
-             startColumnName: Option[Name] = None,
-             endColumnName: Option[Name]   = None,
-             consistency: ReadConsistency  = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
-    getRowAs[Name, Value](key, count, reversed, startColumnName, endColumnName, consistency)(defaultNameCodec, defaultValueCodec)
+  def getRow(key: String, consistency: ReadConsistency  = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
+    getRowAs[Name, Value](key, consistency)(defaultNameCodec, defaultValueCodec)
+  }
+
+  /**
+   * Returns a slice of all columns of a row as the given types.
+   */
+  def getRowSliceAs[A, B](key: String,
+                          startColumnName: Option[A],
+                          endColumnName: Option[A],
+                          count: Int,
+                          order: Order,
+                          consistency: ReadConsistency = defaultReadConsistency)
+                         (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
+    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
+    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(Array[Byte]())
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
+    getSlice(key, pred, consistency, nameCodec, valueCodec)
+  }
+
+  /**
+   * Returns a slice of all columns of a row as the default types.
+   */
+  def getRowSlice(key: String,
+                  startColumnName: Option[Name],
+                  endColumnName: Option[Name],
+                  count: Int,
+                  order: Order,
+                  consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
+    getRowSliceAs[Name, Value](key, startColumnName, endColumnName, count, order, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**

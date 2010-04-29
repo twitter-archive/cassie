@@ -33,7 +33,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   def setup = {
     val client = mock[Client]
     val provider = SimpleProvider(client)
-    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec)
+    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec,
+      ReadConsistency.Quorum, WriteConsistency.Quorum)
 
     (client, cf)
   }
@@ -42,7 +43,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("performs a get_slice with a set of column names") {
-      cf.getColumn("key", "name", ReadConsistency.Quorum)
+      cf.getColumn("key", "name")
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -58,7 +59,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
 
-      cf.getColumn("key", "name", ReadConsistency.Quorum) must equal(Some(Column("name", "Coda", 2292L)))
+      cf.getColumn("key", "name") must equal(Some(Column("name", "Coda", 2292L)))
     }
 
     it("returns none if the column doesn't exist") {
@@ -68,11 +69,11 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
-  describe("getting all columns for a key") {
+  describe("getting a row") {
     val (client, cf) = setup
 
     it("performs a get_slice with a maxed-out count") {
-      cf.getRow("key", consistency=ReadConsistency.Quorum)
+      cf.getRow("key")
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -89,24 +90,20 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyString, anyString, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(columns.asJava)
 
-      cf.getRow("key", consistency=ReadConsistency.Quorum) must equal(Map(
+      cf.getRow("key") must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       ))
     }
   }
 
-  describe("getting all columns with query options") {
+  describe("getting a row slice") {
     val (client, cf) = setup
 
     it("performs a get_slice with the specified count, reversedness, start column name and end column name") {
       val startColumnName = "somewhere"
       val endColumnName   = "overTheRainbow"
-      cf.getRow("key", count       = 100,
-                       reversed    = true,
-                       startColumnName    = Some(startColumnName),
-                       endColumnName      = Some(endColumnName),
-                       consistency = ReadConsistency.Quorum)
+      cf.getRowSlice("key", Some(startColumnName), Some(endColumnName), 100, Order.Reversed)
 
       val cp = new thrift.ColumnParent("cf")
 
