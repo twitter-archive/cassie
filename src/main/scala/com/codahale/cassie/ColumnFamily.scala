@@ -16,27 +16,29 @@ class ColumnFamily[Name, Value](val keyspace: String,
                    val name: String,
                    val provider: ClientProvider,
                    val defaultNameCodec: Codec[Name],
-                   val defaultValueCodec: Codec[Value]) extends Logging {
+                   val defaultValueCodec: Codec[Value],
+                   val defaultReadConsistency: ReadConsistency = ReadConsistency.Quorum,
+                   val defaultWriteConsistency: WriteConsistency = WriteConsistency.Quorum) extends Logging {
 
   /**
    * Returns the optional value of a given column for a given key as the given
    * types.
    */
-  def getAs[A, B](key: String,
-                  columnName: A,
-                  consistency: ReadConsistency)
-                 (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Option[Column[A, B]] = {
-    getAs(key, Set(columnName), consistency)(nameCodec, valueCodec).get(columnName)
+  def getColumnAs[A, B](key: String,
+                        columnName: A,
+                        consistency: ReadConsistency = defaultReadConsistency)
+                       (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Option[Column[A, B]] = {
+    getColumnsAs(key, Set(columnName), consistency)(nameCodec, valueCodec).get(columnName)
   }
 
   /**
    * Returns the optional value of a given column for a given key as the default
    * types.
    */
-  def get(key: String,
-          columnName: Name,
-          consistency: ReadConsistency): Option[Column[Name, Value]] = {
-    getAs[Name, Value](key, columnName, consistency)(defaultNameCodec, defaultValueCodec)
+  def getColumn(key: String,
+                columnName: Name,
+                consistency: ReadConsistency = defaultReadConsistency): Option[Column[Name, Value]] = {
+    getColumnAs[Name, Value](key, columnName, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**
@@ -44,9 +46,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * given types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def getAs[A, B](key: String,
-                  consistency: ReadConsistency)
-                 (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
+  def getRowAs[A, B](key: String,
+                     consistency: ReadConsistency = defaultReadConsistency)
+                    (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
     val pred = new thrift.SlicePredicate()
     pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
     getSlice(key, pred, consistency, nameCodec, valueCodec)
@@ -57,19 +59,19 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * default types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def get(key: String,
-          consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
-    getAs[Name, Value](key, consistency)(defaultNameCodec, defaultValueCodec)
+  def getRow(key: String,
+             consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
+    getRowAs[Name, Value](key, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**
    * Returns a map of the given column names to the columns for a given key as
    * the given types.
    */
-  def getAs[A, B](key: String,
-                  columnNames: Set[A],
-                  consistency: ReadConsistency)
-                 (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
+  def getColumnsAs[A, B](key: String,
+                         columnNames: Set[A],
+                         consistency: ReadConsistency = defaultReadConsistency)
+                        (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[A, Column[A, B]] = {
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     getSlice(key, pred, consistency, nameCodec, valueCodec)
@@ -79,21 +81,21 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a map of the given column names to the columns for a given key as
    * the default types.
    */
-  def get(key: String,
-          columnNames: Set[Name],
-          consistency: ReadConsistency): Map[Name, Column[Name, Value]] = {
-    getAs[Name, Value](key, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
+  def getColumns(key: String,
+                 columnNames: Set[Name],
+                 consistency: ReadConsistency = defaultReadConsistency): Map[Name, Column[Name, Value]] = {
+    getColumnsAs[Name, Value](key, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
 
   /**
    * Returns a map of keys to given column for a set of keys as the given types.
    */
-  def multigetAs[A, B](keys: Set[String],
-                       columnName: A,
-                       consistency: ReadConsistency)
-                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[String, Column[A, B]] = {
-    multigetAs[A, B](keys, Set(columnName), consistency)(nameCodec, valueCodec).map {
+  def multigetColumnAs[A, B](keys: Set[String],
+                             columnName: A,
+                             consistency: ReadConsistency = defaultReadConsistency)
+                            (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[String, Column[A, B]] = {
+    multigetColumnsAs[A, B](keys, Set(columnName), consistency)(nameCodec, valueCodec).map {
       case (k, v) => (k, v.valuesIterator.next)
     }
   }
@@ -102,20 +104,20 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a map of keys to given column for a set of keys as the default
    * types.
    */
-  def multiget(keys: Set[String],
-               columnName: Name,
-               consistency: ReadConsistency): Map[String, Column[Name, Value]] = {
-    multigetAs[Name, Value](keys, columnName, consistency)(defaultNameCodec, defaultValueCodec)
+  def multigetColumn(keys: Set[String],
+                     columnName: Name,
+                     consistency: ReadConsistency = defaultReadConsistency): Map[String, Column[Name, Value]] = {
+    multigetColumnAs[Name, Value](keys, columnName, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**
    * Returns a map of keys to a map of column names to the columns for a given
    * set of keys and columns as the given types.
    */
-  def multigetAs[A, B](keys: Set[String],
-                       columnNames: Set[A],
-                       consistency: ReadConsistency)
-                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[String, Map[A, Column[A, B]]] = {
+  def multigetColumnsAs[A, B](keys: Set[String],
+                              columnNames: Set[A],
+                              consistency: ReadConsistency = defaultReadConsistency)
+                             (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[String, Map[A, Column[A, B]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
@@ -132,10 +134,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * Returns a map of keys to a map of column names to the columns for a given
    * set of keys and columns as the default types.
    */
-  def multiget(keys: Set[String],
-               columnNames: Set[Name],
-               consistency: ReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
-    multigetAs[Name, Value](keys, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
+  def multigetColumns(keys: Set[String],
+                      columnNames: Set[Name],
+                      consistency: ReadConsistency = defaultReadConsistency): Map[String, Map[Name, Column[Name, Value]]] = {
+    multigetColumnsAs[Name, Value](keys, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   /**
@@ -143,7 +145,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
    */
   def insert[A, B](key: String,
                    column: Column[A, B],
-                   consistency: WriteConsistency)
+                   consistency: WriteConsistency = defaultWriteConsistency)
                   (implicit nameCodec: Codec[A], valueCodec: Codec[B]) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(column.name))
@@ -157,20 +159,21 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Removes a column from a key.
    */
-  def remove[A](key: String,
-                columnName: A,
-                consistency: WriteConsistency)
-               (implicit clock: Clock, nameCodec: Codec[A]) {
-    remove(key, columnName, clock.timestamp, consistency)(nameCodec)
+  def removeColumn[A](key: String,
+                      columnName: A,
+                      consistency: WriteConsistency = defaultWriteConsistency)
+                     (implicit clock: Clock, nameCodec: Codec[A]) {
+    removeColumnWithTimestamp(key, columnName, clock.timestamp, consistency)(nameCodec)
   }
 
   /**
    * Removes a column from a key with a specific timestamp.
    */
-  def remove[A](key: String,
-                columnName: A,
-                timestamp: Long,
-                consistency: WriteConsistency)(implicit nameCodec: Codec[A]) {
+  def removeColumnWithTimestamp[A](key: String,
+                                   columnName: A,
+                                   timestamp: Long,
+                                   consistency: WriteConsistency = defaultWriteConsistency)
+                                  (implicit nameCodec: Codec[A]) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(columnName))
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
@@ -180,41 +183,41 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Removes a set of columns from a key.
    */
-  def remove[A](key: String,
-                columnNames: Set[A],
-                consistency: WriteConsistency)
-               (implicit clock: Clock, nameCodec: Codec[A]) {
-    remove(key, columnNames, clock.timestamp, consistency)(nameCodec)
+  def removeColumns[A](key: String,
+                       columnNames: Set[A],
+                       consistency: WriteConsistency = defaultWriteConsistency)
+                      (implicit clock: Clock, nameCodec: Codec[A]) {
+    removeColumnsWithTimestamp(key, columnNames, clock.timestamp, consistency)(nameCodec)
   }
 
   /**
    * Removes a set of columns from a key with a specific timestamp.
    */
-  def remove[A](key: String,
-                columnNames: Set[A],
-                timestamp: Long,
-                consistency: WriteConsistency)
-               (implicit nameCodec: Codec[A]) {
+  def removeColumnsWithTimestamp[A](key: String,
+                                    columnNames: Set[A],
+                                    timestamp: Long,
+                                    consistency: WriteConsistency = defaultWriteConsistency)
+                                   (implicit nameCodec: Codec[A]) {
     batch(consistency) { cf =>
-      cf.remove(key, columnNames, timestamp)(nameCodec)
+      cf.removeColumnsWithTimestamp(key, columnNames, timestamp)(nameCodec)
     }
   }
 
   /**
    * Removes a key.
    */
-  def remove(key: String,
-             consistency: WriteConsistency)
-            (implicit clock: Clock) {
-    remove(key, clock.timestamp, consistency)
+  def removeRow(key: String,
+                consistency: WriteConsistency = defaultWriteConsistency)
+               (implicit clock: Clock) {
+    removeRowWithTimestamp(key, clock.timestamp, consistency)
   }
 
   /**
    * Removes a key with a specific timestamp.
    */
-  def remove(key: String,
-             timestamp: Long,
-             consistency: WriteConsistency) {
+  def removeRowWithTimestamp(key: String,
+                             timestamp: Long,
+                             consistency: WriteConsistency = defaultWriteConsistency) {
     val cp = new thrift.ColumnPath(name)
     log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
@@ -223,7 +226,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
   /**
    * Performs a series of actions in a single request.
    */
-  def batch(consistency: WriteConsistency)
+  def batch(consistency: WriteConsistency = defaultWriteConsistency)
            (build: BatchMutationBuilder => Unit) {
     val builder = new BatchMutationBuilder(name)
     build(builder)
@@ -237,9 +240,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * the column family with the given batch size and consistency level as the
    * given types.
    */
-  def iteratorAs[A, B](batchSize: Int,
-                       consistency: ReadConsistency)
-                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] = {
+  def rowIteratorAs[A, B](batchSize: Int,
+                          consistency: ReadConsistency = defaultReadConsistency)
+                         (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(Array(), Array(), false, Int.MaxValue))
     new ColumnIterator(this, "", "", batchSize, pred, consistency, nameCodec, valueCodec)
@@ -250,9 +253,9 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * the column family with the given batch size and consistency level as the
    * default types.
    */
-  def iterator(batchSize: Int,
-               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
-    iteratorAs[Name, Value](batchSize, consistency)(defaultNameCodec, defaultValueCodec)
+  def rowIterator(batchSize: Int,
+                  consistency: ReadConsistency = defaultReadConsistency): Iterator[(String, Column[Name, Value])] = {
+    rowIteratorAs[Name, Value](batchSize, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
 
@@ -261,31 +264,31 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * in the column family with the given batch size and consistency level as the
    * given types.
    */
-  def iteratorAs[A, B](batchSize: Int,
-                       columnName: A,
-                       consistency: ReadConsistency)
-                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] =
-    iteratorAs(batchSize, Set(columnName), consistency)(nameCodec, valueCodec)
+  def columnIteratorAs[A, B](batchSize: Int,
+                             columnName: A,
+                             consistency: ReadConsistency = defaultReadConsistency)
+                            (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] =
+    columnsIteratorAs(batchSize, Set(columnName), consistency)(nameCodec, valueCodec)
 
   /**
    * Returns a column iterator which iterates over the given column of all rows
    * in the column family with the given batch size and consistency level as the
    * default types.
    */
-  def iterator(batchSize: Int,
-               columnName: Name,
-               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] =
-    iteratorAs[Name, Value](batchSize, columnName, consistency)(defaultNameCodec, defaultValueCodec)
+  def columnIterator(batchSize: Int,
+                     columnName: Name,
+                     consistency: ReadConsistency = defaultReadConsistency): Iterator[(String, Column[Name, Value])] =
+    columnIteratorAs[Name, Value](batchSize, columnName, consistency)(defaultNameCodec, defaultValueCodec)
 
   /**
    * Returns a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size and consistency level as the
    * given types.
    */
-  def iteratorAs[A, B](batchSize: Int,
-                       columnNames: Set[A],
-                       consistency: ReadConsistency)
-                      (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] = {
+  def columnsIteratorAs[A, B](batchSize: Int,
+                              columnNames: Set[A],
+                              consistency: ReadConsistency = defaultReadConsistency)
+                             (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Iterator[(String, Column[A, B])] = {
     val pred = new thrift.SlicePredicate
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
     new ColumnIterator(this, "", "", batchSize, pred, consistency, nameCodec, valueCodec)
@@ -296,10 +299,10 @@ class ColumnFamily[Name, Value](val keyspace: String,
    * in the column family with the given batch size and consistency level as the
    * default types.
    */
-  def iterator(batchSize: Int,
-               columnNames: Set[Name],
-               consistency: ReadConsistency): Iterator[(String, Column[Name, Value])] = {
-    iteratorAs[Name, Value](batchSize, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
+  def columnsIterator(batchSize: Int,
+                      columnNames: Set[Name],
+                      consistency: ReadConsistency = defaultReadConsistency): Iterator[(String, Column[Name, Value])] = {
+    columnsIteratorAs[Name, Value](batchSize, columnNames, consistency)(defaultNameCodec, defaultValueCodec)
   }
 
   private def getSlice[A, B](key: String,

@@ -4,8 +4,8 @@ import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import com.codahale.cassie.client.ClientProvider
-import com.codahale.cassie.{ColumnFamily, Keyspace}
 import com.codahale.cassie.codecs.Utf8Codec
+import com.codahale.cassie.{WriteConsistency, ReadConsistency, Keyspace}
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
   describe("a keyspace") {
@@ -14,14 +14,13 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
 
     it("builds a column family with the same ClientProvider") {
       val cf = keyspace.columnFamily[String, String]("People")
-      cf.isInstanceOf[ColumnFamily[_, _]] must be(true)
-
-      val cfi = cf.asInstanceOf[ColumnFamily[String, String]]
-      cfi.keyspace must equal("MyApp")
-      cfi.name must equal("People")
-      cfi.defaultNameCodec must equal(Utf8Codec)
-      cfi.defaultValueCodec must equal(Utf8Codec)
-      cfi.provider must equal(provider)
+      cf.keyspace must equal("MyApp")
+      cf.name must equal("People")
+      cf.defaultReadConsistency must equal(ReadConsistency.Quorum)
+      cf.defaultWriteConsistency must equal(WriteConsistency.Quorum)
+      cf.defaultNameCodec must equal(Utf8Codec)
+      cf.defaultValueCodec must equal(Utf8Codec)
+      cf.provider must equal(provider)
     }
   }
 }

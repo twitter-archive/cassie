@@ -35,31 +35,31 @@ class BatchMutationBuilder(cfName: String) {
   /**
    * Removes a column from a row.
    */
-  def remove[Name](key: String, columnName: Name)
+  def removeColumn[Name](key: String, columnName: Name)
                   (implicit clock: Clock, nameCodec: Codec[Name]) {
-    remove(key, columnName, clock.timestamp)(nameCodec)
+    removeColumnWithTimestamp(key, columnName, clock.timestamp)(nameCodec)
   }
 
   /**
    * Removes a column from a row with a specific timestamp.
    */
-  def remove[Name](key: String, columnName: Name, timestamp: Long)
+  def removeColumnWithTimestamp[Name](key: String, columnName: Name, timestamp: Long)
                   (implicit nameCodec: Codec[Name]) {
-    remove(key, Set(columnName), timestamp)(nameCodec)
+    removeColumnsWithTimestamp(key, Set(columnName), timestamp)(nameCodec)
   }
 
   /**
    * Removes a set of columns from a row.
    */
-  def remove[Name](key: String, columnNames: Set[Name])
+  def removeColumns[Name](key: String, columnNames: Set[Name])
                   (implicit clock: Clock, nameCodec: Codec[Name]) {
-    remove(key, columnNames, clock.timestamp)(nameCodec)
+    removeColumnsWithTimestamp(key, columnNames, clock.timestamp)(nameCodec)
   }
 
   /**
    * Removes a set of columns from a row with a specific timestamp.
    */
-  def remove[Name](key: String, columnNames: Set[Name], timestamp: Long)
+  def removeColumnsWithTimestamp[Name](key: String, columnNames: Set[Name], timestamp: Long)
                   (implicit nameCodec: Codec[Name]) {
     val pred = new SlicePredicate
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)

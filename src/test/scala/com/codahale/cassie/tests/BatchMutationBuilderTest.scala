@@ -28,7 +28,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("removing a column with an implicit timestamp") {
     val builder = new BatchMutationBuilder("People")
-    builder.remove("key", "column")
+    builder.removeColumn("key", "column")
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
@@ -42,7 +42,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("removing a column with an explicit timestamp") {
     val builder = new BatchMutationBuilder("People")
-    builder.remove("key", "column", 22)
+    builder.removeColumnWithTimestamp("key", "column", 22)
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
@@ -56,7 +56,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("removing a set of columns with an implicit timestamp") {
     val builder = new BatchMutationBuilder("People")
-    builder.remove("key", Set("one", "two"))
+    builder.removeColumns("key", Set("one", "two"))
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
@@ -70,7 +70,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("removing a set of columns with an explicit timestamp") {
     val builder = new BatchMutationBuilder("People")
-    builder.remove("key", Set("one", "two"), 22)
+    builder.removeColumnsWithTimestamp("key", Set("one", "two"), 22)
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {

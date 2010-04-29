@@ -16,122 +16,243 @@ Requirements
 * Cassandra 0.6.x
 
 
-How To Use
-----------
+Let's Get This Party Started
+----------------------------
 
-**First**, specify Cassie as a dependency:
-
+In your [simple-build-tool](http://code.google.com/p/simple-build-tool/) project
+file, add Cassie as a dependency:
+    
     val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
-    val cassie = "com.yammer" %% "cassie" % "0.1" withSources()
+    val cassie = "com.codahale" %% "cassie" % "0.1" withSources()
 
-**Second**, set up a connection:
-    
-    import com.codahale.cassie._
-    import com.codahale.cassie.client._
-    import com.codahale.cassie.clocks._
-    import com.codahale.cassie.codecs._
-    
-    // pull down data about all the nodes in the cluster
+
+Connecting To Your Cassandra Cluster
+------------------------------------
+
+First, use a `ClusterMap` to pull down a list of nodes in your cluster from a
+seed host:
+
     val map = new ClusterMap("localhost", 9160)
-    
-    // create a round-robin pool of 1-5 connections, and retry each query up to
-    // 10 times
+
+Then set up a pool of 1-5 connections with up to 10 retries (in case a request
+times out or a connection is lost, etc.):
+
     val selector = new RoundRobinHostSelector(map)
     val provider = new PooledClientProvider(selector, 1, 5, 10)
 
-**Third**, let Cassie know how it should be handling column names and values:
-    
-    val cluster = new Cluster(provider)
-    val keyspace = cluster.keyspace("MyCassieApp")
+This uses a round-robin approach when a new connection is required. There's also
+`RandomHostSelector`, which simply chooses a random node from the cluster to
+connect to.
 
-    // access the "People" column family with column names and values as UTF-8
-    // strings
-    val people = keyspace.columnFamily[String, String]("People")
-    
-**Fourth**, interact with Cassandra:
 
-Pick a clock to use for timestamps. Microseconds are fashionable:
+A Quick Note On Timestamps
+--------------------------
+
+Cassandra uses client-generated timestamps to determine the order in which
+writes and deletes should be processed. Cassie comes with a few different clock
+implementations, but you'll probably want to use `MicrosecondEpochClock`, which
+is a strictly-increasing clock of microseconds since January 1st, 1970.
+
+Set it up as an implicit variable:
     
     implicit val clock = MicrosecondEpochClock
 
-Insert some columns:
+(For each operation which requires a timestamp, you always have the option of
+passing in a specific timestamp. In general, though, you should stick with this
+default.)
+
+
+A Longer Note, This Time On Column Names And Values
+---------------------------------------------------
+
+Cassandra stores the name and value of a column as a simple array of bytes. To
+convert these bytes to and from useful Scala types, Cassie uses implicit `Codec`
+parameters for the given type.
+
+For example, take adding a column to a column family of UTF-8 strings:
     
-    people.insert("codahale", Column("name", "Coda"), WriteConsistency.Quorum)
-    people.insert("codahale", Column("motto", "Moar lean."), WriteConsistency.Quorum)
+    strings.insert("newstring", Column("colname", "colvalue"))
 
-    people.insert("darlingnikles", Column("name", "Niki"), WriteConsistency.Quorum)
-    people.insert("darlingnikles", Column("motto", "Told ya."), WriteConsistency.Quorum)
+The `insert` method looks for an implicit parameter of type `Codec[String]` to
+convert both the name and the value to byte arrays. In this case, the `codecs`
+package already provides `Utf8Codec` as an implicit parameter, so the conversion
+is seamless. Cassie handles `String` and `Byte[Array]` instances out of the box,
+and also provides some useful non-standard types:
 
-    people.insert("biscuitfoof", Column("name", "Biscuit"), WriteConsistency.Quorum)
-    people.insert("biscuitfoof", Column("motto", "Mlalm."), WriteConsistency.Quorum)
+* `AsciiString`: character sequence encoded with `US-ASCII`
+* `FixedInt`: 32-bit integer stored as a 4-byte sequence
+* `FixedLong`: 64-bit integer stored as an 8-byte sequence
+* `VarInt`: 32-bit integer stored using [Avro](http://hadoop.apache.org/avro/)'s
+  variable-length integer encoding
+* `VarLong`: 64-bit integer stored using
+  [Avro](http://hadoop.apache.org/avro/)'s variable-length integer encoding
 
-    people.insert("louiefoof", Column("name", "Louie"), WriteConsistency.Quorum)
-    people.insert("louiefoof", Column("motto", "Swish!"), WriteConsistency.Quorum)
+These types also have implicit conversions defined, so if you have an instance
+of `ColumnFamily[String, VarLong]` you can use regular `Long`s.
 
-Insert a column of a different type:
+
+Accessing Column Families
+-------------------------
+
+Once you've got a `ClientProvider` instance (in the form of the
+`PooledClientProvider` from before), you can load your cluster, keyspace, and
+column families:
+
+    val cluster = new Cluster(provider)
+    val keyspace = cluster.keyspace("MyCassieApp")
     
-    people.insert("digits", Column[VarInt, VarInt](1, 300), WriteConsistency.Quorum)
-    
-Select a single column:
-    
-    people.get("codahale", "name", ReadConsistency.Quorum)
-    // Some(Column(name,Coda,1271789761374109))
+    val people = keyspace.columnFamily[String, String]("People")
+    val numbers = keyspace.columnFamily[String, VarInt]("People",
+                    defaultReadConsistency = ReadConsistency.One,
+                    defaultWriteConsistency = WriteConsistency.Any)
 
-Select a single column of a different type:
+By default, `ColumnFamily` instances have a default `ReadConsistency` and
+`WriteConsistency` of `Quorum`, meaning reads and writes will only be considered
+successful if a quorum of the replicas for that key respond successfully. You
+can change this default or simply pass a different consistency level to specific
+read and write operations.
+
+
+Reading Data From Cassandra
+---------------------------
+
+Now that you've got your `ColumnFamily`, you can read some data from Cassandra:
     
-    people.getAs[VarInt, VarInt]("digits", 1, ReadConsistency.One)
-
-Select a column what don't exist:
+    people.getColumn("codahale", "name")
     
-    people.get("unicorncow", "name", ReadConsistency.Quorum)
-    // None
+`getColumn` returns an `Option[Column[Name, Value]]` where `Name` and `Value`
+are the type parameters of the `ColumnFamily`. If the row or column doesn't
+exist, `None` is returned.
 
-Select a set of columns:
+If you need a column with a name or value of a different type than the
+`ColumnFamily`, you can use `getColumnAs`:
     
-    people.get("codahale", Set("name", "motto"), ReadConsistency.One)    
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
+    people.getColumnAs[String, VarLong]("codahale", "name")
 
-Select an entire row:
+This will return an `Option[Column[String, VarLong]]`.
+
+You can also get a set of columns:
+
+    people.getColumns("codahale", Set("name", "motto"))
+
+This returns a `Map[Name, Column[Name, Value]]`, where each column is mapped by
+its name. Again, `getColumnsAs` provides a way for reading column names and
+values of different types:
     
-    people.get("codahale", ReadConsistency.Quorum)
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
+    people.getColumnsAs[FixedLong, Byte[Array]]("things", Set(1, 2, 3))
 
-Select a column from a set of rows:
+If you want to get all columns of a row, that's cool too:
     
-    people.multiget(Set("codahale", "darlingnikles"), "name", ReadConsistency.Quorum)
-    // Map(darlingnikles -> Column(name,Niki,1271789761390785), codahale -> Column(name,Coda,1271789761374109))
+    people.getRow("codahale")
 
-Select a set of columns from a set of rows:
+(And hey, `getRowAs` works, too.)
+
+Cassie also supports multiget for columns and sets of columns:
     
-    people.multiget(Set("codahale", "yay for you"), Set("name", "motto"), ReadConsistency.Quorum)
-    // Map(darlingnikles -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)),
-    //     codahale -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
+    people.multigetColumn(Set("codahale", "darlingnikles"), "name")
+    people.multigetColumns(Set("codahale", "darlingnikles"), Set("name", "motto"))
 
-Remove a column:
+`multigetColumn` returns a `Map[String, Map[Name, Column[Name, Value]]]` which
+maps row keys to column names to columns. `multigetColumnAs` and
+`multigetColumnsAs` do the usual for specifying column name and value types.
 
-    people.remove("codahale", "motto", WriteConsistency.Quorum)
+
+Iterating Through Rows
+----------------------
+
+Cassie provides functionality for iterating through the rows of a column family.
+This works with both the random partitioner and the order-preserving
+partitioner, at the expense of a wee bit of performance (really, though,
+high-performance iteration is not going to be Cassandra's selling point).
+
+It does this by requesting a certain number of rows, starting with the first
+possible row (`""`) and ending with the last row possible row (`""`). The last
+key of the returned rows is then used as the start key for the next request,
+until either no rows are returned or the last row is returned twice.
+
+(The performance hit in this is that the last row of one request will be the
+first row of the next.)
+
+You can iterate over every column of every row:
+    
+    for ((key, col) <- people.rowIterator(100) {
+      println(" Found column %s in row %s", col, key)
+    }
+
+(This gets 100 rows at a time.)
+
+Or just one column from every row:
+
+    for ((key, col) <- people.columnIterator(100, "name") {
+      println(" Found column %s in row %s", col, key)
+    }
+
+Or a set of columns from every row:
+
+    for ((key, col) <- people.columnsIterator(100, Set("name", "motto")) {
+      println(" Found column %s in row %s", col, key)
+    }
+
+
+Writing Data To Cassandra
+-------------------------
+
+Inserting columns is pretty easy:
+
+    people.insert("codahale", Column("name", "Coda"))
+    people.insert("codahale", Column("motto", "Moar lean."))
+
+You can insert a value with a specific timestamp:
+    
+    people.insert("darlingnikles", Column("name", "Niki", 200L))
+    people.insert("darlingnikles", Column("motto", "Told ya.", 201L))
+
+Or even insert column names and values of a different type than those of the
+`ColumnFamily`:
+
+    people.insert("biscuitfoof", Column[AsciiString, AsciiString]("name", "Biscuit"))
+    people.insert("biscuitfoof", Column[AsciiString, AsciiString]("motto", "Mlalm."))
+
+Or insert values with a specific write consistency level:
+
+    people.insert("louiefoof", Column("name", "Louie"), WriteConsistency.All)
+    people.insert("louiefoof", Column("motto", "Swish!"), WriteConsistency.Any)
+
+Batch operations are also possible:
+    
+    people.batch() { cf =>
+      cf.insert("puddle", Column("name", "Puddle"))
+      cf.insert("puddle", Column("motto", "Food!"))
+    }
+
+(See `BatchMutationBuilder` for a better idea of which operations are 
+available.)
+
+
+Deleting Data From Cassandra
+----------------------------
+
+First, it's important to understand
+[exactly how deletes work](http://wiki.apache.org/cassandra/DistributedDeletes)
+in a distributed system like Cassandra.
+
+Once you've read that, then feel free to remove a column:
+
+    people.removeColumn("puddle", "name")
 
 Or a set of columns:
     
-    people.remove("codahale", Set("name", "motto"), WriteConsistency.Quorum)
+    people.removeColumns("puddle", Set("name", "motto"))
 
-Remove a row:
+Or even a row:
     
-    people.remove("codahale", WriteConsistency.Quorum)
+    people.removeRow("puddle")
 
-Or batch up a whole bunch of mutations and send 'em down the pipe at once:
-    
-    people.batch(WriteConsistency.Quorum) { batch =>
-      batch.insert("ursusbourbonia", Column("name", "Drinky Bear"))
-      batch.insert("ursusbourbonia", Column("motto", "Arghalhafflg."))
-      batch.remove("tinkles", Set("name", "motto", "carpetstain"))
-    }
+If you need to ensure your delete action has a specific timestamp, you can:
 
-And then iterate over the whole mess:
-    
-    for ((key, col) <- people.iterator(100, Set("name", "motto")) {
-      println(" Found column %s in row %s", col, key)
-    }
+    people.removeColumnWithTimestamp("puddle", "name", 40010L)
+    people.removeColumnsWithTimestamp("puddle", Set("name", "motto"), 818181L)
+    people.removeRowWithTimestamp("puddle", 901289282L)
 
 
 Things What Ain't Done Yet
@@ -150,4 +271,5 @@ License
 -------
 
 Copyright (c) 2010 Coda Hale
+
 Published under The MIT License, see LICENSE
