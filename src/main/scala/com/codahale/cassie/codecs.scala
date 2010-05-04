@@ -10,9 +10,11 @@ import codecs._
 package object codecs {
   implicit val utf8 = Utf8Codec
   implicit val ascii = AsciiStringCodec
+  implicit val base64 = Base64ByteArrayCodec
   implicit val bytes = ByteArrayCodec
   implicit val fixedInt = FixedIntCodec
   implicit val fixedLong = FixedLongCodec
+  implicit val hex = HexByteArrayCodec
   implicit val varInt = VarIntCodec
   implicit val varLong = VarLongCodec
 }
