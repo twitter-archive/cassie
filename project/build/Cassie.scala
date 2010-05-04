@@ -10,6 +10,7 @@ class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) {
   val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
   val pool = "commons-pool" % "commons-pool" % "1.5.4" withSources() intransitive()
+  val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
 
   val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0.Beta2"
 
