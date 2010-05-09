@@ -41,8 +41,8 @@ object LexicalUUID {
  */
 case class LexicalUUID(timestamp: Long, workerID: Long) {
   override def toString = {
-    val hex = "%016x%016x".format(timestamp, workerID)
-    "%s-%s-%s-%s".format(hex.substring( 0,  8), hex.substring( 8, 12),
-                         hex.substring(12, 16), hex.substring(16, 32))
+    val hex = "%016x".format(timestamp)
+    "%s-%s-%s-%016x".format(hex.substring( 0,  8), hex.substring( 8, 12),
+                            hex.substring(12, 16), workerID)
   }
 }
