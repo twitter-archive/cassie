@@ -25,6 +25,15 @@ object LexicalUUID {
     }
     LexicalUUID(clock.timestamp, workerId)
   }
+
+  /**
+   * Given a UUID formatted as a string, returns it as a LexicalUUID.
+   */
+  def apply(uuid: String): LexicalUUID = {
+    def decode(s: String) = s.foldLeft(0L) { (n, c) => (n * 16) + Character.digit(c, 16) }
+    val (high, low) = uuid.filterNot { _ == '-' }.splitAt(16)
+    LexicalUUID(decode(high), decode(low))
+  }
 }
 
 /**
@@ -35,7 +44,7 @@ object LexicalUUID {
 case class LexicalUUID(timestamp: Long, workerID: Long) {
   override def toString = {
     val hex = "%016x%016x".format(timestamp, workerID)
-    "LexicalUUID(%s-%s-%s-%s)".format(hex.substring(0, 8), hex.substring(8, 12),
-                                      hex.substring(12, 16), hex.substring(16, 32))
+    "%s-%s-%s-%s".format(hex.substring( 0,  8), hex.substring( 8, 12),
+                         hex.substring(12, 16), hex.substring(16, 32))
   }
 }

@@ -3,9 +3,9 @@ package com.codahale.cassie.tests.examples
 import com.codahale.cassie._
 import client.{RoundRobinHostSelector, PooledClientProvider, ClusterMap}
 import clocks.MicrosecondEpochClock
-import types.{VarInt, AsciiString, FixedLong}
 import com.codahale.logula.Logging
 import java.util.logging.Level
+import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
@@ -62,6 +62,9 @@ object CassieRun extends Logging {
 
     log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")))
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
+
+    // drop some UUID sauce on things
+    cass.insert(LexicalUUID(), Column("yay", "boo"))
 
     cass.getColumnAs[FixedLong, AsciiString]("key", 2)
     cass.insert("digits", Column[VarInt, VarInt](1, 300))

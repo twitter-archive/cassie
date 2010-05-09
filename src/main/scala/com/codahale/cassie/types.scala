@@ -28,4 +28,7 @@ package object types {
 
   implicit def Long2VarLong(value: Long): VarLong = VarLong(value)
   implicit def VarLong2Long(varLong: VarLong): Long = varLong.value
+  
+  implicit def String2LexicalUUID(s: String): LexicalUUID = LexicalUUID(s)
+  implicit def LexicalUUID2String(uuid: LexicalUUID): String = uuid.toString
 }

@@ -18,7 +18,19 @@ class LexicalUUIDTest extends Spec with MustMatchers {
     }
 
     it("is human-readable") {
-      uuid.toString must equal("LexicalUUID(00000000-00ff-9281-ffffffffa0091991)")
+      uuid.toString must equal("00000000-00ff-9281-ffffffffa0091991")
+    }
+
+    it("is convertible to a String") {
+      val s: String = uuid
+
+      s must equal("00000000-00ff-9281-ffffffffa0091991")
+    }
+
+    it("is convertible from a String") {
+      val u: LexicalUUID = "00000000-00ff-9281-ffffffffa0091991"
+
+      u must equal(uuid)
     }
   }
 
@@ -30,7 +42,7 @@ class LexicalUUIDTest extends Spec with MustMatchers {
     val uuid = LexicalUUID(1001)
 
     it("uses the timestamp from the clock and the provided worker ID") {
-      uuid.toString must equal("LexicalUUID(00000000-012f-cd83-00000000000003e9)")
+      uuid.toString must equal("00000000-012f-cd83-00000000000003e9")
     }
   }
 }
