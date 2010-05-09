@@ -2,8 +2,11 @@ package com.codahale.cassie.types
 
 import com.codahale.cassie.clocks.Clock
 import java.net.InetAddress.{getLocalHost => localHost}
+import com.codahale.cassie.FNV1A
 
 object LexicalUUID {
+  private val defaultWorkerID = FNV1A(localHost.getHostName.getBytes)
+
   /**
    * Given a worker ID and a clock, generates a new LexicalUUID. If each node
    * has unique worker ID and a clock which is guaranteed to never go backwards,
@@ -17,13 +20,7 @@ object LexicalUUID {
    * hostname as a worker ID.
    */
   def apply()(implicit clock: Clock): LexicalUUID = {
-    // FNV-1A 64
-    val offsetBasis = 0xcbf29ce484222325L
-    val prime = 0x100000001b3L
-    val workerId = localHost.getHostName.foldLeft(offsetBasis) { (h, b) =>
-      (h ^ b) * prime
-    }
-    LexicalUUID(clock.timestamp, workerId)
+    LexicalUUID(clock.timestamp, defaultWorkerID)
   }
 
   /**
