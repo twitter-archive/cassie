@@ -255,6 +255,48 @@ If you need to ensure your delete action has a specific timestamp, you can:
     people.removeRowWithTimestamp("puddle", 901289282L)
 
 
+Generating Unique IDs
+---------------------
+
+If you're going to be storing data in Cassandra and don't have a naturally
+unique piece of data to use as a key, you've probably looked into UUIDs. The
+only problem with UUIDs is that they're mental, requiring access to MAC
+addresses or Gregorian calendars or POSIX ids. In general, people want UUIDs
+which are:
+
+* Unique across a large set of workers without requiring coordination.
+* Partially ordered by time.
+
+Cassie's `LexicalUUID`s meet these criteria. They're 128 bits long. The most
+significant 64 bits are a timestamp value (from one of Cassie's
+strictly-increasing `Clock` implementations -- `NanosecondEpochClock` is
+recommended). The least significant 64 bits are a worker ID, with the default
+value being a hash of the machine's hostname.
+
+When sorted using Cassandra's `LexicalUUIDType`, `LexicalUUID`s will be
+partially ordered by time -- that is, UUIDs generated in order on a single
+process will be totally ordered by time; UUIDs generated simultaneously (i.e.,
+within the same clock tick, given clock skew) will not have a deterministic
+order; UUIDs generated in order between single processes (i.e., in different
+clock ticks, given clock skew) will be totally ordered by time.
+
+See *Lamport. Time, clocks, and the ordering of events in a distributed system.
+Communications of the ACM (1978) vol. 21 (7) pp. 565* and *Mattern. Virtual time
+and global states of distributed systems. Parallel and Distributed Algorithms
+(1989) pp. 215–226* for a more thorough discussion.
+
+`LexicalUUID`s can be used as column names, in which case they're stored as
+16-byte values and are sortable by `LexicalUUIDType`, or as keys, in which case
+they're stored as traditional, hex-encoded strings. Cassie provides implicit
+conversions between `LexicalUUID` and `String`:
+
+    val uuid = LexicalUUID() // uses the implicit `Clock` and the machine's hostname
+    
+    people.insert(uuid, Column("one", "two")) // converted to hex automatically
+    
+    people.insert("key", Column(uuid, "what")) // converted to a byte array
+
+
 Things What Ain't Done Yet
 ==========================
 
