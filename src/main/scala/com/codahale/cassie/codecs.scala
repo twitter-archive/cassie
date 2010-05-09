@@ -17,4 +17,5 @@ package object codecs {
   implicit val hex = HexByteArrayCodec
   implicit val varInt = VarIntCodec
   implicit val varLong = VarLongCodec
+  implicit val lexicalUUID = LexicalUUIDCodec
 }
