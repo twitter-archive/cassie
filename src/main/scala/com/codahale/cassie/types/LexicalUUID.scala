@@ -2,6 +2,8 @@ package com.codahale.cassie.types
 
 import com.codahale.cassie.clocks.Clock
 import java.net.InetAddress.{getLocalHost => localHost}
+import org.apache.commons.codec.binary.Hex.{decodeHex => decode}
+import java.nio.ByteBuffer
 import com.codahale.cassie.FNV1A
 
 object LexicalUUID {
@@ -27,9 +29,8 @@ object LexicalUUID {
    * Given a UUID formatted as a string, returns it as a LexicalUUID.
    */
   def apply(uuid: String): LexicalUUID = {
-    def decode(s: String) = s.foldLeft(0L) { (n, c) => (n * 16) + Character.digit(c, 16) }
-    val (high, low) = uuid.filterNot { _ == '-' }.splitAt(16)
-    LexicalUUID(decode(high), decode(low))
+    val buf = ByteBuffer.wrap(decode(uuid.toCharArray.filterNot { _ == '-' }))
+    LexicalUUID(buf.getLong(), buf.getLong())
   }
 }
 
