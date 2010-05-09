@@ -1,6 +1,7 @@
 package com.codahale.cassie.types
 
 import com.codahale.cassie.clocks.Clock
+import java.net.InetAddress.{getLocalHost => localHost}
 
 object LexicalUUID {
   /**
@@ -10,6 +11,20 @@ object LexicalUUID {
    */
   def apply(workerID: Long)(implicit clock: Clock): LexicalUUID =
     LexicalUUID(clock.timestamp, workerID)
+
+  /**
+   * Given a clock, generates a new LexicalUUID, using a hash of the machine's
+   * hostname as a worker ID.
+   */
+  def apply()(implicit clock: Clock): LexicalUUID = {
+    // FNV-1A 64
+    val offsetBasis = 0xcbf29ce484222325L
+    val prime = 0x100000001b3L
+    val workerId = localHost.getHostName.foldLeft(offsetBasis) { (h, b) =>
+      (h ^ b) * prime
+    }
+    LexicalUUID(clock.timestamp, workerId)
+  }
 }
 
 /**
