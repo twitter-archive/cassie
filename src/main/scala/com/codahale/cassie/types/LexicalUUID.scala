@@ -38,7 +38,20 @@ object LexicalUUID {
  *
  * @author coda
  */
-case class LexicalUUID(timestamp: Long, workerID: Long) {
+case class LexicalUUID(timestamp: Long, workerID: Long) extends Ordered[LexicalUUID] {
+
+  /**
+   * Sort by timestamp, then by worker ID.
+   */
+  def compare(that: LexicalUUID) = {
+    val res = timestamp.compare(that.timestamp)
+    if (res == 0) {
+      workerID.compare(that.workerID)
+    } else {
+      res
+    }
+  }
+
   override def toString = {
     val hex = "%016x".format(timestamp)
     "%s-%s-%s-%016x".format(hex.substring( 0,  8),

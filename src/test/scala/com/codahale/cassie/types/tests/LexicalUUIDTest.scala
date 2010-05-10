@@ -45,4 +45,16 @@ class LexicalUUIDTest extends Spec with MustMatchers {
       uuid.toString must equal("00000000-012f-cd83-00000000000003e9")
     }
   }
+
+  describe("ordering lexical UUIDs") {
+    val uuid1 = LexicalUUID(0xFF9281, 0xA0091991)
+    val uuid2 = LexicalUUID(0xFF9281, 0xA0091992)
+    val uuid3 = LexicalUUID(0xFF9282, 0xA0091991)
+
+    it("orders by timestamp, then worker ID") {
+      val ordered = Seq(uuid2, uuid3, uuid1).sortWith { _ < _ }
+
+      ordered must equal(Seq(uuid1, uuid2, uuid3))
+    }
+  }
 }
