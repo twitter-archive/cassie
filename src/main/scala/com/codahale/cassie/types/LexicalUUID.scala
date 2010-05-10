@@ -21,9 +21,8 @@ object LexicalUUID {
    * Given a clock, generates a new LexicalUUID, using a hash of the machine's
    * hostname as a worker ID.
    */
-  def apply()(implicit clock: Clock): LexicalUUID = {
+  def apply()(implicit clock: Clock): LexicalUUID =
     LexicalUUID(clock.timestamp, defaultWorkerID)
-  }
 
   /**
    * Given a UUID formatted as a string, returns it as a LexicalUUID.
@@ -42,7 +41,8 @@ object LexicalUUID {
 case class LexicalUUID(timestamp: Long, workerID: Long) {
   override def toString = {
     val hex = "%016x".format(timestamp)
-    "%s-%s-%s-%016x".format(hex.substring( 0,  8), hex.substring( 8, 12),
+    "%s-%s-%s-%016x".format(hex.substring( 0,  8),
+                            hex.substring( 8, 12),
                             hex.substring(12, 16), workerID)
   }
 }
