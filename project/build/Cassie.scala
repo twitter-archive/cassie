@@ -12,9 +12,9 @@ class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) {
   val pool = "commons-pool" % "commons-pool" % "1.5.4" withSources() intransitive()
   val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
 
-  val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0.Beta2"
+  val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0.RC1-SNAPSHOT"
 
-  val logula = "com.codahale" %% "logula" % "1.0.0" withSources() intransitive()
+  val logula = "com.codahale" %% "logula" % "1.0.1" withSources() intransitive()
   
   /**
    * Test Dependencies
