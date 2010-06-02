@@ -309,6 +309,16 @@ Things What Ain't Done Yet
 Why? I don't need it yet.
 
 
+Thanks
+======
+
+Many thanks to:
+
+* Cliff Moon
+* James Golick
+* Robert J. Macomber
+
+
 License
 -------
 
