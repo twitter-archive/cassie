@@ -38,15 +38,15 @@ abstract class RetryingClientProvider extends ClientProvider with Logging {
         // also not catching AuthenticationException, AuthorizationException,
         // InvalidRequestException, or NotFoundException for what should be
         // pretty obvious reasons.
-        case e: TTransportException => lastError = recoverFrom(e)
-        case e: TimedOutException => lastError = recoverFrom(e)
+        case e: TTransportException => lastError = recoverFrom(e, attempts, client)
+        case e: TimedOutException => lastError = recoverFrom(e, attempts, client)
       }
       attempts += 1
     }
     throw new IOException("Aborting query after %d attempts".format(attempts), lastError)
   }
 
-  private def recoverFrom(e: Exception) = {
+  private def recoverFrom(e: Exception, attempts: Int, client: Client) = {
     log.warning(e, "Attempt %d failed", attempts)
     pool.invalidateObject(client)
     e
