@@ -56,9 +56,11 @@ class ColumnIterator[Name, Value](val cf: ColumnFamily[_, _],
         ks.key -> convert(nameCodec, valueCodec, col)
       }
     }
-    val lastFoundKey = Some(slice.last.key)
-    cycled = lastKey == lastFoundKey
-    lastKey = lastFoundKey
+    if (!slice.isEmpty) {
+      val lastFoundKey = Some(slice.last.key)
+      cycled = lastKey == lastFoundKey
+      lastKey = lastFoundKey
+    }    
   }
 
   private def convert[Name, Value](nameCodec: Codec[Name], valueCodec: Codec[Value], colOrSCol: ColumnOrSuperColumn): Column[Name, Value] = {

@@ -18,6 +18,23 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
     cosc
   }
 
+  describe("iterating through an empty column family") {
+    val slice = new thrift.KeySlice()
+    slice.setKey("start")
+    slice.setColumns(List[thrift.ColumnOrSuperColumn]().asJava)
+
+    val predicate = mock[thrift.SlicePredicate]
+
+    val cf = mock[ColumnFamily[String, String]]
+    when(cf.getRangeSlice(anyString, anyString, anyInt, matchEq(predicate), matchEq(ReadConsistency.Quorum))).thenReturn(List[thrift.KeySlice]())
+
+    val iterator = new ColumnIterator(cf, "start", "end", 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec)
+
+    it("doesn't throw an error") {
+      iterator.foreach { _ => () }
+    }
+  }
+
   describe("iterating through the columns of a range of keys") {
     val slice = new thrift.KeySlice()
     slice.setKey("start")
