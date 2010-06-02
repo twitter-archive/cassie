@@ -171,6 +171,19 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
         "key2" -> Column("name", "Niki", 422L)
       ))
     }
+
+    it("does not explode when the column doesn't exist for a key") {
+      val results = Map(
+        "key1" -> (newColumn("name".getBytes, "Coda".getBytes, 2292L) :: Nil).asJava,
+        "key2" -> Nil.asInstanceOf[List[thrift.ColumnOrSuperColumn]].asJava
+      ).asJava
+
+      when(client.multiget_slice(anyString, anyListOf(classOf[String]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(results)
+
+      cf.multigetColumn(Set("key1", "key2"), "name", ReadConsistency.Quorum) must equal(Map(
+        "key1" -> Column("name", "Coda", 2292L)
+      ))
+    }
   }
 
   describe("getting a set of columns for a set of keys") {

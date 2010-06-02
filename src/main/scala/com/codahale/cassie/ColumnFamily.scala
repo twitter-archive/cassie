@@ -121,8 +121,8 @@ class ColumnFamily[Name, Value](val keyspace: String,
                              columnName: A,
                              consistency: ReadConsistency = defaultReadConsistency)
                             (implicit nameCodec: Codec[A], valueCodec: Codec[B]): Map[String, Column[A, B]] = {
-    multigetColumnsAs[A, B](keys, Set(columnName), consistency)(nameCodec, valueCodec).map {
-      case (k, v) => (k, v.valuesIterator.next)
+    multigetColumnsAs[A, B](keys, Set(columnName), consistency)(nameCodec, valueCodec).flatMap { case (k, m) =>
+      m.get(columnName).map { v => (k, v) }
     }
   }
 
