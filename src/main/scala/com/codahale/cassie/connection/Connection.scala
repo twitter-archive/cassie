@@ -46,7 +46,6 @@ class Connection(val factory: ClientFactory) extends Logging {
       if (open()) {
         _client.map(f)
       } else {
-        log.warning("Unable to connect to %s", this)
         None
       }
     } catch {
@@ -66,9 +65,10 @@ class Connection(val factory: ClientFactory) extends Logging {
   def open() = synchronized {
     if (_client.isEmpty) {
       try {
+        log.fine("Opening connection to %s", factory.host)
         _client = Some(factory.build)
       } catch {
-        case e: Exception => log.warning(e, "Unable to open connection to %s", factory)
+        case e: Exception => log.warning(e, "Unable to open connection to %s", factory.host)
       }
     }
     _client.isDefined
@@ -78,6 +78,7 @@ class Connection(val factory: ClientFactory) extends Logging {
    * Closes the connection.
    */
   def close() = synchronized {
+    log.fine("Closing connection to %s", factory.host)
     _client.map { factory.destroy(_) }
     _client = None
   }
