@@ -1,6 +1,6 @@
 package com.codahale.cassie.connection
 
-import org.apache.cassandra.thrift.Cassandra.{Client, Iface}
+import org.apache.cassandra.thrift.Cassandra.Client
 import org.apache.thrift.transport.{TTransportException}
 import org.apache.cassandra.thrift.TimedOutException
 import com.codahale.logula.Logging
@@ -41,7 +41,7 @@ class Connection(val factory: ClientFactory) extends Logging {
    *
    * (If a transport error occured, the connection will close itself.)
    */
-  def map[A](f: Iface => A): Option[A] = {
+  def map[A](f: Client => A): Option[A] = {
     try {
       if (open()) {
         _client.map(f)
