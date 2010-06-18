@@ -21,12 +21,18 @@ class ConnectionFactory(factory: ClientFactory)
   }
 
   override def validateObject(obj: Any) = obj match {
-    case conn: Connection => conn.isHealthy()
+    case conn: Connection =>
+      log.fine("Validating %s", conn)
+      val healthy = conn.isHealthy()
+      log.fine("%s is %s", conn, if (healthy) "healthy" else "unhealthy")
+      healthy
     case _ => false
   }
 
   override def destroyObject(obj: Any) = obj match {
-    case conn: Connection => conn.close()
+    case conn: Connection =>
+      log.fine("Destroying %s", conn)
+      conn.close()
     case _ =>
   }
 
