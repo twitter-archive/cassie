@@ -4,23 +4,22 @@ import org.apache.cassandra.thrift.Cassandra.Client
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.TSocket
 import java.net.InetSocketAddress
-
-// TODO:  add logging
+import com.codahale.logula.Logging
 
 /**
- * An abstract class which builds Cassandra clients and destroys existing
- * clients.
+ * A class which builds Cassandra clients and destroys existing clients.
  *
  * @author coda
  */
-class ClientFactory(val host: InetSocketAddress) {
+class ClientFactory(val host: InetSocketAddress) extends Logging {
 
   /**
    * Opens a new client connection to `host`.
    *
-   * @return a `Cassandra.Client` instance
+   * @return a `Cassandra.Client` instance!
    */
   def build = {
+    log.fine("Opening a new socket to %s", host)
     val socket = new TSocket(host.getHostName, host.getPort)
     socket.open()
     new Client(new TBinaryProtocol(socket))
@@ -33,9 +32,10 @@ class ClientFactory(val host: InetSocketAddress) {
    */
   def destroy(client: Client) {
     try {
+      log.fine("Disconnecting from %s", host)
       client.getOutputProtocol.getTransport.close()
     } catch {
-      case e: Exception => // ignore
+      case e: Exception => log.finest(e, "Error disconnecting from %s", host)
     }
   }
 
