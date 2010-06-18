@@ -16,12 +16,12 @@ class Connection(val factory: ClientFactory) extends Logging {
   /**
    * Returns `true` if the connection is open.
    */
-  def isOpen = _client.isDefined
+  def isOpen = synchronized { _client.isDefined }
 
   /**
    * Returns `true` if the connection is open and connected to a working node.
    */
-  def isHealthy() = _client match {
+  def isHealthy() = synchronized { _client match {
     case Some(client) =>
       try {
         client.describe_version
@@ -32,7 +32,7 @@ class Connection(val factory: ClientFactory) extends Logging {
           false
       }
     case None => false
-  }
+  } }
 
   /**
    * Given a function, executes it with the client connection, connecting if
@@ -41,7 +41,7 @@ class Connection(val factory: ClientFactory) extends Logging {
    *
    * (If a transport error occured, the connection will close itself.)
    */
-  def map[A](f: Client => A): Option[A] = {
+  def map[A](f: Client => A): Option[A] = synchronized {
     try {
       if (open()) {
         _client.map(f)
@@ -63,7 +63,7 @@ class Connection(val factory: ClientFactory) extends Logging {
   /**
    * Ensures the connection, if not already open, is open.
    */
-  def open() = {
+  def open() = synchronized {
     if (_client.isEmpty) {
       try {
         _client = Some(factory.build)
@@ -77,7 +77,7 @@ class Connection(val factory: ClientFactory) extends Logging {
   /**
    * Closes the connection.
    */
-  def close() = {
+  def close() = synchronized {
     _client.map { factory.destroy(_) }
     _client = None
   }
