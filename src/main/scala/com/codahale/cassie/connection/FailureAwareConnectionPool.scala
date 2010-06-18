@@ -20,10 +20,15 @@ import java.lang.UnsupportedOperationException
  */
 class FailureAwareConnectionPool(pool: ConnectionPool,
                                  val partialFailureThreshold: Int,
-                                 val downTimeoutInMS: Int) extends ConnectionPool {
+                                 val downTimeoutInMS: Int) {
   private val _totalFailures = new AtomicInteger(0)
   private val _partialFailures = new AtomicInteger(0)
   private val _downUntil = new AtomicLong(0)
+
+  /**
+   * Returns the `InetSocketAddress` of the host.
+   */
+  def host = pool.host
 
   /**
    * Returns `true` if the connection pool is accepting queries.
@@ -54,11 +59,15 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
    */
   def partialFailures = _partialFailures.get
 
+  /**
+   * Returns `true` if the pool has no idle connections to lend.
+   */
   def isEmpty = isDown || pool.isEmpty
+
+  /**
+   * Returns the total number of connections in the pool.
+   */
   def size = if (isDown) 0 else pool.size
-  def clear() {
-    throw new UnsupportedOperationException("can't clear a failure-aware pool")
-  }
 
   /**
    * Borrows a connection from the pool and passes it to a callback function.

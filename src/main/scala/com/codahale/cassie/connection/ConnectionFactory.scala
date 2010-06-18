@@ -10,6 +10,9 @@ import com.codahale.logula.Logging
  */
 class ConnectionFactory(factory: ClientFactory)
         extends BasePoolableObjectFactory with Logging {
+
+  def host = factory.host
+
   def makeObject = {
     log.fine("Creating a new connection to %s", factory)
     new Connection(factory)

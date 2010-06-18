@@ -6,12 +6,12 @@ import org.mockito.Mockito.when
 import org.scalatest.concurrent.Conductor
 import com.codahale.cassie.tests.util.MockCassandraServer
 import org.scalatest.{BeforeAndAfterAll, Spec}
-import com.codahale.cassie.connection.{ClientFactory, BasicConnectionPool, ConnectionFactory}
+import com.codahale.cassie.connection.{ClientFactory, ConnectionPool, ConnectionFactory}
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
 import java.util.logging.Level
 
-class BasicConnectionPoolTest extends Spec
+class ConnectionPoolTest extends Spec
         with MustMatchers with MockitoSugar
         with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
@@ -30,7 +30,7 @@ class BasicConnectionPoolTest extends Spec
 
     val clientFactory = new ClientFactory(new InetSocketAddress("0.0.0.0", server.port))
     val factory = new ConnectionFactory(clientFactory)
-    val pool = new BasicConnectionPool(factory, 2, 4, 500)
+    val pool = new ConnectionPool(factory, 2, 4, 500)
 
     it("is not initially empty") {
       pool.isEmpty must be(false)
