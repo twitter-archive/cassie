@@ -5,6 +5,7 @@ import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.TSocket
 import java.net.InetSocketAddress
 
+// TODO:  add logging
 
 /**
  * An abstract class which builds Cassandra clients and destroys existing

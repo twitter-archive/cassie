@@ -3,6 +3,8 @@ package com.codahale.cassie.connection
 import org.apache.commons.pool.BasePoolableObjectFactory
 import com.codahale.logula.Logging
 
+// TODO:  add logging
+
 /**
  * A factory for `Connection` objects.
  *
@@ -27,4 +29,7 @@ class ConnectionFactory(factory: ClientFactory)
     case conn: Connection => conn.close()
     case _ =>
   }
+
+
+  override def toString = "ConnectionFactory(%s)".format(host)
 }

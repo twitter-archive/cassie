@@ -3,6 +3,8 @@ package com.codahale.cassie.connection
 import org.apache.commons.pool.impl.GenericObjectPool
 import org.apache.cassandra.thrift.Cassandra.Client
 
+// TODO:  add logging
+
 /**
  * A dynamically-sized pool of connections.
  *
@@ -77,4 +79,6 @@ class ConnectionPool(val factory: ConnectionFactory,
       case e: NoSuchElementException => None
     }
   }
+
+  override def toString = "ConnectionPool(%s)".format(host)
 }

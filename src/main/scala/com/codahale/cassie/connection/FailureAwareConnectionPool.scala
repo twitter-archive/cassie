@@ -2,7 +2,8 @@ package com.codahale.cassie.connection
 
 import org.apache.cassandra.thrift.Cassandra.Client
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-import java.lang.UnsupportedOperationException
+
+// TODO:  add logging
 
 /**
  * A decorator for [[com.codahale.cassie.connection.ConnectionPool]]s which
@@ -103,4 +104,6 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
       result
     }
   }
+
+  override def toString = "FailureAwareConnectionPool(%s)".format(pool)
 }
