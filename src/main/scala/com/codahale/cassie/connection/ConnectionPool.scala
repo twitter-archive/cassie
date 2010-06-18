@@ -2,8 +2,7 @@ package com.codahale.cassie.connection
 
 import org.apache.commons.pool.impl.GenericObjectPool
 import org.apache.cassandra.thrift.Cassandra.Client
-
-// TODO:  add logging
+import com.codahale.logula.Logging
 
 /**
  * A dynamically-sized pool of connections.
@@ -20,7 +19,7 @@ import org.apache.cassandra.thrift.Cassandra.Client
 class ConnectionPool(val factory: ConnectionFactory,
                      val min: Int,
                      val max: Int,
-                     val removeAfterIdleForMS: Int) {
+                     val removeAfterIdleForMS: Int) extends Logging {
   protected val pool = {
     val p = new GenericObjectPool(factory)
     p.setMaxActive(max)
@@ -54,6 +53,7 @@ class ConnectionPool(val factory: ConnectionFactory,
    * Removes all connections from the pool.
    */
   def clear() {
+    log.info("Clearing connections from %s", this)
     pool.clear()
   }
 
@@ -76,7 +76,9 @@ class ConnectionPool(val factory: ConnectionFactory,
         pool.returnObject(connection)
       }
     } catch {
-      case e: NoSuchElementException => None
+      case e: NoSuchElementException =>
+        log.warning("%s is exhausted", this)
+        None
     }
   }
 

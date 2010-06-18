@@ -2,8 +2,7 @@ package com.codahale.cassie.connection
 
 import org.apache.cassandra.thrift.Cassandra.Client
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
-
-// TODO:  add logging
+import com.codahale.logula.Logging
 
 /**
  * A decorator for [[com.codahale.cassie.connection.ConnectionPool]]s which
@@ -15,13 +14,14 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
  *
  * @param pool the underlying [[com.codahale.cassie.connection.ConnectionPool]]
  * @param partialFailureThreshold the number
- * @param downTimeoutInMS how long, in milliseconds, blah blah
+ * @param downTimeoutInMS how long, in milliseconds, a node should be marked as
+ *                        down before allowing a recovery query to be processed
  * @author coda
  * @see <a href="http://pragprog.com/titles/mnee/release-it">p. 115 of __Release It!__ by Michael Nygard</a>
  */
 class FailureAwareConnectionPool(pool: ConnectionPool,
                                  val partialFailureThreshold: Int,
-                                 val downTimeoutInMS: Int) {
+                                 val downTimeoutInMS: Int) extends Logging {
   private val _totalFailures = new AtomicInteger(0)
   private val _partialFailures = new AtomicInteger(0)
   private val _downUntil = new AtomicLong(0)
@@ -80,25 +80,29 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
    *
    * @param f a function which given a Cassandra `Client`, returns a value
    * @tparam A the query result type
-   * @return if `f` was called successfully, `Some(f(iface))`, otherwise `None`
+   * @return if `f` was called successfully, `Some(f(client))`, otherwise `None`
    */
   def map[A](f: Client => A): Option[A] = {
     if (isDown) {
       // if the node is down, always return None
+      log.warning("%s IS STILL DOWN", pool.host)
       None
     } else {
       // otherwise, perform the query inside a circuit breaker
       val result = pool.map(f)
       if (result.isEmpty) {
+        log.warning("Query for %s failed", pool.host)
         _partialFailures.incrementAndGet
         if (!isUp) {
           // if the node has too many partial failures, mark the pool as down
           _downUntil.set(System.currentTimeMillis + downTimeoutInMS)
           _totalFailures.incrementAndGet
+          log.warning("%s IS DOWN", pool.host)
           // remove all existing connections to the node
           pool.clear()
         }
       } else {
+        log.warning("%s IS UP", pool.host)
         _partialFailures.set(0)
       }
       result

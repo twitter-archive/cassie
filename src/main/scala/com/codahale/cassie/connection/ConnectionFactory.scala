@@ -3,8 +3,6 @@ package com.codahale.cassie.connection
 import org.apache.commons.pool.BasePoolableObjectFactory
 import com.codahale.logula.Logging
 
-// TODO:  add logging
-
 /**
  * A factory for `Connection` objects.
  *
@@ -24,7 +22,9 @@ class ConnectionFactory(factory: ClientFactory)
     case conn: Connection =>
       log.fine("Validating %s", conn)
       val healthy = conn.isHealthy()
-      log.fine("%s is %s", conn, if (healthy) "healthy" else "unhealthy")
+      if (!healthy) {
+        log.warning("%s is unhealthy", conn)
+      }
       healthy
     case _ => false
   }
