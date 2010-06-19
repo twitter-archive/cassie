@@ -4,8 +4,10 @@ import org.apache.commons.pool.BasePoolableObjectFactory
 import com.codahale.logula.Logging
 
 /**
- * A factory for `Connection` objects.
+ * A factory for [[com.codahale.connection.Connection]]s.
  *
+ * @param factory the [[com.codahale.connection.ClientFactory]] responsible for
+ *                creating new Cassandra `Client` instances
  * @author coda
  */
 class ConnectionFactory(factory: ClientFactory)

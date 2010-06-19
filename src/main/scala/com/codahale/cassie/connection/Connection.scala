@@ -8,6 +8,8 @@ import com.codahale.logula.Logging
 /**
  * A connection to a Cassandra node. Handles reconnection on temporary errors.
  *
+ * @param factory the [[com.codahale.connection.ClientFactory]] responsible for
+ *                creating new Cassandra `Client` instances
  * @author coda
  */
 class Connection(val factory: ClientFactory) extends Logging {
@@ -40,6 +42,10 @@ class Connection(val factory: ClientFactory) extends Logging {
    * the process, `None`.
    *
    * (If a transport error occured, the connection will close itself.)
+   *
+   * @param f a function which given a Cassandra `Client`, returns a value
+   * @tparam A the query result type
+   * @return if `f` was called successfully, `Some(f(iface))`, otherwise `None`
    */
   def map[A](f: Client => A): Option[A] = synchronized {
     try {

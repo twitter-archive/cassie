@@ -7,6 +7,10 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * Balances requests between nodes in a round-robin fashion.
  *
+ * @param nodes a set of [[com.codahale.cassie.connection.FailureAwareConnectionPool]]s
+ *              for each node the client should send queries to
+ * @param retryAttempts the number of times a query should be attempted before
+ *                      throwing an exception
  * @author coda
  */
 class RoundRobinLoadBalancer(nodes: Set[FailureAwareConnectionPool],
