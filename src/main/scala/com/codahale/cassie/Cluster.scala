@@ -2,7 +2,6 @@ package com.codahale.cassie
 
 import connection._
 import java.net.InetSocketAddress
-import org.apache.cassandra.thrift.Cassandra.Client
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
