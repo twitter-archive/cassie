@@ -3,9 +3,9 @@ package com.codahale.cassie.tests
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import com.codahale.cassie.client.ClientProvider
 import com.codahale.cassie.codecs.Utf8Codec
 import com.codahale.cassie.{WriteConsistency, ReadConsistency, Keyspace}
+import com.codahale.cassie.connection.ClientProvider
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
   describe("a keyspace") {

@@ -1,7 +1,7 @@
 package com.codahale.cassie
 
-import client.ClientProvider
 import codecs.Codec
+import connection.ClientProvider
 
 /**
  * A Cassandra keyspace.

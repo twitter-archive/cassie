@@ -1,8 +1,8 @@
 package com.codahale.cassie
 
-import client.ClientProvider
 import clocks.Clock
 import codecs.Codec
+import connection.ClientProvider
 import scalaj.collection.Imports._
 import org.apache.cassandra.thrift
 import com.codahale.logula.Logging

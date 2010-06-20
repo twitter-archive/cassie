@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
  * @author coda
  */
 class RoundRobinLoadBalancer(nodes: Set[FailureAwareConnectionPool],
-                             val retryAttempts: Int) extends Logging {
+                             val retryAttempts: Int) extends ClientProvider with Logging {
   private val pools = nodes.toArray
   private val index = new AtomicLong(0) // to prevent overflow
 

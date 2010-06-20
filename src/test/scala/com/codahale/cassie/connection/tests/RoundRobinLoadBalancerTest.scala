@@ -6,6 +6,8 @@ import org.scalatest.{OneInstancePerTest, Spec}
 import org.mockito.Mockito.{when, inOrder}
 import org.apache.cassandra.thrift.Cassandra.Client
 import com.codahale.cassie.connection.{UnsuccessfulQueryException, FailureAwareConnectionPool, RoundRobinLoadBalancer}
+import com.codahale.logula.Logging
+import java.util.logging.Level
 
 class RoundRobinLoadBalancerTest extends Spec
         with MustMatchers with MockitoSugar with OneInstancePerTest {
@@ -20,6 +22,8 @@ class RoundRobinLoadBalancerTest extends Spec
 
 
   describe("a round-robin load balancer with three nodes") {
+    Logging.configure(Level.OFF)
+
     val (node1, node2, node3) = nodes
     when(node1.map(f)).thenReturn(Some("node1"))
     when(node2.map(f)).thenReturn(Some("node2"))

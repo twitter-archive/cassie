@@ -12,7 +12,7 @@ Requirements
 ------------
 
 * Java SE 6
-* Scala 2.8 Beta1
+* Scala 2.8 Beta1, RC2, RC3, or RC5
 * Cassandra 0.6.x
 
 
@@ -29,20 +29,32 @@ file, add Cassie as a dependency:
 Connecting To Your Cassandra Cluster
 ------------------------------------
 
-First, use a `ClusterMap` to pull down a list of nodes in your cluster from a
+First, use a `ClusterMapper` to pull down a list of nodes in your cluster from a
 seed host:
 
-    val map = new ClusterMap("localhost", 9160)
+    val mapper = new ClusterMapper("localhost")
 
-Then set up a pool of 1-5 connections with up to 10 retries (in case a request
-times out or a connection is lost, etc.):
+(If you have some nodes with dramatically different latency—e.g., in another
+data center–or if you have a huge cluster, you can always manually specify the
+nodes the client should connect to.)
 
-    val selector = new RoundRobinHostSelector(map)
-    val provider = new PooledClientProvider(selector, 1, 5, 10)
+Then create a `Cluster` instance which will maintain per-node connection pools
+of 1 to 5 connections (removing idle connections after 60 seconds), retry failed
+queries up to 5 times, and which will not send queries to a node for 10 seconds
+after 3 queries have failed:
 
-This uses a round-robin approach when a new connection is required. There's also
-`RandomHostSelector`, which simply chooses a random node from the cluster to
-connect to.
+    val cluster = new Cluster(
+      mapper.hosts(),
+      retryAttempts = 5,
+      partialFailureThreshold = 3,
+      downTimeoutInMS = 10000,
+      minConnectionsPerHost = 1,
+      maxConnectionsPerHost = 5,
+      removeAfterIdleForMS = 60000
+    )
+
+This `Cluster` will balance requests across the nodes in a round-robin way,
+which should distribute load effectively.
 
 
 A Quick Note On Timestamps
@@ -94,11 +106,9 @@ of `ColumnFamily[String, VarLong]` you can use regular `Long`s.
 Accessing Column Families
 -------------------------
 
-Once you've got a `ClientProvider` instance (in the form of the
-`PooledClientProvider` from before), you can load your cluster, keyspace, and
-column families:
+Once you've got a `Clsuter` instance, you can load your keyspace and column
+families:
 
-    val cluster = new Cluster(provider)
     val keyspace = cluster.keyspace("MyCassieApp")
     
     val people = keyspace.columnFamily[String, String]("People")

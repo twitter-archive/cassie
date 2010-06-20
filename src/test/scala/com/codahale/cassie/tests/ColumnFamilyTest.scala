@@ -3,8 +3,7 @@ package com.codahale.cassie.tests
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.apache.cassandra.thrift.Cassandra.{Client, Iface}
-import com.codahale.cassie.client.ClientProvider
+import org.apache.cassandra.thrift.Cassandra.Client
 import com.codahale.cassie.codecs.Utf8Codec
 import org.mockito.Mockito.{when, verify}
 import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
@@ -15,10 +14,11 @@ import java.util.ArrayList
 import com.codahale.cassie.clocks.Clock
 import thrift.Mutation
 import com.codahale.cassie._
+import connection.ClientProvider
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   case class SimpleProvider(client: Client) extends ClientProvider {
-    def map[A](f: (Iface) => A) = f(client)
+    def map[A](f: Client => A) = f(client)
   }
 
   def anyColumnParent = any(classOf[thrift.ColumnParent])

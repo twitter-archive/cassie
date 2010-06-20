@@ -1,11 +1,13 @@
-package com.codahale.cassie.connection.tests
+package com.codahale.cassie.tests
 
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import com.codahale.cassie.tests.util.MockCassandraServer
-import com.codahale.cassie.connection.ClusterMapper
 import java.net.InetSocketAddress
+import com.codahale.cassie.ClusterMapper
+import com.codahale.logula.Logging
+import java.util.logging.Level
 
 class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
@@ -20,6 +22,7 @@ class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   }
 
   describe("mapping a cluster") {
+    Logging.configure(Level.OFF)
     it("returns the set of nodes in the cluster") {
       val mapper = new ClusterMapper("127.0.0.1", server.port)
 

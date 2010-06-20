@@ -1,7 +1,6 @@
 package com.codahale.cassie.tests.examples
 
 import com.codahale.cassie._
-import client.{RoundRobinHostSelector, PooledClientProvider, ClusterMap}
 import clocks.MicrosecondEpochClock
 import com.codahale.logula.Logging
 import java.util.logging.Level
@@ -14,14 +13,10 @@ object CassieRun extends Logging {
     implicit val clock = MicrosecondEpochClock
 
     // pull down data about all the nodes in the cluster
-    val map = new ClusterMap("localhost", 9160)
-
-    // create a round-robin pool of 1-5 connections
-    val selector = new RoundRobinHostSelector(map)
-    val pool = new PooledClientProvider(selector, 1, 5, 10)
+    val mapper = new ClusterMapper("localhost", 9160)
 
     // create a cluster
-    val cluster = new Cluster(pool)
+    val cluster = new Cluster(mapper.hosts(), 5, 2, 10000, 1, 10, 60000)
 
     // create a keyspace
     val keyspace = cluster.keyspace("Keyspace1")
