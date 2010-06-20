@@ -102,7 +102,9 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
           pool.clear()
         }
       } else {
-        log.warning("%s IS UP", pool.host)
+        if (isRecovering) {
+          log.warning("%s IS UP", pool.host)
+        }
         _partialFailures.set(0)
       }
       result
