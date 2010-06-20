@@ -18,7 +18,7 @@ class ClientFactory(val host: InetSocketAddress) extends Logging {
    *
    * @return a `Cassandra.Client` instance!
    */
-  def build = {
+  def build() = {
     log.fine("Opening a new socket to %s", host)
     val socket = new TSocket(host.getHostName, host.getPort)
     socket.open()
