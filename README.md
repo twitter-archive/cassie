@@ -106,7 +106,7 @@ of `ColumnFamily[String, VarLong]` you can use regular `Long`s.
 Accessing Column Families
 -------------------------
 
-Once you've got a `Clsuter` instance, you can load your keyspace and column
+Once you've got a `Cluster` instance, you can load your keyspace and column
 families:
 
     val keyspace = cluster.keyspace("MyCassieApp")
