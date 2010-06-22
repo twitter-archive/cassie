@@ -16,7 +16,16 @@ object CassieRun extends Logging {
     val mapper = new ClusterMapper("localhost", 9160)
 
     // create a cluster
-    val cluster = new Cluster(mapper.hosts(), 5, 2, 10000, 1, 10, 60000)
+    val cluster = new Cluster(
+      mapper.hosts(),
+      retryAttempts = 5,
+      readTimeoutInMS = 1000,
+      partialFailureThreshold = 2,
+      downTimeoutInMS = 10000,
+      minConnectionsPerHost = 1,
+      maxConnectionsPerHost = 10,
+      removeAfterIdleForMS = 60000
+    )
 
     // create a keyspace
     val keyspace = cluster.keyspace("Keyspace1")
