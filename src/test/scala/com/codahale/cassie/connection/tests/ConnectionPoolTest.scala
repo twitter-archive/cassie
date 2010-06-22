@@ -77,7 +77,7 @@ class ConnectionPoolTest extends Spec
 
       conductor.whenFinished {
         pool.size must be(4)
-        Thread.sleep(1200)
+        Thread.sleep(2000)
         pool.size must be(2)
       }
     }
