@@ -4,48 +4,35 @@ import connection._
 import java.net.InetSocketAddress
 
 /**
- * Manages connections to the nodes in a Cassandra cluster.
+ * A Cassandra cluster.
  *
- * @param retryAttempts the number of times a query should be attempted before
- *                      throwing an exception
- * @param readTimeoutInMS the amount of time, in milliseconds, the client will
- *                        wait for a response from the server before considering
- *                        the query to have failed
- * @param partialFailureThreshold the number of failed queries in a row a node
- *                                must return before being marked down
- * @param downTimeoutInMS how long, in milliseconds, a node should be marked as
- *                        down before allowing a recovery query to be processed
- * @param minConnectionsPerHost the minimum number of connections to maintain to
- *                              the node
- * @param maxConnectionsPerHost the maximum number of connections to maintain to
- *                              the ndoe
- * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
- *                             idle connections should be closed and removed
- *                             from the pool
+ * @param provider a [[com.codahale.cassie.connection.ClientProvider]] instance
  * @author coda
  */
-class Cluster(val hosts: Set[InetSocketAddress],
-              val retryAttempts: Int = 5,
-              val readTimeoutInMS: Int = 10000,
-              val partialFailureThreshold: Int = 3,
-              val downTimeoutInMS: Int = 10000,
-              val minConnectionsPerHost: Int = 1,
-              val maxConnectionsPerHost: Int = 5,
-              val removeAfterIdleForMS: Int = 60000) {
-  
-  private val pools = hosts.map { h =>
-    val clientFactory = new ClientFactory(h, readTimeoutInMS)
-    val factory = new ConnectionFactory(clientFactory)
-    val pool = new ConnectionPool(factory, minConnectionsPerHost,
-                                  maxConnectionsPerHost, removeAfterIdleForMS)
-    new FailureAwareConnectionPool(pool, partialFailureThreshold, downTimeoutInMS)
+class Cluster(provider: ClientProvider) {
+
+  /**
+   * Returns a [[com.codahale.cassie.Cluster]] instance with a
+   * [[com.codahale.cassie.connection.ClusterClientProvider]] with the provided
+   * options.
+   *
+   * @see com.codahale.cassie.connection.ClusterClientProvider
+   */
+  def this(hosts: Set[InetSocketAddress],
+           retryAttempts: Int = 5,
+           readTimeoutInMS: Int = 10000,
+           partialFailureThreshold: Int = 3,
+           downTimeoutInMS: Int = 10000,
+           minConnectionsPerHost: Int = 1,
+           maxConnectionsPerHost: Int = 5,
+           removeAfterIdleForMS: Int = 60000) = {
+    this(new ClusterClientProvider(hosts, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS))
   }
-  private val balancer = new RoundRobinLoadBalancer(pools, retryAttempts)
 
   /**
    * Returns a [[com.codahale.cassie.Keyspace]] with the given name.
    *
    * @param name the keyspace's name
    */
-  def keyspace(name: String) = new Keyspace(name, balancer)
+  def keyspace(name: String) = new Keyspace(name, provider)
 }
