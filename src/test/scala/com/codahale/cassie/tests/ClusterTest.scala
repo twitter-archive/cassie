@@ -45,7 +45,7 @@ class ClusterTest extends Spec with MustMatchers with BeforeAndAfterAll {
   }
 
   describe("a cluster") {
-    val cluster = new Cluster(hosts, 3, 2, 1000, 2, 5, 10*60*1000)
+    val cluster = new Cluster(hosts, 3, 10000, 2, 1000, 2, 5, 10*60*1000)
     val provider = cluster.keyspace("woo").provider
     Logging.configure(Level.OFF)
 

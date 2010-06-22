@@ -1,7 +1,7 @@
 package com.codahale.cassie
 
 import connection.ClientFactory
-import util.parsing.json.JSON
+import scala.util.parsing.json.JSON
 import java.io.IOException
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
@@ -13,8 +13,8 @@ import com.codahale.logula.Logging
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-class ClusterMapper(seedHost: String, seedPort: Int = 9160) extends Logging {
-  private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort))
+class ClusterMapper(seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
+  private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort), timeoutMS)
 
   /**
    * Returns the set of addresses of the nodes in the cluster.

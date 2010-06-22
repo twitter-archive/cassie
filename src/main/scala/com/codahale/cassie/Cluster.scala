@@ -22,6 +22,7 @@ import java.net.InetSocketAddress
  */
 class Cluster(val hosts: Set[InetSocketAddress],
               val retryAttempts: Int = 5,
+              val timeoutMS: Int = 10000,
               val partialFailureThreshold: Int = 3,
               val downTimeoutInMS: Int = 10000,
               val minConnectionsPerHost: Int = 1,
@@ -29,7 +30,7 @@ class Cluster(val hosts: Set[InetSocketAddress],
               val removeAfterIdleForMS: Int = 60000) {
   
   private val pools = hosts.map { h =>
-    val clientFactory = new ClientFactory(h)
+    val clientFactory = new ClientFactory(h, timeoutMS)
     val factory = new ConnectionFactory(clientFactory)
     val pool = new ConnectionPool(factory, minConnectionsPerHost,
                                   maxConnectionsPerHost, removeAfterIdleForMS)
