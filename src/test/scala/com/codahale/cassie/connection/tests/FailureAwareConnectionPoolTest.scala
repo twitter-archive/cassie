@@ -11,6 +11,7 @@ import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 import com.codahale.logula.Logging
 import java.util.logging.Level
+import org.scalatest.concurrent.Conductor
 
 class FailureAwareConnectionPoolTest extends Spec
         with MustMatchers with MockitoSugar with OneInstancePerTest {
@@ -178,6 +179,30 @@ class FailureAwareConnectionPoolTest extends Spec
       pool.map { i => i.describe_version } must equal(None)
 
       pool.isDown must be(true)
+    }
+
+    it("only tries one query while recovering") {
+      val conductor = new Conductor
+      val (connectionPool, pool) = setup(client)
+      makeConnectionPoolWork(connectionPool, client)
+
+      conductor.thread {
+        pool.map { i =>
+          Thread.sleep(100)
+          i.describe_version
+        } must equal(Some("moof"))
+      }
+
+      conductor.thread {
+        Thread.sleep(50)
+        pool.map { i =>
+          i.describe_version
+        } must equal(None)
+      }
+
+      conductor.whenFinished {
+        pool.isDown must be(false)
+      }
     }
   }
 }

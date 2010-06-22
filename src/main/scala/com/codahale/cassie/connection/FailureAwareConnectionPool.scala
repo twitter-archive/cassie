@@ -1,8 +1,8 @@
 package com.codahale.cassie.connection
 
 import org.apache.cassandra.thrift.Cassandra.Client
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import com.codahale.logula.Logging
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 
 /**
  * A decorator for [[com.codahale.cassie.connection.ConnectionPool]]s which
@@ -25,6 +25,7 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
   private val _totalFailures = new AtomicInteger(0)
   private val _partialFailures = new AtomicInteger(0)
   private val _downUntil = new AtomicLong(0)
+  private val _isRetrying = new AtomicBoolean(false)
 
   /**
    * Returns the `InetSocketAddress` of the host.
@@ -88,6 +89,14 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
       log.warning("%s IS STILL DOWN", pool.host)
       None
     } else {
+      if (isRecovering) {
+        if (!_isRetrying.compareAndSet(false, true)) {
+          return None
+        } else {
+          log.warning("Trying a request to %s", pool.host)
+        }
+      }
+
       // otherwise, perform the query inside a circuit breaker
       val result = pool.map(f)
       if (result.isEmpty) {
@@ -107,6 +116,7 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
         }
         _partialFailures.set(0)
       }
+      _isRetrying.set(false)
       result
     }
   }
