@@ -15,7 +15,12 @@ class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) with rsync.
   val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0"
 
   val logula = "com.codahale" %% "logula" % "2.0.0" withSources()
-  
+ 
+  /**
+   * Fetch Cassandra itself, with only the client dependencies
+   */
+  val cassandra = "org.apache.cassandra" % "cassandra-all" % "0.7.0" intransitive()
+
   /**
    * Test Dependencies
    */
