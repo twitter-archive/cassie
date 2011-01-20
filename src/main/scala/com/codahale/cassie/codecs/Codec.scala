@@ -1,9 +1,19 @@
 package com.codahale.cassie.codecs
 
+import java.nio.ByteBuffer
+
 /**
  * A bidirection encoding for column names or values.
  */
 trait Codec[A] {
-  def encode(obj: A): Array[Byte]
-  def decode(ary: Array[Byte]): A
+  def encode(obj: A): ByteBuffer
+  def decode(ary: ByteBuffer): A
+
+  /** Helpers for conversion from ByteBuffers to byte arrays. Keep explicit! */
+  def b2b(buff: ByteBuffer): Array[Byte] = {
+    val bytes = new Array[Byte](buff.remaining)
+    buff.duplicate.get(bytes)
+    bytes
+  }
+  def b2b(array: Array[Byte]): ByteBuffer = ByteBuffer.wrap(array)
 }

@@ -1,11 +1,15 @@
 package com.codahale.cassie.codecs
 
+import java.nio.ByteBuffer
+
 /**
  * An identity encoding.
  *
+ * TODO: Fix name.
+ *
  * @author coda
  */
-object ByteArrayCodec extends Codec[Array[Byte]] {
-  def encode(obj: Array[Byte]) = obj
-  def decode(ary: Array[Byte]) = ary
+object ByteArrayCodec extends Codec[ByteBuffer] {
+  def encode(obj: ByteBuffer) = obj
+  def decode(ary: ByteBuffer) = ary
 }

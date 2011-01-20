@@ -15,12 +15,13 @@ object LexicalUUIDCodec extends Codec[LexicalUUID] {
     val b = ByteBuffer.allocate(length)
     b.putLong(uuid.timestamp)
     b.putLong(uuid.workerID)
-    b.array
+    b.rewind
+    b
   }
 
-  def decode(buf: Array[Byte]) = {
-    require(buf.length == length)
-    val b = ByteBuffer.wrap(buf)
-    LexicalUUID(b.getLong(), b.getLong())
+  def decode(buf: ByteBuffer) = {
+    require(buf.remaining == length)
+    val dupe = buf.duplicate
+    LexicalUUID(dupe.getLong(), dupe.getLong())
   }
 }

@@ -14,11 +14,12 @@ object FixedIntCodec extends Codec[FixedInt] {
   def encode(v: FixedInt) = {
     val buf = ByteBuffer.allocate(length)
     buf.putInt(v.value)
-    buf.array
+    buf.rewind
+    buf
   }
 
-  def decode(buf: Array[Byte]) = {
-    require(buf.length == length)
-    FixedInt(ByteBuffer.wrap(buf).getInt)
+  def decode(buf: ByteBuffer) = {
+    require(buf.remaining == length)
+    FixedInt(buf.duplicate().getInt)
   }
 }

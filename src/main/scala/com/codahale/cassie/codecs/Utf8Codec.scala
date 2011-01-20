@@ -1,5 +1,6 @@
 package com.codahale.cassie.codecs
 
+import java.nio.ByteBuffer
 import java.lang.String
 import org.apache.thrift.bootleg.Utf8Helper
 
@@ -9,6 +10,6 @@ import org.apache.thrift.bootleg.Utf8Helper
  * @author coda
  */
 object Utf8Codec extends Codec[String] {
-  def encode(s: String) = Utf8Helper.encode(s)
-  def decode(ary: Array[Byte]) = Utf8Helper.decode(ary)
+  def encode(s: String) = b2b(Utf8Helper.encode(s))
+  def decode(ary: ByteBuffer) = Utf8Helper.decode(b2b(ary))
 }

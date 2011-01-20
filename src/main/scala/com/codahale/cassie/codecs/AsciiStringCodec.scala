@@ -10,8 +10,9 @@ import com.codahale.cassie.types.AsciiString
  * @author coda
  */
 object AsciiStringCodec extends Codec[AsciiString] {
+  // TODO: should this be threadlocal to prevent contention?
   private val usAscii = Charset.forName("US-ASCII")
 
-  def encode(obj: AsciiString) = obj.value.getBytes(usAscii)
-  def decode(ary: Array[Byte]) = AsciiString(usAscii.decode(ByteBuffer.wrap(ary)).toString)
+  def encode(obj: AsciiString) = { val buf = usAscii.encode(obj.value); buf.rewind; buf }
+  def decode(ary: ByteBuffer) = AsciiString(usAscii.decode(ary.duplicate()).toString)
 }

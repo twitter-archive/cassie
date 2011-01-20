@@ -1,5 +1,7 @@
 package com.codahale.cassie.connection.tests
 
+import java.nio.ByteBuffer
+import com.codahale.cassie.codecs.Utf8Codec
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.{when, verify, never}
 import org.mockito.Matchers.{any, anyString}
@@ -60,10 +62,10 @@ class ConnectionTest extends Spec with MustMatchers with MockitoSugar with OneIn
     }
 
     it("returns None if a request times out") {
-      when(client.get(anyString, anyString, any(classOf[ColumnPath]), any(classOf[ConsistencyLevel]))).thenThrow(new TimedOutException)
+      when(client.get(any(classOf[ByteBuffer]), any(classOf[ColumnPath]), any(classOf[ConsistencyLevel]))).thenThrow(new TimedOutException)
 
       val cp = new ColumnPath("cf")
-      connection.map { c => c.get("herp", "derp", cp, ConsistencyLevel.ALL) } must equal(None)
+      connection.map { c => c.get(Utf8Codec.encode("derp"), cp, ConsistencyLevel.ALL) } must equal(None)
 
       connection.isOpen must be(true)
       verify(factory, never).destroy(client)

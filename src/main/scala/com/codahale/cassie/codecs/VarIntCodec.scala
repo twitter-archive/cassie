@@ -1,5 +1,6 @@
 package com.codahale.cassie.codecs
 
+import java.nio.ByteBuffer
 import com.codahale.cassie.types.VarInt
 
 /**
@@ -24,10 +25,13 @@ object VarIntCodec extends Codec[VarInt] {
       pos += 1
     }
     b(pos) = n.toByte
-    b.take(pos+1)
+    // TODO: the 'take' would be more efficient as an adjustment of the bb length
+    b2b(b.take(pos+1))
   }
 
-  def decode(buf: Array[Byte]) = {
+  def decode(bytebuf: ByteBuffer) = {
+    // TODO: operate directly on the bb
+    val buf = b2b(bytebuf)
     require(buf.length < maxLength)
     val pos = 0
     var len = 1
