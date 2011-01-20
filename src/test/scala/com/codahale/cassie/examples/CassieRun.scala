@@ -12,8 +12,8 @@ object CassieRun extends Logging {
 
     implicit val clock = MicrosecondEpochClock
 
-    // pull down data about all the nodes in the cluster
-    val mapper = new ClusterMapper("localhost", 9160)
+    // pull down data about all the nodes participating in the cluster for a keyspace
+    val mapper = new ClusterMapper("Keyspace1", "localhost", 9160)
 
     // create a cluster
     val cluster = new Cluster(

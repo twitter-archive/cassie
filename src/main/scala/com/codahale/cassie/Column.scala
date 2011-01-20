@@ -1,6 +1,9 @@
 package com.codahale.cassie
 
 import clocks.Clock
+import scalaj.collection.Imports._
+import codecs.Codec
+import org.apache.cassandra.thrift
 
 object Column {
   /**
@@ -9,6 +12,22 @@ object Column {
    */
   def apply[A, B](name: A, value: B)(implicit clock: Clock): Column[A, B] =
     Column(name, value, clock.timestamp)
+
+  private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], colOrSCol: thrift.ColumnOrSuperColumn): Column[A, B] = {
+    Column(
+      nameCodec.decode(colOrSCol.column.name),
+      valueCodec.decode(colOrSCol.column.value),
+      colOrSCol.column.timestamp
+    )
+  }
+
+  private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], col: Column[A, B]): thrift.Column = {
+    new thrift.Column(
+      nameCodec.encode(col.name),
+      valueCodec.encode(col.value),
+      col.timestamp
+    )
+  }
 }
 
 /**

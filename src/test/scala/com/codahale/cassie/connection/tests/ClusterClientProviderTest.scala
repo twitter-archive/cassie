@@ -3,6 +3,7 @@ package com.codahale.cassie.connection.tests
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import org.mockito.Mockito.{when, verify, times}
+import java.nio.ByteBuffer
 import com.codahale.logula.Logging
 import org.apache.log4j.Level
 import com.codahale.cassie.connection.ClusterClientProvider
@@ -13,18 +14,19 @@ import org.apache.cassandra.thrift.{TimedOutException, ColumnOrSuperColumn, Colu
 class ClusterClientProviderTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val cp = new ColumnPath("cf")
   val cosc = new ColumnOrSuperColumn
+  val keyBytes = ByteBuffer.wrap("key".getBytes)
 
   val server1 = new MockCassandraServer(MockCassandraServer.choosePort())
   when(server1.cassandra.describe_version).thenReturn("node1")
-  when(server1.cassandra.get("ks", "key", cp, ConsistencyLevel.ALL)).thenReturn(cosc)
+  when(server1.cassandra.get(keyBytes, cp, ConsistencyLevel.ALL)).thenReturn(cosc)
 
   val server2 = new MockCassandraServer(MockCassandraServer.choosePort())
   when(server2.cassandra.describe_version).thenReturn("node2")
-  when(server2.cassandra.get("ks", "key", cp, ConsistencyLevel.ALL)).thenReturn(cosc)
+  when(server2.cassandra.get(keyBytes, cp, ConsistencyLevel.ALL)).thenReturn(cosc)
 
   val server3 = new MockCassandraServer(MockCassandraServer.choosePort())
   when(server3.cassandra.describe_version).thenReturn("node3")
-  when(server3.cassandra.get("ks", "key", cp, ConsistencyLevel.ALL)).thenThrow(new TimedOutException())
+  when(server3.cassandra.get(keyBytes, cp, ConsistencyLevel.ALL)).thenThrow(new TimedOutException())
 
   val hosts = Set(
     new InetSocketAddress("127.0.0.1", server1.port),
@@ -68,20 +70,20 @@ class ClusterClientProviderTest extends Spec with MustMatchers with BeforeAndAft
     }
 
     it("handles nodes which are down gracefully") {
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
-      provider.map { c => c.get("ks", "key", cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
+      provider.map { c => c.get(keyBytes, cp, ConsistencyLevel.ALL) } must equal(cosc)
 
-      verify(server1.cassandra, times(5)).get("ks", "key", cp, ConsistencyLevel.ALL)
-      verify(server2.cassandra, times(5)).get("ks", "key", cp, ConsistencyLevel.ALL)
-      verify(server3.cassandra, times(2)).get("ks", "key", cp, ConsistencyLevel.ALL)
+      verify(server1.cassandra, times(5)).get(keyBytes, cp, ConsistencyLevel.ALL)
+      verify(server2.cassandra, times(5)).get(keyBytes, cp, ConsistencyLevel.ALL)
+      verify(server3.cassandra, times(2)).get(keyBytes, cp, ConsistencyLevel.ALL)
     }
   }
 }

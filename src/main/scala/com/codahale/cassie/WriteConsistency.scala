@@ -14,13 +14,6 @@ sealed case class WriteConsistency(level: thrift.ConsistencyLevel) {
 
 object WriteConsistency {
   /**
-   * Ensure nothing. A write happens asynchronously in background. (Cassandra as
-   * of 0.6 does not have back pressure for asynchronous writes. If these are
-   * not throttled, clients will exhaust the servers' memory.
-   */
-  val Zero = WriteConsistency(thrift.ConsistencyLevel.ZERO)
-
-  /**
    * Ensure that the write has been written to at least 1 node, including hinted
    * recipients.
    */

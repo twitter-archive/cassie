@@ -1,6 +1,7 @@
 package com.codahale.cassie
 
-import codecs.Codec
+import java.nio.ByteBuffer
+import codecs.{Codec, Utf8Codec}
 import clocks.Clock
 import scalaj.collection.Imports._
 import collection.mutable.{ArrayBuffer, HashMap}
@@ -12,7 +13,10 @@ import org.apache.cassandra.thrift.{SlicePredicate, Deletion, Mutation, Column =
  * @author coda
  */
 class BatchMutationBuilder(cfName: String) {
-  private val ops = new HashMap[String, HashMap[String, ArrayBuffer[Mutation]]]()
+  private val ops = new HashMap[ByteBuffer, HashMap[String, ArrayBuffer[Mutation]]]()
+
+  // TODO: thread the key codec through as an implicit where necessary
+  val keyCodec: Codec[String] = Utf8Codec
 
   /**
    * Inserts a column.
@@ -75,12 +79,12 @@ class BatchMutationBuilder(cfName: String) {
 
   private def addMutation(key: String, mutation: Mutation) {
     synchronized {
-      ops.getOrElseUpdate(key, new HashMap).
+      ops.getOrElseUpdate(keyCodec.encode(key), new HashMap).
               getOrElseUpdate(cfName, new ArrayBuffer) += mutation
     }
   }
 
-  private[cassie] def mutations: java.util.Map[String, java.util.Map[String, java.util.List[Mutation]]] = {
+  private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = {
     synchronized {
       ops.map { case (key, cfMap) =>
         key -> cfMap.map { case (cf, m) =>

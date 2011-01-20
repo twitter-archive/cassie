@@ -6,16 +6,6 @@ import com.codahale.cassie.WriteConsistency
 import org.apache.cassandra.thrift.ConsistencyLevel
 
 class WriteConsistencyTest extends Spec with MustMatchers {
-  describe("a write consistency of Zero") {
-    it("is human readable") {
-      WriteConsistency.Zero.toString must equal("WriteConsistency.Zero")
-    }
-
-    it("has a corresponding Thrift ConsistencyLevel of ZERO") {
-      WriteConsistency.Zero.level must equal(ConsistencyLevel.ZERO)
-    }
-  }
-
   describe("a write consistency of Any") {
     it("is human readable") {
       WriteConsistency.Any.toString must equal("WriteConsistency.Any")

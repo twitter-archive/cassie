@@ -1,5 +1,6 @@
 package com.codahale.cassie.tests
 
+import com.codahale.cassie.codecs.Utf8Codec
 import scalaj.collection.Imports._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
@@ -18,10 +19,10 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds an insertion mutation") {
-      val mutation = mutations.get("key").get("People").get(0)
+      val mutation = mutations.get(Utf8Codec.encode("key")).get("People").get(0)
       val col = mutation.getColumn_or_supercolumn.getColumn
-      new String(col.getName) must equal("name")
-      new String(col.getValue) must equal("value")
+      Utf8Codec.decode(col.name) must equal("name")
+      Utf8Codec.decode(col.value) must equal("value")
       col.getTimestamp must equal(234)
     }
   }
@@ -32,11 +33,11 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
-      val mutation = mutations.get("key").get("People").get(0)
+      val mutation = mutations.get(Utf8Codec.encode("key")).get("People").get(0)
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(445)
-      deletion.getPredicate.getColumn_names.asScala.map { new String(_) } must equal(List("column"))
+      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("column"))
     }
   }
 
@@ -46,11 +47,11 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
-      val mutation = mutations.get("key").get("People").get(0)
+      val mutation = mutations.get(Utf8Codec.encode("key")).get("People").get(0)
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(22)
-      deletion.getPredicate.getColumn_names.asScala.map { new String(_) } must equal(List("column"))
+      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("column"))
     }
   }
 
@@ -60,11 +61,11 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
-      val mutation = mutations.get("key").get("People").get(0)
+      val mutation = mutations.get(Utf8Codec.encode("key")).get("People").get(0)
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(445)
-      deletion.getPredicate.getColumn_names.asScala.map { new String(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 
@@ -74,11 +75,11 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds a deletion mutation") {
-      val mutation = mutations.get("key").get("People").get(0)
+      val mutation = mutations.get(Utf8Codec.encode("key")).get("People").get(0)
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(22)
-      deletion.getPredicate.getColumn_names.asScala.map { new String(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 }

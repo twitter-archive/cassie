@@ -1,10 +1,11 @@
 package com.codahale.cassie
 
+import java.nio.ByteBuffer
 import codecs.Codec
 import scalaj.collection.Imports._
 import collection.mutable.ArrayBuffer
 import com.codahale.logula.Logging
-import org.apache.cassandra.thrift.{ColumnOrSuperColumn, SlicePredicate}
+import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 /**
  * Given a column family, a key range, a batch size, a slice predicate, and
@@ -15,19 +16,21 @@ import org.apache.cassandra.thrift.{ColumnOrSuperColumn, SlicePredicate}
  *
  * @author coda
  */
-class ColumnIterator[Name, Value](val cf: ColumnFamily[_, _],
-                                  val startKey: String,
-                                  val endKey: String,
-                                  val batchSize: Int,
-                                  val predicate: SlicePredicate,
-                                  val consistency: ReadConsistency,
-                                  val nameCodec: Codec[Name],
-                                  val valueCodec: Codec[Value])
-        extends Iterator[(String, Column[Name, Value])] with Logging {
-  
-  private var lastKey: Option[String] = None
+class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _],
+                                       val startKey: Key,
+                                       val endKey: Key,
+                                       val batchSize: Int,
+                                       val predicate: SlicePredicate,
+                                       val consistency: ReadConsistency,
+                                       val keyCodec: Codec[Key],
+                                       val nameCodec: Codec[Name],
+                                       val valueCodec: Codec[Value])
+        extends Iterator[(Key, Column[Name, Value])] with Logging {
+  private val start = keyCodec.encode(startKey)
+  private val end = keyCodec.encode(endKey)
+  private var lastKey: Option[ByteBuffer] = None
   private var cycled = false
-  private val buffer = new ArrayBuffer[(String, Column[Name, Value])]
+  private val buffer = new ArrayBuffer[(Key, Column[Name, Value])]
 
   def next() = {
     if (hasNext) {
@@ -50,10 +53,11 @@ class ColumnIterator[Name, Value](val cf: ColumnFamily[_, _],
 
   private def getNextSlice() {
     val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)
-    val slice = cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate, consistency)
-    buffer ++= slice.filterNot { col => lastKey.map { _ == col.key }.getOrElse(false) }.flatMap { ks =>
+    val slice = cf.getRangeSlice(lastKey.getOrElse(start), end, effectiveCount, predicate, consistency)
+    val filterPred = (ks: KeySlice) => lastKey.map { _ == ks.key }.getOrElse(false)
+    buffer ++= slice.filterNot(filterPred).flatMap { ks =>
       ks.columns.asScala.map { col =>
-        ks.key -> convert(nameCodec, valueCodec, col)
+        keyCodec.decode(ks.key) -> Column.convert(nameCodec, valueCodec, col)
       }
     }
     if (!slice.isEmpty) {
@@ -61,13 +65,5 @@ class ColumnIterator[Name, Value](val cf: ColumnFamily[_, _],
       cycled = lastKey == lastFoundKey
       lastKey = lastFoundKey
     }    
-  }
-
-  private def convert[Name, Value](nameCodec: Codec[Name], valueCodec: Codec[Value], colOrSCol: ColumnOrSuperColumn): Column[Name, Value] = {
-    Column(
-      nameCodec.decode(colOrSCol.column.name),
-      valueCodec.decode(colOrSCol.column.value),
-      colOrSCol.column.timestamp
-    )
   }
 }
