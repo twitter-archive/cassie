@@ -10,7 +10,7 @@ import com.codahale.cassie.connection.{ConnectionPool, FailureAwareConnectionPoo
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 import org.scalatest.concurrent.Conductor
 
 class FailureAwareConnectionPoolTest extends Spec
@@ -43,7 +43,7 @@ class FailureAwareConnectionPoolTest extends Spec
   }
 
   describe("a failure-aware connection pool with no partial failures") {
-    Logging.configure(Level.OFF)
+    Logging.configure(_.level = Level.OFF)
 
     def setup(client: Client) = {
       val p = newConnectionPool(client)

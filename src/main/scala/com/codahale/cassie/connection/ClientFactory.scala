@@ -19,7 +19,7 @@ class ClientFactory(val host: InetSocketAddress, val timeoutMS: Int) extends Log
    * @return a `Cassandra.Client` instance!
    */
   def build() = {
-    log.fine("Opening a new socket to %s", host)
+    log.debug("Opening a new socket to %s", host)
     val socket = new TSocket(host.getHostName, host.getPort)
     socket.setTimeout(timeoutMS)
     socket.open()
@@ -33,10 +33,10 @@ class ClientFactory(val host: InetSocketAddress, val timeoutMS: Int) extends Log
    */
   def destroy(client: Client) {
     try {
-      log.fine("Disconnecting from %s", host)
+      log.debug("Disconnecting from %s", host)
       client.getOutputProtocol.getTransport.close()
     } catch {
-      case e: Exception => log.finest(e, "Error disconnecting from %s", host)
+      case e: Exception => log.trace(e, "Error disconnecting from %s", host)
     }
   }
 

@@ -10,10 +10,10 @@ import org.scalatest.mock.MockitoSugar
 import org.apache.thrift.transport.TTransportException
 import org.apache.cassandra.thrift.{ConsistencyLevel, ColumnPath, TimedOutException}
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 
 class ConnectionTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
-  Logging.configure(Level.OFF)
+  Logging.configure(_.level = Level.OFF)
 
   describe("a closed connection") {
     val client = mock[Client]

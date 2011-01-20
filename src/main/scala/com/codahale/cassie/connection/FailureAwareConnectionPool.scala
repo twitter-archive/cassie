@@ -86,33 +86,33 @@ class FailureAwareConnectionPool(pool: ConnectionPool,
   def map[A](f: Client => A): Option[A] = {
     if (isDown) {
       // if the node is down, always return None
-      log.warning("%s IS STILL DOWN", pool.host)
+      log.warn("%s IS STILL DOWN", pool.host)
       None
     } else {
       if (isRecovering) {
         if (!_isRetrying.compareAndSet(false, true)) {
           return None
         } else {
-          log.warning("Trying a request to %s", pool.host)
+          log.warn("Trying a request to %s", pool.host)
         }
       }
 
       // otherwise, perform the query inside a circuit breaker
       val result = pool.map(f)
       if (result.isEmpty) {
-        log.warning("Query for %s failed", pool.host)
+        log.warn("Query for %s failed", pool.host)
         _partialFailures.incrementAndGet
         if (!isUp) {
           // if the node has too many partial failures, mark the pool as down
           _downUntil.set(System.currentTimeMillis + downTimeoutInMS)
           _totalFailures.incrementAndGet
-          log.warning("%s IS DOWN", pool.host)
+          log.warn("%s IS DOWN", pool.host)
           // remove all existing connections to the node
           pool.clear()
         }
       } else {
         if (isRecovering) {
-          log.warning("%s IS UP", pool.host)
+          log.warn("%s IS UP", pool.host)
         }
         _partialFailures.set(0)
       }

@@ -45,7 +45,7 @@ class RoundRobinLoadBalancer(nodes: Set[FailureAwareConnectionPool],
     val hosts = pools.map { _.host }
     val msg = ("Made %d attempts to query nodes " +
                "(%s) with no success").format(retryAttempts, hosts.mkString(", "))
-    log.severe(msg)
+    log.error(msg)
     throw new UnsuccessfulQueryException(msg)
   }
 

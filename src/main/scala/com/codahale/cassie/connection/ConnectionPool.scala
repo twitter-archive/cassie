@@ -77,7 +77,7 @@ class ConnectionPool(val factory: ConnectionFactory,
       }
     } catch {
       case e: NoSuchElementException =>
-        log.warning("%s is exhausted", this)
+        log.warn("%s is exhausted", this)
         None
     }
   }

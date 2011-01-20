@@ -7,7 +7,7 @@ import com.codahale.cassie.tests.util.MockCassandraServer
 import java.net.InetSocketAddress
 import com.codahale.cassie.ClusterMapper
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 
 class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
@@ -22,7 +22,7 @@ class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   }
 
   describe("mapping a cluster") {
-    Logging.configure(Level.OFF)
+    Logging.configure(_.level = Level.OFF)
     it("returns the set of nodes in the cluster") {
       val mapper = new ClusterMapper("127.0.0.1", server.port)
 

@@ -24,7 +24,7 @@ class ClusterMapper(seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 100
     val client = factory.build()
     val json = client.get_string_property("token map")
     factory.destroy(client)
-    log.fine("Received: %s", json)
+    log.debug("Received: %s", json)
     JSON.parse(json) match {
       case Some(keysAndNodes: List[_]) =>
         val nodes = keysAndNodes.map { h =>

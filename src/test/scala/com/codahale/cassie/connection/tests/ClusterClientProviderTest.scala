@@ -4,7 +4,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import org.mockito.Mockito.{when, verify, times}
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 import com.codahale.cassie.connection.ClusterClientProvider
 import com.codahale.cassie.tests.util.MockCassandraServer
 import java.net.InetSocketAddress
@@ -55,7 +55,7 @@ class ClusterClientProviderTest extends Spec with MustMatchers with BeforeAndAft
       maxConnectionsPerHost = 5,
       removeAfterIdleForMS = 10*60*1000
     )
-    Logging.configure(Level.OFF)
+    Logging.configure(_.level = Level.OFF)
 
     it("balances requests between nodes") {
       provider.map { c => c.describe_version } must equal("node1")

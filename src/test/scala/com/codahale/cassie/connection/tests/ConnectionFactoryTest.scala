@@ -6,11 +6,11 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito.{when, verify}
 import com.codahale.cassie.connection.{Connection, ConnectionFactory, ClientFactory}
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 
 class ConnectionFactoryTest extends Spec with MustMatchers with MockitoSugar {
   describe("a connection factory") {
-    Logging.configure(Level.OFF)
+    Logging.configure(_.level = Level.OFF)
     val clientFactory = mock[ClientFactory]
     val factory = new ConnectionFactory(clientFactory)
 

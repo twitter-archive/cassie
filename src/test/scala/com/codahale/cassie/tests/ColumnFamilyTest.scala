@@ -233,7 +233,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
       val value = ArgumentCaptor.forClass(classOf[Array[Byte]])
 
-      verify(client).insert(matchEq("ks"), matchEq("key"), cp.capture, value.capture, matchEq(55), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).insert(matchEq("ks"), matchEq("key"), cp.capture, value.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       new String(cp.getValue.getColumn) must equal("name")
@@ -252,7 +252,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.removeColumn("key", "age", WriteConsistency.Quorum)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445L), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       new String(cp.getValue.getColumn) must equal("age")
@@ -266,7 +266,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.removeColumnWithTimestamp("key", "age", 55, WriteConsistency.Quorum)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(55), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       new String(cp.getValue.getColumn) must equal("age")
@@ -280,7 +280,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.removeRowWithTimestamp("key", 55, WriteConsistency.Quorum)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(55), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       cp.getValue.getColumn must be(null)
@@ -297,7 +297,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.removeRow("key", WriteConsistency.Quorum)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).remove(matchEq("ks"), matchEq("key"), cp.capture, matchEq(445L), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
       cp.getValue.getColumn must be(null)
@@ -321,7 +321,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val mutation = mutations.get("key").get("cf").get(0)
       val deletion = mutation.getDeletion
 
-      deletion.getTimestamp must equal(445)
+      deletion.getTimestamp must equal(445L)
       deletion.getPredicate.getColumn_names.asScala.map { new String(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }

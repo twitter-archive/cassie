@@ -147,7 +147,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
-    log.fine("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
+    log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
     val result = provider.map {
       _.multiget_slice(keyspace, keys.toList.asJava, cp, pred, consistency.level).asScala
     }
@@ -175,7 +175,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
                   (implicit nameCodec: Codec[A], valueCodec: Codec[B]) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(column.name))
-    log.fine("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
+    log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
       column.timestamp, consistency.level)
     provider.map {
       _.insert(keyspace, key, cp, valueCodec.encode(column.value), column.timestamp, consistency.level)
@@ -202,7 +202,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
                                   (implicit nameCodec: Codec[A]) {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(nameCodec.encode(columnName))
-    log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
+    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
   }
 
@@ -245,7 +245,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
                              timestamp: Long,
                              consistency: WriteConsistency = defaultWriteConsistency) {
     val cp = new thrift.ColumnPath(name)
-    log.fine("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
+    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, consistency.level)
     provider.map { _.remove(keyspace, key, cp, timestamp, consistency.level) }
   }
 
@@ -257,7 +257,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
     val builder = new BatchMutationBuilder(name)
     build(builder)
     val mutations = builder.mutations
-    log.fine("batch_mutate(%s, %s, %s", keyspace, mutations, consistency.level)
+    log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, consistency.level)
     provider.map { _.batch_mutate(keyspace, mutations, consistency.level) }
   }
 
@@ -335,7 +335,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
                        pred: thrift.SlicePredicate,
                        consistency: ReadConsistency, nameCodec: Codec[A], valueCodec: Codec[B]) = {
     val cp = new thrift.ColumnParent(name)
-    log.fine("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
+    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyspace, key, cp, pred, consistency.level) }
     result.asScala.map { r => convert(nameCodec, valueCodec, r).pair }.toMap
   }
@@ -349,7 +349,7 @@ class ColumnFamily[Name, Value](val keyspace: String,
     val range = new thrift.KeyRange(count)
     range.setStart_key(startKey)
     range.setEnd_key(endKey)
-    log.fine("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, consistency.level)
+    log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, consistency.level)
     provider.map { _.get_range_slices(keyspace, cp, predicate, range, consistency.level) }.asScala
   }
 

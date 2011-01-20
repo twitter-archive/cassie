@@ -9,7 +9,7 @@ import org.scalatest.{BeforeAndAfterAll, Spec}
 import com.codahale.cassie.connection.{ClientFactory, ConnectionPool, ConnectionFactory}
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 
 class ConnectionPoolTest extends Spec
         with MustMatchers with MockitoSugar
@@ -26,7 +26,7 @@ class ConnectionPoolTest extends Spec
   }
 
   describe("a connection pool") {
-    Logging.configure(Level.OFF)
+    Logging.configure(_.level = Level.OFF)
 
     val clientFactory = new ClientFactory(new InetSocketAddress("0.0.0.0", server.port), 1000)
     val factory = new ConnectionFactory(clientFactory)

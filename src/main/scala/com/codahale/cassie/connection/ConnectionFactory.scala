@@ -16,16 +16,16 @@ class ConnectionFactory(factory: ClientFactory)
   def host = factory.host
 
   def makeObject = {
-    log.fine("Creating a new connection to %s", factory)
+    log.debug("Creating a new connection to %s", factory)
     new Connection(factory)
   }
 
   override def validateObject(obj: Any) = obj match {
     case conn: Connection =>
-      log.fine("Validating %s", conn)
+      log.debug("Validating %s", conn)
       val healthy = conn.isHealthy()
       if (!healthy) {
-        log.warning("%s is unhealthy", conn)
+        log.warn("%s is unhealthy", conn)
       }
       healthy
     case _ => false
@@ -33,7 +33,7 @@ class ConnectionFactory(factory: ClientFactory)
 
   override def destroyObject(obj: Any) = obj match {
     case conn: Connection =>
-      log.fine("Destroying %s", conn)
+      log.debug("Destroying %s", conn)
       conn.close()
     case _ =>
   }

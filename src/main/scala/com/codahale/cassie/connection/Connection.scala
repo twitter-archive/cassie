@@ -30,7 +30,7 @@ class Connection(val factory: ClientFactory) extends Logging {
         true
       } catch {
         case e: Exception =>
-          log.warning(e, "%s is unhealthy", this)
+          log.warn(e, "%s is unhealthy", this)
           false
       }
     case None => false
@@ -56,11 +56,11 @@ class Connection(val factory: ClientFactory) extends Logging {
       }
     } catch {
       case e: TTransportException =>
-        log.warning(e, "Error executing request on %s", this)
+        log.warn(e, "Error executing request on %s", this)
         close()
         None
       case e: TimedOutException =>
-        log.warning(e, "Request timed out on %s", this)
+        log.warn(e, "Request timed out on %s", this)
         None
     }
   }
@@ -74,7 +74,7 @@ class Connection(val factory: ClientFactory) extends Logging {
         log.info("Opening connection to %s", factory.host)
         _client = Some(factory.build)
       } catch {
-        case e: Exception => log.warning(e, "Unable to open connection to %s", factory.host)
+        case e: Exception => log.warn(e, "Unable to open connection to %s", factory.host)
       }
     }
     _client.isDefined

@@ -3,12 +3,12 @@ package com.codahale.cassie.tests.examples
 import com.codahale.cassie._
 import clocks.MicrosecondEpochClock
 import com.codahale.logula.Logging
-import java.util.logging.Level
+import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
-    Logging.configure(Level.ALL)
+    Logging.configure(_.level = Level.ALL)
 
     implicit val clock = MicrosecondEpochClock
 
