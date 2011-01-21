@@ -5,15 +5,17 @@ import scala.util.parsing.json.JSON
 import java.io.IOException
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
+import scalaj.collection.Imports._
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
  *
+ * @param keyspace the keyspace to map
  * @param seedHost the hostname of the seed node
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-class ClusterMapper(seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
+class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
   private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort), timeoutMS)
 
   /**
@@ -22,17 +24,10 @@ class ClusterMapper(seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 100
   def hosts(): Set[InetSocketAddress] = {
     log.info("Mapping cluster...")
     val client = factory.build()
-    val json = client.get_string_property("token map")
+    val ring = client.describe_ring(keyspace)
     factory.destroy(client)
-    log.debug("Received: %s", json)
-    JSON.parse(json) match {
-      case Some(keysAndNodes: List[_]) =>
-        val nodes = keysAndNodes.map { h =>
-          new InetSocketAddress(h.asInstanceOf[(String, String)]._2, seedPort)
-        }.toSet
-        log.info("Found %d nodes: %s", nodes.size, nodes)
-        nodes
-      case None => throw new IOException("Unable to map the cluster.")
-    }
+    log.debug("Received: %s", ring)
+    ring.asScala.flatMap{ _.endpoints.asScala.map{ host =>
+      new InetSocketAddress(host, seedPort) } }.toSet
   }
 }
