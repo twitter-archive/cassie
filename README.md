@@ -19,7 +19,8 @@ Requirements
 Let's Get This Party Started
 ----------------------------
 
-TODO: This version (refreshed for Cassandra 0.7.0) is not yet hosted!
+**TODO: This version (refreshed for Cassandra 0.7.0) is not yet hosted!**
+
 In your [simple-build-tool](http://code.google.com/p/simple-build-tool/) project
 file, add Cassie as a dependency:
     
