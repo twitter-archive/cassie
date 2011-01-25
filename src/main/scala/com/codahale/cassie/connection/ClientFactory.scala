@@ -2,7 +2,7 @@ package com.codahale.cassie.connection
 
 import org.apache.cassandra.thrift.Cassandra.Client
 import org.apache.thrift.protocol.TBinaryProtocol
-import org.apache.thrift.transport.TSocket
+import org.apache.thrift.transport.{TSocket, TFramedTransport}
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
 
@@ -11,7 +11,7 @@ import com.codahale.logula.Logging
  *
  * @author coda
  */
-class ClientFactory(val host: InetSocketAddress, val keyspace: String, val timeoutMS: Int) extends Logging {
+class ClientFactory(val host: InetSocketAddress, val keyspace: String, val timeoutMS: Int, val framed: Boolean = true) extends Logging {
 
   /**
    * Opens a new client connection to `host`.
@@ -22,8 +22,9 @@ class ClientFactory(val host: InetSocketAddress, val keyspace: String, val timeo
     log.debug("Opening a new socket to %s", host)
     val socket = new TSocket(host.getHostName, host.getPort)
     socket.setTimeout(timeoutMS)
-    socket.open()
-    val client = new Client(new TBinaryProtocol(socket))
+    val transport = if (framed) new TFramedTransport(socket) else socket
+    transport.open()
+    val client = new Client(new TBinaryProtocol(transport))
     client.set_keyspace(keyspace)
     client
   }

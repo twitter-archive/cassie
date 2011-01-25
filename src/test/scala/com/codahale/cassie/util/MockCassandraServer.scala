@@ -5,7 +5,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.Mockito.mock
 import org.apache.cassandra.thrift.Cassandra
-import org.apache.thrift.transport.TServerSocket
+import org.apache.thrift.transport.{TServerSocket, TFramedTransport}
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.TThreadPoolServer
 
@@ -17,8 +17,9 @@ object MockCassandraServer {
     setDaemon(true)
     val serverTransport = new TServerSocket(port)
     val protFactory = new TBinaryProtocol.Factory(true, true)
+    val transportFactory = new TFramedTransport.Factory()
     val processor = new Cassandra.Processor(cassandra)
-    val server = new TThreadPoolServer(processor, serverTransport, protFactory)
+    val server = new TThreadPoolServer(processor, serverTransport, transportFactory, protFactory)
     val latch = new CountDownLatch(1)
 
     override def run {

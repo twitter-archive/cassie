@@ -31,7 +31,8 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
                downTimeoutInMS: Int = 10000,
                minConnectionsPerHost: Int = 1,
                maxConnectionsPerHost: Int = 5,
-               removeAfterIdleForMS: Int = 60000) = {
+               removeAfterIdleForMS: Int = 60000,
+               framed: Boolean = true) = {
     val hosts = if (performMapping)
       // either map the cluster for this keyspace
       new ClusterMapper(name, seedHosts.head).hosts
@@ -39,7 +40,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       // or connect directly to the hosts that were given as seeds
       seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
 
-    val ccp = new ClusterClientProvider(hosts, name, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS)
+    val ccp = new ClusterClientProvider(hosts, name, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS, framed)
     new Keyspace(name, ccp)
   }
 }

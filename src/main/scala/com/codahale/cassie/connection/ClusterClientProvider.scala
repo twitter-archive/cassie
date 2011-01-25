@@ -22,6 +22,7 @@ import org.apache.cassandra.thrift.Cassandra.Client
  * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
  *                             idle connections should be closed and removed
  *                             from the pool
+ * @param framed true if the server will only accept framed connections
  * @author coda
  */
 class ClusterClientProvider(val hosts: Set[InetSocketAddress],
@@ -32,9 +33,10 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val downTimeoutInMS: Int = 10000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
-                            val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
+                            val removeAfterIdleForMS: Int = 60000,
+                            val framed: Boolean = true) extends ClientProvider {
   private val pools = hosts.map { h =>
-    val clientFactory = new ClientFactory(h, keyspace, readTimeoutInMS)
+    val clientFactory = new ClientFactory(h, keyspace, readTimeoutInMS, framed)
     val factory = new ConnectionFactory(clientFactory)
     val pool = new ConnectionPool(factory, minConnectionsPerHost,
                                   maxConnectionsPerHost, removeAfterIdleForMS)
