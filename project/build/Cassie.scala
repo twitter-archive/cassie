@@ -1,4 +1,8 @@
-class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) with rsync.RsyncPublishing {
+import sbt._
+import com.twitter.sbt._
+
+class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
+  with DefaultRepos with CompileFinagleThrift {
   /**
    * Repositories
    */
@@ -15,7 +19,14 @@ class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) with rsync.
   val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0"
 
   val logula = "com.codahale" %% "logula" % "2.0.0" withSources()
- 
+
+  /**
+   * Twitter specific deps
+   */
+  val finagle = "com.twitter" % "finagle" % "1.1.3" 
+  val finagleThrift = "com.twitter" % "finagle-thrift" % "1.1.3" 
+  val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.2" % "provided" 
+
   /**
    * Fetch Cassandra itself, with only the client dependencies
    */
@@ -38,11 +49,6 @@ class Cassie(info: sbt.ProjectInfo) extends sbt.DefaultProject(info) with rsync.
   override def packageSrcJar = defaultJarPath("-sources.jar")
   val sourceArtifact = sbt.Artifact(artifactID, "src", "jar", Some("sources"), Nil, None)
   override def packageToPublishActions = super.packageToPublishActions ++ Seq(packageSrc, `package`)
-
-  /**
-   * Publish via rsync.
-   */
-  def rsyncRepo = "codahale.com:/home/codahale/repo.codahale.com"
 
   /**
    * Build a JAR file with class files for Cassie, Cassandra, and Thrift.
