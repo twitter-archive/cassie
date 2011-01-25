@@ -36,7 +36,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   def setup = {
     val client = mock[Client]
     val provider = SimpleProvider(client)
-    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec,
+    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec, Utf8Codec,
       ReadConsistency.Quorum, WriteConsistency.Quorum)
 
     (client, cf)
@@ -373,8 +373,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.rowIterator(16, ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String, String]]
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal("")
-      iterator.endKey must equal("")
+      iterator.startKey must equal(b(""))
+      iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names must be(null)
       iterator.predicate.getSlice_range.getStart must equal(Array[Byte]())
@@ -390,8 +390,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.columnIterator(16, "name", ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String, String]]
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal("")
-      iterator.endKey must equal("")
+      iterator.startKey must equal(b(""))
+      iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) } must be(List("name"))
     }
@@ -404,8 +404,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.columnsIterator(16, Set("name", "motto"), ReadConsistency.Quorum).asInstanceOf[ColumnIterator[String, String, String]]
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal("")
-      iterator.endKey must equal("")
+      iterator.startKey must equal(b(""))
+      iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }

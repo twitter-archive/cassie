@@ -28,7 +28,7 @@ object CassieRun extends Logging {
     )
 
     // create a column family
-    val cass = keyspace.columnFamily[String, String]("Standard1")
+    val cass = keyspace.columnFamily[String, String, String]("Standard1")
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda"))
@@ -67,7 +67,7 @@ object CassieRun extends Logging {
     // drop some UUID sauce on things
     cass.insert(LexicalUUID(), Column("yay", "boo"))
 
-    cass.getColumnAs[FixedLong, AsciiString]("key", 2)
+    cass.getColumnAs[String, FixedLong, AsciiString]("key", 2)
     cass.insert("digits", Column[VarInt, VarInt](1, 300))
 
     log.info("Iterating!")

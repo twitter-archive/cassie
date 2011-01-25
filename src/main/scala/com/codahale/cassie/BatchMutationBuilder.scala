@@ -15,14 +15,11 @@ import org.apache.cassandra.thrift.{SlicePredicate, Deletion, Mutation, Column =
 class BatchMutationBuilder(cfName: String) {
   private val ops = new HashMap[ByteBuffer, HashMap[String, ArrayBuffer[Mutation]]]()
 
-  // TODO: thread the key codec through as an implicit where necessary
-  val keyCodec: Codec[String] = Utf8Codec
-
   /**
    * Inserts a column.
    */
-  def insert[Name, Value](key: String, column: Column[Name, Value])
-                         (implicit nameCodec: Codec[Name], valueCodec: Codec[Value]) {
+  def insert[Key, Name, Value](key: Key, column: Column[Name, Value])
+                         (implicit keyCodec: Codec[Key], nameCodec: Codec[Name], valueCodec: Codec[Value]) {
     val cosc = new ColumnOrSuperColumn
     cosc.setColumn(
       new TColumn(
@@ -39,32 +36,32 @@ class BatchMutationBuilder(cfName: String) {
   /**
    * Removes a column from a row.
    */
-  def removeColumn[Name](key: String, columnName: Name)
-                  (implicit clock: Clock, nameCodec: Codec[Name]) {
-    removeColumnWithTimestamp(key, columnName, clock.timestamp)(nameCodec)
+  def removeColumn[Key, Name](key: Key, columnName: Name)
+                  (implicit clock: Clock, keyCodec: Codec[Key], nameCodec: Codec[Name]) {
+    removeColumnWithTimestamp(key, columnName, clock.timestamp)(keyCodec, nameCodec)
   }
 
   /**
    * Removes a column from a row with a specific timestamp.
    */
-  def removeColumnWithTimestamp[Name](key: String, columnName: Name, timestamp: Long)
-                  (implicit nameCodec: Codec[Name]) {
-    removeColumnsWithTimestamp(key, Set(columnName), timestamp)(nameCodec)
+  def removeColumnWithTimestamp[Key, Name](key: Key, columnName: Name, timestamp: Long)
+                  (implicit keyCodec: Codec[Key], nameCodec: Codec[Name]) {
+    removeColumnsWithTimestamp(key, Set(columnName), timestamp)(keyCodec, nameCodec)
   }
 
   /**
    * Removes a set of columns from a row.
    */
-  def removeColumns[Name](key: String, columnNames: Set[Name])
-                  (implicit clock: Clock, nameCodec: Codec[Name]) {
-    removeColumnsWithTimestamp(key, columnNames, clock.timestamp)(nameCodec)
+  def removeColumns[Key, Name](key: Key, columnNames: Set[Name])
+                  (implicit clock: Clock, keyCodec: Codec[Key], nameCodec: Codec[Name]) {
+    removeColumnsWithTimestamp(key, columnNames, clock.timestamp)(keyCodec, nameCodec)
   }
 
   /**
    * Removes a set of columns from a row with a specific timestamp.
    */
-  def removeColumnsWithTimestamp[Name](key: String, columnNames: Set[Name], timestamp: Long)
-                  (implicit nameCodec: Codec[Name]) {
+  def removeColumnsWithTimestamp[Key, Name](key: Key, columnNames: Set[Name], timestamp: Long)
+                  (implicit keyCodec: Codec[Key], nameCodec: Codec[Name]) {
     val pred = new SlicePredicate
     pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
 
@@ -77,7 +74,8 @@ class BatchMutationBuilder(cfName: String) {
     addMutation(key, mutation)
   }
 
-  private def addMutation(key: String, mutation: Mutation) {
+  private def addMutation[Key](key: Key, mutation: Mutation)
+                              (implicit keyCodec: Codec[Key]) {
     synchronized {
       ops.getOrElseUpdate(keyCodec.encode(key), new HashMap).
               getOrElseUpdate(cfName, new ArrayBuffer) += mutation

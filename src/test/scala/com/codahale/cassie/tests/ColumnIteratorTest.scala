@@ -29,10 +29,10 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
 
     val predicate = mock[thrift.SlicePredicate]
 
-    val cf = mock[ColumnFamily[String, String]]
+    val cf = mock[ColumnFamily[String, String, String]]
     when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate), matchEq(ReadConsistency.Quorum))).thenReturn(List[thrift.KeySlice]())
 
-    val iterator = new ColumnIterator(cf, "start", "end", 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
+    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
 
     it("doesn't throw an error") {
       iterator.foreach { _ => () }
@@ -58,7 +58,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
 
     val predicate = mock[thrift.SlicePredicate]
 
-    val cf = mock[ColumnFamily[String, String]]
+    val cf = mock[ColumnFamily[String, String, String]]
     when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate), matchEq(ReadConsistency.Quorum))).thenReturn(
       List(slice),
       List(slice1),
@@ -67,7 +67,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
       List(slice3)
     )
 
-    val iterator = new ColumnIterator(cf, "start", "end", 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
+    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
 
     it("does a buffered iteration over the columns in the rows in the range") {
       val results = new ArrayBuffer[(String, Column[String, String])]

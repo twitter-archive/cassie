@@ -16,9 +16,9 @@ import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicat
  *
  * @author coda
  */
-class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _],
-                                       val startKey: Key,
-                                       val endKey: Key,
+class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
+                                       val startKey: ByteBuffer,
+                                       val endKey: ByteBuffer,
                                        val batchSize: Int,
                                        val predicate: SlicePredicate,
                                        val consistency: ReadConsistency,
@@ -26,8 +26,6 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _],
                                        val nameCodec: Codec[Name],
                                        val valueCodec: Codec[Value])
         extends Iterator[(Key, Column[Name, Value])] with Logging {
-  private val start = keyCodec.encode(startKey)
-  private val end = keyCodec.encode(endKey)
   private var lastKey: Option[ByteBuffer] = None
   private var cycled = false
   private val buffer = new ArrayBuffer[(Key, Column[Name, Value])]
@@ -53,7 +51,7 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _],
 
   private def getNextSlice() {
     val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)
-    val slice = cf.getRangeSlice(lastKey.getOrElse(start), end, effectiveCount, predicate, consistency)
+    val slice = cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate, consistency)
     val filterPred = (ks: KeySlice) => lastKey.map { _ == ks.key }.getOrElse(false)
     buffer ++= slice.filterNot(filterPred).flatMap { ks =>
       ks.columns.asScala.map { col =>
