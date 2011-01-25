@@ -12,13 +12,14 @@ Requirements
 ------------
 
 * Java SE 6
-* Scala 2.8 Beta1, RC2, RC3, or RC5
-* Cassandra 0.6.x
+* Scala 2.8
+* Cassandra 0.7.0
 
 
 Let's Get This Party Started
 ----------------------------
 
+TODO: This version (refreshed for Cassandra 0.7.0) is not yet hosted!
 In your [simple-build-tool](http://code.google.com/p/simple-build-tool/) project
 file, add Cassie as a dependency:
     
@@ -29,22 +30,20 @@ file, add Cassie as a dependency:
 Connecting To Your Cassandra Cluster
 ------------------------------------
 
-First, use a `ClusterMapper` to pull down a list of nodes in your cluster from a
-seed host:
+First create a cluster object, passing in a list of seed hosts. By default, when
+creating a connection to a Keyspace, the seed hosts will be queried for a full
+list of nodes in the cluster.
 
-    val mapper = new ClusterMapper("localhost")
+    val cluster = new Cluster("host1", "host2")
 
-(If you have some nodes with dramatically different latency—e.g., in another
-data center–or if you have a huge cluster, you can always manually specify the
-nodes the client should connect to.)
-
-Then create a `Cluster` instance which will maintain per-node connection pools
+Then create a `Keyspace` instance which will maintain per-node connection pools
 of 1 to 5 connections (removing idle connections after 60 seconds), retry failed
 queries up to 5 times, and which will not send queries to a node for 10 seconds
 after 3 queries have failed:
 
-    val cluster = new Cluster(
-      mapper.hosts(),
+    val keyspace = cluster.keyspace(
+      "MyCassieApp",
+      performMapping = true,
       retryAttempts = 5,
       partialFailureThreshold = 3,
       downTimeoutInMS = 10000,
@@ -53,7 +52,12 @@ after 3 queries have failed:
       removeAfterIdleForMS = 60000
     )
 
-This `Cluster` will balance requests across the nodes in a round-robin way,
+(If you have some nodes with dramatically different latency—e.g., in another
+data center–or if you have a huge cluster, you can disable cluster mapping via
+"performMapping = false" in which case clients will connect directly to the seed
+hosts passed to "new Cluster".)
+
+This `Keyspace` will balance requests across the nodes in a round-robin way,
 which should distribute load effectively.
 
 
@@ -85,8 +89,8 @@ For example, take adding a column to a column family of UTF-8 strings:
     
     strings.insert("newstring", Column("colname", "colvalue"))
 
-The `insert` method looks for an implicit parameter of type `Codec[String]` to
-convert both the name and the value to byte arrays. In this case, the `codecs`
+The `insert` method looks for implicit parameters of type `Codec[String]` to
+convert the key, name and value to byte arrays. In this case, the `codecs`
 package already provides `Utf8Codec` as an implicit parameter, so the conversion
 is seamless. Cassie handles `String` and `Array[Byte]` instances out of the box,
 and also provides some useful non-standard types:
@@ -100,19 +104,16 @@ and also provides some useful non-standard types:
   [Avro](http://hadoop.apache.org/avro/)'s variable-length integer encoding
 
 These types also have implicit conversions defined, so if you have an instance
-of `ColumnFamily[String, VarLong]` you can use regular `Long`s.
+of `ColumnFamily[String, String, VarLong]` you can use regular `Long`s.
 
 
 Accessing Column Families
 -------------------------
 
-Once you've got a `Cluster` instance, you can load your keyspace and column
-families:
+Once you've got a `Keyspace` instance, you can load your column families:
 
-    val keyspace = cluster.keyspace("MyCassieApp")
-    
-    val people = keyspace.columnFamily[String, String]("People")
-    val numbers = keyspace.columnFamily[String, VarInt]("People",
+    val people = keyspace.columnFamily[String, String, String]("People")
+    val numbers = keyspace.columnFamily[String, String, VarInt]("People",
                     defaultReadConsistency = ReadConsistency.One,
                     defaultWriteConsistency = WriteConsistency.Any)
 
@@ -137,7 +138,7 @@ exist, `None` is returned.
 If you need a column with a name or value of a different type than the
 `ColumnFamily`, you can use `getColumnAs`:
     
-    people.getColumnAs[String, VarLong]("codahale", "name")
+    people.getColumnAs[String, String, VarLong]("codahale", "name")
 
 This will return an `Option[Column[String, VarLong]]`.
 
@@ -149,7 +150,7 @@ This returns a `Map[Name, Column[Name, Value]]`, where each column is mapped by
 its name. Again, `getColumnsAs` provides a way for reading column names and
 values of different types:
     
-    people.getColumnsAs[FixedLong, Array[Byte]]("things", Set(1, 2, 3))
+    people.getColumnsAs[String, FixedLong, Array[Byte]]("things", Set(1, 2, 3))
 
 If you want to get all columns of a row, that's cool too:
     
@@ -162,7 +163,7 @@ Cassie also supports multiget for columns and sets of columns:
     people.multigetColumn(Set("codahale", "darlingnikles"), "name")
     people.multigetColumns(Set("codahale", "darlingnikles"), Set("name", "motto"))
 
-`multigetColumn` returns a `Map[String, Map[Name, Column[Name, Value]]]` which
+`multigetColumn` returns a `Map[Key, Map[Name, Column[Name, Value]]]` which
 maps row keys to column names to columns. `multigetColumnAs` and
 `multigetColumnsAs` do the usual for specifying column name and value types.
 
