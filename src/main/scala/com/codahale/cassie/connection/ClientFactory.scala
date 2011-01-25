@@ -11,7 +11,7 @@ import com.codahale.logula.Logging
  *
  * @author coda
  */
-class ClientFactory(val host: InetSocketAddress, val timeoutMS: Int) extends Logging {
+class ClientFactory(val host: InetSocketAddress, val keyspace: String, val timeoutMS: Int) extends Logging {
 
   /**
    * Opens a new client connection to `host`.
@@ -23,7 +23,9 @@ class ClientFactory(val host: InetSocketAddress, val timeoutMS: Int) extends Log
     val socket = new TSocket(host.getHostName, host.getPort)
     socket.setTimeout(timeoutMS)
     socket.open()
-    new Client(new TBinaryProtocol(socket))
+    val client = new Client(new TBinaryProtocol(socket))
+    client.set_keyspace(keyspace)
+    client
   }
 
   /**

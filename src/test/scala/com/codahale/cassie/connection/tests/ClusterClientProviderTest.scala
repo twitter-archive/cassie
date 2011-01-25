@@ -49,6 +49,7 @@ class ClusterClientProviderTest extends Spec with MustMatchers with BeforeAndAft
   describe("a cluster") {
     val provider = new ClusterClientProvider(
       hosts,
+      "spaceman",
       retryAttempts = 3,
       readTimeoutInMS = 10000,
       partialFailureThreshold = 2,

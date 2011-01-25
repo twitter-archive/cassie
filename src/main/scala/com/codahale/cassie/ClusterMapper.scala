@@ -18,7 +18,7 @@ import scalaj.collection.Imports._
  * @author coda
  */
 private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
-  private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort), timeoutMS)
+  private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort), keyspace, timeoutMS)
 
   /**
    * Returns the set of addresses of the nodes in the cluster.

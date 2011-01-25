@@ -25,6 +25,7 @@ import org.apache.cassandra.thrift.Cassandra.Client
  * @author coda
  */
 class ClusterClientProvider(val hosts: Set[InetSocketAddress],
+                            val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
                             val partialFailureThreshold: Int = 3,
@@ -33,7 +34,7 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
   private val pools = hosts.map { h =>
-    val clientFactory = new ClientFactory(h, readTimeoutInMS)
+    val clientFactory = new ClientFactory(h, keyspace, readTimeoutInMS)
     val factory = new ConnectionFactory(clientFactory)
     val pool = new ConnectionPool(factory, minConnectionsPerHost,
                                   maxConnectionsPerHost, removeAfterIdleForMS)

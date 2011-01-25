@@ -28,7 +28,7 @@ class ConnectionPoolTest extends Spec
   describe("a connection pool") {
     Logging.configure(_.level = Level.OFF)
 
-    val clientFactory = new ClientFactory(new InetSocketAddress("0.0.0.0", server.port), 1000)
+    val clientFactory = new ClientFactory(new InetSocketAddress("0.0.0.0", server.port), "spaceman", 1000)
     val factory = new ConnectionFactory(clientFactory)
     val pool = new ConnectionPool(factory, 2, 4, 500)
 
