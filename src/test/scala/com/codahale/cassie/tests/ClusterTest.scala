@@ -8,14 +8,12 @@ import com.codahale.cassie.connection.ClientProvider
 
 class ClusterTest extends Spec with MustMatchers with MockitoSugar {
   describe("a cluster") {
-    val provider = mock[ClientProvider]
-    val cluster = new Cluster(provider)
+    val cluster = new Cluster("nonhost")
 
     it("creates a keyspace with the given name and provider") {
-      val ks = cluster.keyspace("poop")
+      val ks = cluster.keyspace("poop", performMapping = false)
 
       ks.name must equal("poop")
-      ks.provider must equal(provider)
     }
   }
 }

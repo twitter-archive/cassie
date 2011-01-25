@@ -6,6 +6,7 @@ import connection.ClientProvider
 /**
  * A Cassandra keyspace.
  *
+ * @param provider a [[com.codahale.cassie.connection.ClientProvider]] instance
  * @author coda
  */
 class Keyspace(val name: String, val provider: ClientProvider) {

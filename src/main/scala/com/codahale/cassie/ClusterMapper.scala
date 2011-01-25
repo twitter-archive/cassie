@@ -10,12 +10,14 @@ import scalaj.collection.Imports._
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
  *
+ * TODO: Accept a set of seedHosts
+ *
  * @param keyspace the keyspace to map
  * @param seedHost the hostname of the seed node
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
+private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
   private val factory = new ClientFactory(new InetSocketAddress(seedHost, seedPort), timeoutMS)
 
   /**

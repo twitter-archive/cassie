@@ -6,33 +6,40 @@ import java.net.InetSocketAddress
 /**
  * A Cassandra cluster.
  *
- * @param provider a [[com.codahale.cassie.connection.ClientProvider]] instance
+ * @param hosts A set of seed hosts for a cluster: the set of hosts for a particular
+ *        keyspace can optionally be determined via mapping.
  * @author coda
  */
-class Cluster(provider: ClientProvider) {
+class Cluster(seedHosts: Set[String], seedPort: Int) {
+
+  def this(seedHosts: String*) = this(seedHosts.toSet, 9160)
 
   /**
-   * Returns a [[com.codahale.cassie.Cluster]] instance with a
+   * Returns a [[com.codahale.cassie.Keyspace]] instance with a
    * [[com.codahale.cassie.connection.ClusterClientProvider]] with the provided
    * options.
-   *
+   * @param name the keyspace's name
+   * @param performMapping true to expand the cluster's list of seeds into a full
+   *        list of hosts; false if the seed list should be used directly
    * @see com.codahale.cassie.connection.ClusterClientProvider
    */
-  def this(hosts: Set[InetSocketAddress],
-           retryAttempts: Int = 5,
-           readTimeoutInMS: Int = 10000,
-           partialFailureThreshold: Int = 3,
-           downTimeoutInMS: Int = 10000,
-           minConnectionsPerHost: Int = 1,
-           maxConnectionsPerHost: Int = 5,
-           removeAfterIdleForMS: Int = 60000) = {
-    this(new ClusterClientProvider(hosts, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS))
-  }
+  def keyspace(name: String,
+               performMapping: Boolean = true,
+               retryAttempts: Int = 5,
+               readTimeoutInMS: Int = 10000,
+               partialFailureThreshold: Int = 3,
+               downTimeoutInMS: Int = 10000,
+               minConnectionsPerHost: Int = 1,
+               maxConnectionsPerHost: Int = 5,
+               removeAfterIdleForMS: Int = 60000) = {
+    val hosts = if (performMapping)
+      // either map the cluster for this keyspace
+      new ClusterMapper(name, seedHosts.head).hosts
+    else
+      // or connect directly to the hosts that were given as seeds
+      seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
 
-  /**
-   * Returns a [[com.codahale.cassie.Keyspace]] with the given name.
-   *
-   * @param name the keyspace's name
-   */
-  def keyspace(name: String) = new Keyspace(name, provider)
+    val ccp = new ClusterClientProvider(hosts, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS)
+    new Keyspace(name, ccp)
+  }
 }

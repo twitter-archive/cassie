@@ -12,12 +12,12 @@ object CassieRun extends Logging {
 
     implicit val clock = MicrosecondEpochClock
 
-    // pull down data about all the nodes participating in the cluster for a keyspace
-    val mapper = new ClusterMapper("Keyspace1", "localhost", 9160)
+    // create a cluster with a single seed from which to map keyspaces
+    val cluster = new Cluster("localhost")
 
-    // create a cluster
-    val cluster = new Cluster(
-      mapper.hosts(),
+    // create a keyspace
+    val keyspace = cluster.keyspace(
+      "Keyspace1",
       retryAttempts = 5,
       readTimeoutInMS = 1000,
       partialFailureThreshold = 2,
@@ -26,9 +26,6 @@ object CassieRun extends Logging {
       maxConnectionsPerHost = 10,
       removeAfterIdleForMS = 60000
     )
-
-    // create a keyspace
-    val keyspace = cluster.keyspace("Keyspace1")
 
     // create a column family
     val cass = keyspace.columnFamily[String, String]("Standard1")
