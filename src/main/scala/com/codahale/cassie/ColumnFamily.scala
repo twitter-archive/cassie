@@ -12,19 +12,22 @@ import java.nio.ByteBuffer
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
  *
+ * TODO: add copy methods for codecs
+ *
  * @author coda
  */
-case class ColumnFamily[Key, Name, Value](keyspace: String,
-                                          name: String,
-                                          provider: ClientProvider,
-                                          readConsistency: ReadConsistency,
-                                          writeConsistency: WriteConsistency,
-                                          defaultKeyCodec: Codec[Key],
-                                          defaultNameCodec: Codec[Name],
-                                          defaultValueCodec: Codec[Value])
-        extends Logging {
+case class ColumnFamily[Key, Name, Value](
+    keyspace: String,
+    name: String,
+    provider: ClientProvider,
+    defaultKeyCodec: Codec[Key],
+    defaultNameCodec: Codec[Name],
+    defaultValueCodec: Codec[Value],
+    readConsistency: ReadConsistency = ReadConsistency.Quorum,
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum)
+  extends Logging {
 
-  val EMPTY = ByteBuffer.allocate(0)
+  import ColumnFamily._
 
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
@@ -329,4 +332,9 @@ case class ColumnFamily[Key, Name, Value](keyspace: String,
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
     provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }().asScala
   }
+}
+
+private object ColumnFamily
+{
+  val EMPTY = ByteBuffer.allocate(0)
 }

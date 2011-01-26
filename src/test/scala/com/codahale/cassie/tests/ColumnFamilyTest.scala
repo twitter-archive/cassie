@@ -44,8 +44,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(new ArrayList[thrift.ColumnOrSuperColumn]))
     when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(new HashMap[ByteBuffer,List[thrift.ColumnOrSuperColumn]]))
     val provider = SimpleProvider(client)
-    val cf = new ColumnFamily("ks", "cf", provider, ReadConsistency.Quorum, WriteConsistency.Quorum,
-      Utf8Codec, Utf8Codec, Utf8Codec)
+    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec, Utf8Codec)
 
     (client, cf)
   }

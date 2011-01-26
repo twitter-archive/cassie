@@ -18,6 +18,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
       cf.name must equal("People")
       cf.readConsistency must equal(ReadConsistency.Quorum)
       cf.writeConsistency must equal(WriteConsistency.Quorum)
+      cf.defaultKeyCodec must equal(Utf8Codec)
       cf.defaultNameCodec must equal(Utf8Codec)
       cf.defaultValueCodec must equal(Utf8Codec)
       cf.provider must equal(provider)
