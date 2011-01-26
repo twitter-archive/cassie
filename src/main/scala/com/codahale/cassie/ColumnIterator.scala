@@ -21,7 +21,6 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
                                        val endKey: ByteBuffer,
                                        val batchSize: Int,
                                        val predicate: SlicePredicate,
-                                       val consistency: ReadConsistency,
                                        val keyCodec: Codec[Key],
                                        val nameCodec: Codec[Name],
                                        val valueCodec: Codec[Value])
@@ -51,7 +50,7 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
 
   private def getNextSlice() {
     val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)
-    val slice = cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate, consistency)
+    val slice = cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate)
     val filterPred = (ks: KeySlice) => lastKey.map { _ == ks.key }.getOrElse(false)
     buffer ++= slice.filterNot(filterPred).flatMap { ks =>
       ks.columns.asScala.map { col =>

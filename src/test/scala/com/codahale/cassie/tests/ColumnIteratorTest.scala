@@ -6,7 +6,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
 import collection.mutable.ArrayBuffer
-import com.codahale.cassie.{Column, ReadConsistency, ColumnFamily, ColumnIterator}
+import com.codahale.cassie.{Column, ColumnFamily, ColumnIterator}
 import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.thrift
@@ -30,9 +30,9 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
     val predicate = mock[thrift.SlicePredicate]
 
     val cf = mock[ColumnFamily[String, String, String]]
-    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate), matchEq(ReadConsistency.Quorum))).thenReturn(List[thrift.KeySlice]())
+    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(List[thrift.KeySlice]())
 
-    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
+    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec)
 
     it("doesn't throw an error") {
       iterator.foreach { _ => () }
@@ -59,7 +59,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
     val predicate = mock[thrift.SlicePredicate]
 
     val cf = mock[ColumnFamily[String, String, String]]
-    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate), matchEq(ReadConsistency.Quorum))).thenReturn(
+    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(
       List(slice),
       List(slice1),
       List(slice2),
@@ -67,7 +67,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
       List(slice3)
     )
 
-    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, ReadConsistency.Quorum, Utf8Codec, Utf8Codec, Utf8Codec)
+    val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec)
 
     it("does a buffered iteration over the columns in the rows in the range") {
       val results = new ArrayBuffer[(String, Column[String, String])]
@@ -90,11 +90,11 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
       iterator.foreach { _ => () }
 
       val inOrder = inOrderVerify(cf)
-      inOrder.verify(cf).getRangeSlice(b("start"), b("end"), 6, predicate, ReadConsistency.Quorum)
-      inOrder.verify(cf).getRangeSlice(b("start"), b("end"), 5, predicate, ReadConsistency.Quorum)
-      inOrder.verify(cf).getRangeSlice(b("start1"), b("end"), 5, predicate, ReadConsistency.Quorum)
-      inOrder.verify(cf).getRangeSlice(b("start2"), b("end"), 5, predicate, ReadConsistency.Quorum)
-      inOrder.verify(cf).getRangeSlice(b("start3"), b("end"), 5, predicate, ReadConsistency.Quorum)
+      inOrder.verify(cf).getRangeSlice(b("start"), b("end"), 6, predicate)
+      inOrder.verify(cf).getRangeSlice(b("start"), b("end"), 5, predicate)
+      inOrder.verify(cf).getRangeSlice(b("start1"), b("end"), 5, predicate)
+      inOrder.verify(cf).getRangeSlice(b("start2"), b("end"), 5, predicate)
+      inOrder.verify(cf).getRangeSlice(b("start3"), b("end"), 5, predicate)
     }
   }
 }
