@@ -1,6 +1,7 @@
 package com.codahale.cassie.connection
 
-import org.apache.cassandra.thrift.Cassandra.Client
+import com.twitter.util.Future
+import org.apache.cassandra.thrift.Cassandra.ServiceToClient
 
 /**
  * A utility interface for classes which pass a Cassandra `Client` instance to
@@ -15,5 +16,5 @@ trait ClientProvider {
    * @param f the function to which the `Client` is passed
    * @return `f(client)`
    */
-  def map[A](f: Client => A): A
+  def map[A](f: ServiceToClient => Future[A]): Future[A]
 }

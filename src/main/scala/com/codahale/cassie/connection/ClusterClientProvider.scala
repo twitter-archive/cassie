@@ -1,7 +1,13 @@
 package com.codahale.cassie.connection
 
 import java.net.InetSocketAddress
-import org.apache.cassandra.thrift.Cassandra.{ServiceToClient => Client}
+import java.util.concurrent.TimeUnit
+import org.apache.cassandra.thrift.Cassandra.ServiceToClient
+import org.apache.thrift.protocol.TBinaryProtocol
+import com.twitter.finagle.builder.ClientBuilder
+import com.twitter.finagle.thrift.ThriftFramedTransportCodec
+import com.twitter.util.Duration
+import com.twitter.util.Future
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -11,10 +17,6 @@ import org.apache.cassandra.thrift.Cassandra.{ServiceToClient => Client}
  * @param readTimeoutInMS the amount of time, in milliseconds, the client will
  *                        wait for a response from the server before considering
  *                        the query to have failed
- * @param partialFailureThreshold the number of failed queries in a row a node
- *                                must return before being marked down
- * @param downTimeoutInMS how long, in milliseconds, a node should be marked as
- *                        down before allowing a recovery query to be processed
  * @param minConnectionsPerHost the minimum number of connections to maintain to
  *                              the node
  * @param maxConnectionsPerHost the maximum number of connections to maintain to
@@ -29,20 +31,21 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
-                            val partialFailureThreshold: Int = 3,
-                            val downTimeoutInMS: Int = 10000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
-                            val removeAfterIdleForMS: Int = 60000,
-                            val framed: Boolean = true) extends ClientProvider {
-  private val pools = hosts.map { h =>
-    val clientFactory = new ClientFactory(h, keyspace, readTimeoutInMS, framed)
-    val factory = new ConnectionFactory(clientFactory)
-    val pool = new ConnectionPool(factory, minConnectionsPerHost,
-                                  maxConnectionsPerHost, removeAfterIdleForMS)
-    new FailureAwareConnectionPool(pool, partialFailureThreshold, downTimeoutInMS)
-  }
-  private val balancer = new RoundRobinLoadBalancer(pools, retryAttempts)
+                            val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
+  
+  private val service = ClientBuilder()
+      .hosts(hosts.toSeq)
+      .codec(ThriftFramedTransportCodec())
+      .retries(retryAttempts)
+      .requestTimeout(Duration(readTimeoutInMS, TimeUnit.MILLISECONDS))
+      .hostConnectionCoresize(minConnectionsPerHost)
+      .hostConnectionLimit(maxConnectionsPerHost)
+      .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
+      .build()
 
-  def map[A](f: Client => A) = balancer.map(f)
+  private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
+
+  def map[A](f: ServiceToClient => Future[A]) = f(client)
 }

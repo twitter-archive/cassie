@@ -40,7 +40,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       // or connect directly to the hosts that were given as seeds
       seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
 
-    val ccp = new ClusterClientProvider(hosts, name, retryAttempts, readTimeoutInMS, partialFailureThreshold, downTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS, framed)
+    val ccp = new ClusterClientProvider(hosts, name, retryAttempts, readTimeoutInMS, minConnectionsPerHost, maxConnectionsPerHost, removeAfterIdleForMS)
     new Keyspace(name, ccp)
   }
 }

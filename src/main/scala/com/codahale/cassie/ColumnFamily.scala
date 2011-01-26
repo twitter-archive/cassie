@@ -154,9 +154,9 @@ class ColumnFamily[Key, Name, Value](val keyspace: String,
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, consistency.level)
     val encodedKeys = keys.toList.map { keyCodec.encode(_) }.asJava
     val result = provider.map {
-      _.multiget_slice(encodedKeys, cp, pred, consistency.level).asScala
+      _.multiget_slice(encodedKeys, cp, pred, consistency.level)
     }
-    return result.map {
+    return result().asScala.map {
       case (k, v) => (keyCodec.decode(k), v.asScala.map { r => Column.convert(nameCodec, valueCodec, r).pair }.toMap)
     }.toMap
   }
@@ -341,7 +341,7 @@ class ColumnFamily[Key, Name, Value](val keyspace: String,
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, consistency.level)
     val result = provider.map { _.get_slice(keyCodec.encode(key), cp, pred, consistency.level) }
-    result.asScala.map { r => Column.convert(nameCodec, valueCodec, r).pair }.toMap
+    result().asScala.map { r => Column.convert(nameCodec, valueCodec, r).pair }.toMap
   }
 
   private[cassie] def getRangeSlice(startKey: ByteBuffer,
@@ -354,6 +354,6 @@ class ColumnFamily[Key, Name, Value](val keyspace: String,
     range.setStart_key(startKey)
     range.setEnd_key(endKey)
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, consistency.level)
-    provider.map { _.get_range_slices(cp, predicate, range, consistency.level) }.asScala
+    provider.map { _.get_range_slices(cp, predicate, range, consistency.level) }().asScala
   }
 }
