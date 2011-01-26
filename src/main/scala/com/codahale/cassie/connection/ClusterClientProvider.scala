@@ -48,4 +48,6 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 
   def map[A](f: ServiceToClient => Future[A]) = f(client)
+
+  def close() = service.close()
 }

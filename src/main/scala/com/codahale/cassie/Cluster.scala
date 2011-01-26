@@ -35,7 +35,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
                framed: Boolean = true) = {
     val hosts = if (performMapping)
       // either map the cluster for this keyspace
-      new ClusterMapper(name, seedHosts.head).hosts
+      new ClusterMapper(name, seedHosts.head).perform
     else
       // or connect directly to the hosts that were given as seeds
       seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
