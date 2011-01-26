@@ -35,27 +35,25 @@ First create a cluster object, passing in a list of seed hosts. By default, when
 creating a connection to a Keyspace, the seed hosts will be queried for a full
 list of nodes in the cluster.
 
-    val cluster = new Cluster("host1", "host2")
+    val cluster = new Cluster("host1,host2")
 
 Then create a `Keyspace` instance which will maintain per-node connection pools
 of 1 to 5 connections (removing idle connections after 60 seconds), retry failed
 queries up to 5 times, and which will not send queries to a node for 10 seconds
 after 3 queries have failed:
 
-    val keyspace = cluster.keyspace(
-      "MyCassieApp",
-      performMapping = true,
-      retryAttempts = 5,
-      partialFailureThreshold = 3,
-      downTimeoutInMS = 10000,
-      minConnectionsPerHost = 1,
-      maxConnectionsPerHost = 5,
-      removeAfterIdleForMS = 60000
-    )
+    val keyspace = cluster.keyspace("MyCassieApp")
+      .performMapping(true)
+      .retryAttempts(5)
+      .readTimeoutInMS(5000)
+      .minConnectionsPerHost(1)
+      .maxConnectionsPerHost(10)
+      .removeAfterIdleForMS(60000)
+      .connect()
 
 (If you have some nodes with dramatically different latency—e.g., in another
-data center–or if you have a huge cluster, you can disable cluster mapping via
-"performMapping = false" in which case clients will connect directly to the seed
+data center–or if you have a huge cluster, you can disable keyspace mapping via
+"performMapping(false)" in which case clients will connect directly to the seed
 hosts passed to "new Cluster".)
 
 This `Keyspace` will balance requests across the nodes in a round-robin way,

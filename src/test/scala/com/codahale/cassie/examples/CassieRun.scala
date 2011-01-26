@@ -16,16 +16,13 @@ object CassieRun extends Logging {
     val cluster = new Cluster("localhost")
 
     // create a keyspace
-    val keyspace = cluster.keyspace(
-      "Keyspace1",
-      retryAttempts = 5,
-      readTimeoutInMS = 1000,
-      partialFailureThreshold = 2,
-      downTimeoutInMS = 10000,
-      minConnectionsPerHost = 1,
-      maxConnectionsPerHost = 10,
-      removeAfterIdleForMS = 60000
-    )
+    val keyspace = cluster.keyspace("Keyspace1")
+      .retryAttempts(5)
+      .readTimeoutInMS(5000)
+      .minConnectionsPerHost(1)
+      .maxConnectionsPerHost(10)
+      .removeAfterIdleForMS(60000)
+      .connect()
 
     // create a column family
     val cass = keyspace.columnFamily[String, String, String]("Standard1")
