@@ -149,6 +149,9 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a map of keys to a map of column names to the columns for a given
    * set of keys and columns as the given types.
    */
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   def multigetColumnsAs[K, N, V](keys: Set[K],
                               columnNames: Set[N])
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Map[N, Column[N, V]]] = {
@@ -185,6 +188,9 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Inserts a column.
    */
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   def insert[K, N, V](key: K,
                    column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) {
@@ -208,6 +214,9 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Removes a column from a key with a specific timestamp.
    */
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   def removeColumnWithTimestamp[K, N](key: K,
                                       columnName: N,
                                       timestamp: Long)
@@ -250,6 +259,9 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Removes a key with a specific timestamp.
    */
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   def removeRowWithTimestamp(key: Key,
                              timestamp: Long) {
     val cp = new thrift.ColumnPath(name)
@@ -260,6 +272,9 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Performs a series of actions in a single request.
    */
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   def batch()
            (build: BatchMutationBuilder => Unit) {
     val builder = new BatchMutationBuilder(name)
@@ -326,6 +341,9 @@ case class ColumnFamily[Key, Name, Value](
     columnsIteratorAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
                                 keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N,Column[N,V]] = {
@@ -341,6 +359,9 @@ case class ColumnFamily[Key, Name, Value](
     cols
   }
 
+  @throws(classOf[thrift.TimedOutException])
+  @throws(classOf[thrift.UnavailableException])
+  @throws(classOf[thrift.InvalidRequestException])
   private[cassie] def getRangeSlice(startKey: ByteBuffer,
                                     endKey: ByteBuffer,
                                     count: Int,
