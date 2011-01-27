@@ -13,7 +13,6 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
   val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
-  val pool = "commons-pool" % "commons-pool" % "1.5.4" withSources() intransitive()
   val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
 
   val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0"
@@ -37,6 +36,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
    */
   val scalaTest =  "org.scalatest" % "scalatest" % "1.2" % "test" withSources() intransitive()
   val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test" withSources()
+  val junitInterface = "com.novocode" % "junit-interface" % "0.5" % "test->default"
 
   /**
    * Build Options

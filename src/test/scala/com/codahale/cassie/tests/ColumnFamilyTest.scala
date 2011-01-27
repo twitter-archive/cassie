@@ -14,22 +14,11 @@ import java.nio.ByteBuffer
 import com.codahale.cassie.clocks.Clock
 import thrift.Mutation
 import com.codahale.cassie._
-import connection.ClientProvider
-import com.twitter.util.{Future, Promise}
+
+import MockCassandraClient._
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
-  case class SimpleProvider(client: ServiceToClient) extends ClientProvider {
-    def map[A](f: ServiceToClient => Future[A]) = f(client)
-  }
 
-  case class Fulfillment[A](result: A) extends Promise[A] {
-    setValue(result)
-  }
-
-  def anyByteBuffer = any(classOf[ByteBuffer])
-  def anyColumnParent = any(classOf[thrift.ColumnParent])
-  def anySlicePredicate = any(classOf[thrift.SlicePredicate])
-  def anyConsistencyLevel = any(classOf[thrift.ConsistencyLevel])
   def newColumn(name: String, value: String, timestamp: Long) = {
     val cosc = new thrift.ColumnOrSuperColumn
     cosc.setColumn(new thrift.Column(Utf8Codec.encode(name), Utf8Codec.encode(value), timestamp))
@@ -38,15 +27,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   def b(keyString: String) = ByteBuffer.wrap(keyString.getBytes)
 
   def setup = {
-    import java.util._
-    val client = mock[ServiceToClient]
-    // stub out some standard cases
-    when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(new ArrayList[thrift.ColumnOrSuperColumn]))
-    when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(new HashMap[ByteBuffer,List[thrift.ColumnOrSuperColumn]]))
-    val provider = SimpleProvider(client)
-    val cf = new ColumnFamily("ks", "cf", provider, Utf8Codec, Utf8Codec, Utf8Codec)
-
-    (client, cf)
+    val mcc = new MockCassandraClient
+    (mcc.client, mcc.cf)
   }
 
   describe("getting a columns for a key") {
@@ -71,7 +53,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     it("returns a option of a column if it exists") {
       val columns = newColumn("name", "Coda", 2292L) :: Nil
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
 
       cf.getColumn("key", "name") must equal(Some(Column("name", "Coda", 2292L)))
     }
@@ -96,7 +78,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val columns = newColumn("name", "Coda", 2292L) ::
                     newColumn("age", "old", 11919L) :: Nil
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
 
       cf.getRow("key") must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
@@ -142,7 +124,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val columns = newColumn("name", "Coda", 2292L) ::
                     newColumn("age", "old", 11919L) :: Nil
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
 
       cf.getColumns("key", Set("name", "age")) must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
@@ -172,7 +154,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
         b("key2") -> (newColumn("name", "Niki", 422L) :: Nil).asJava
       ).asJava
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
 
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L),
@@ -186,7 +168,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
         b("key2") -> Nil.asInstanceOf[List[thrift.ColumnOrSuperColumn]].asJava
       ).asJava
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
 
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L)
@@ -217,7 +199,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
                     newColumn("age", "lithe", 129L) :: Nil).asJava
       ).asJava
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
 
       cf.multigetColumns(Set("key1", "key2"), Set("name", "age")) must equal(Map(
         "key1" -> Map(
