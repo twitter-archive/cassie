@@ -23,8 +23,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   /**
    * Twitter specific deps
    */
-  val finagle = "com.twitter" % "finagle" % "1.1.3" 
-  val finagleThrift = "com.twitter" % "finagle-thrift" % "1.1.3" 
+  val finagle = "com.twitter" % "finagle" % "1.1.8" 
+  val finagleThrift = "com.twitter" % "finagle-thrift" % "1.1.8"
   val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.2" % "provided" 
 
   /**

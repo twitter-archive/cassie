@@ -4,8 +4,10 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import org.apache.cassandra.thrift.Cassandra.ServiceToClient
 import org.apache.thrift.protocol.TBinaryProtocol
+import com.twitter.finagle.channel.ChannelService
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.thrift.ThriftFramedTransportCodec
+import com.twitter.finagle.Protocol
+import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
 
@@ -34,10 +36,10 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
-  
+
   private val service = ClientBuilder()
       .hosts(hosts.toSeq)
-      .codec(ThriftFramedTransportCodec())
+      .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
       .requestTimeout(Duration(readTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
@@ -50,4 +52,15 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
   def map[A](f: ServiceToClient => Future[A]) = f(client)
 
   def close() = service.close()
+
+  case class CassandraProtocol(keyspace: String) extends Protocol[ThriftClientRequest, Array[Byte]]
+  {
+    def codec = ThriftClientFramedCodec()
+    override def prepareChannel(cs: ChannelService[ThriftClientRequest, Array[Byte]]) = {
+      // perform connection setup
+      val client = new ServiceToClient(cs, new TBinaryProtocol.Factory())
+
+      client.set_keyspace(keyspace).map{ _ => cs }
+    }
+  }
 }
