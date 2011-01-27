@@ -24,7 +24,7 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
                                        val keyCodec: Codec[Key],
                                        val nameCodec: Codec[Name],
                                        val valueCodec: Codec[Value])
-        extends Iterator[(Key, Column[Name, Value])] with Logging {
+        extends java.util.Iterator[(Key, Column[Name, Value])] with Logging {
   private var lastKey: Option[ByteBuffer] = None
   private var cycled = false
   private val buffer = new ArrayBuffer[(Key, Column[Name, Value])]
@@ -47,6 +47,8 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
       !buffer.isEmpty
     }
   }
+
+  def remove() = throw new UnsupportedOperationException()
 
   private def getNextSlice() {
     val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)

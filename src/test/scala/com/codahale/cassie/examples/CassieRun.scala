@@ -5,6 +5,8 @@ import clocks.MicrosecondEpochClock
 import com.codahale.logula.Logging
 import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
+// TODO: unfortunate
+import scala.collection.JavaConversions.asIterator
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
@@ -68,7 +70,7 @@ object CassieRun extends Logging {
     cass.insert("digits", Column[VarInt, VarInt](1, 300))
 
     log.info("Iterating!")
-    for ((key, col) <- cass.rowIterator(2)) {
+    for ((key, col) <- cass.rowIterator(2): Iterator[(String, Column[String, String])]) {
       log.info("Found: %s", col)
     }
 

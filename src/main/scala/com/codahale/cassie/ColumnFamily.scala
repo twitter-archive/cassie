@@ -8,6 +8,8 @@ import org.apache.cassandra.thrift
 import com.codahale.logula.Logging
 import java.nio.ByteBuffer
 
+import java.util.{ArrayList, HashMap, Iterator, List, Map}
+
 /**
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
@@ -39,7 +41,7 @@ case class ColumnFamily[Key, Name, Value](
   def getColumnAs[K, N, V](key: K,
                            columnName: N)
                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Option[Column[N, V]] = {
-    getColumnsAs(key, Set(columnName))(keyCodec, nameCodec, valueCodec).get(columnName)
+    Option(getColumnsAs(key, Set(columnName))(keyCodec, nameCodec, valueCodec).get(columnName))
   }
 
   /**
@@ -125,9 +127,13 @@ case class ColumnFamily[Key, Name, Value](
   def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Column[N, V]] = {
-    multigetColumnsAs[K, N, V](keys, Set(columnName))(keyCodec, nameCodec, valueCodec).flatMap { case (k, m) =>
-      m.get(columnName).map { v => (k, v) }
-    }
+    val rows = multigetColumnsAs[K, N, V](keys, Set(columnName))(keyCodec, nameCodec, valueCodec)
+      
+    val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
+    for (rowEntry <- rows.entrySet.asScala)
+      if (!rowEntry.getValue.isEmpty)
+        cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
+    cols
   }
 
   /**
@@ -153,10 +159,18 @@ case class ColumnFamily[Key, Name, Value](
     val encodedKeys = keys.toList.map { keyCodec.encode(_) }.asJava
     val result = provider.map {
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
+    }()
+    // decode result
+    val rows: Map[K, Map[N, Column[N, V]]] = new HashMap(result.size)
+    for (rowEntry <- result.entrySet.asScala) {
+      val cols: Map[N, Column[N, V]] = new HashMap(rowEntry.getValue.size)
+      for (cosc <- rowEntry.getValue.asScala) {
+        val col = Column.convert(nameCodec, valueCodec, cosc)
+        cols.put(col.name, col)
+      }
+      rows.put(keyCodec.decode(rowEntry.getKey), cols)
     }
-    return result().asScala.map {
-      case (k, v) => (keyCodec.decode(k), v.asScala.map { r => Column.convert(nameCodec, valueCodec, r).pair }.toMap)
-    }.toMap
+    rows
   }
 
   /**
@@ -314,11 +328,17 @@ case class ColumnFamily[Key, Name, Value](
 
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
-                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
+                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N,Column[N,V]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    val result = provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
-    result().asScala.map { r => Column.convert(nameCodec, valueCodec, r).pair }.toMap
+    val result = provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }()
+
+    val cols: Map[N,Column[N,V]] = new HashMap(result.size)
+    for (cosc <- result.iterator) {
+      val col = Column.convert(nameCodec, valueCodec, cosc)
+      cols.put(col.name, col)
+    }
+    cols
   }
 
   private[cassie] def getRangeSlice(startKey: ByteBuffer,

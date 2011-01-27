@@ -101,7 +101,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.getRow("key") must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ))
+      ).asJava)
     }
   }
 
@@ -147,7 +147,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.getColumns("key", Set("name", "age")) must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ))
+      ).asJava)
     }
   }
 
@@ -177,7 +177,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L),
         "key2" -> Column("name", "Niki", 422L)
-      ))
+      ).asJava)
     }
 
     it("does not explode when the column doesn't exist for a key") {
@@ -190,7 +190,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L)
-      ))
+      ).asJava)
     }
   }
 
@@ -223,12 +223,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
         "key1" -> Map(
           "name" -> Column("name", "Coda", 2292L),
           "age" -> Column("age", "old", 11919L)
-        ),
+        ).asJava,
         "key2" -> Map(
           "name" -> Column("name", "Niki", 422L),
           "age" -> Column("age", "lithe", 129L)
-        )
-      ))
+        ).asJava
+      ).asJava)
     }
   }
 
