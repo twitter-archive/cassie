@@ -29,51 +29,51 @@ public final class CassieRun {
       .connect();
 
     // create a column family
-    ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
+    ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
 
     log.info("inserting some columns", null);
-    cass.insert("yay for me", new Column("name", "Coda"));
-    cass.insert("yay for me", new Column("motto", "Moar lean."));
+    cass.insert("yay for me", cass.newColumn("name", "Coda"));
+    cass.insert("yay for me", cass.newColumn("motto", "Moar lean."));
 
-    cass.insert("yay for you", new Column("name", "Niki"));
-    cass.insert("yay for you", new Column("motto", "Told ya."));
+    cass.insert("yay for you", cass.newColumn("name", "Niki"));
+    cass.insert("yay for you", cass.newColumn("motto", "Told ya."));
 
-    cass.insert("yay for us", new Column("name", "Biscuit"));
-    cass.insert("yay for us", new Column("motto", "Mlalm."));
+    cass.insert("yay for us", cass.newColumn("name", "Biscuit"));
+    cass.insert("yay for us", cass.newColumn("motto", "Mlalm."));
 
-    cass.insert("yay for everyone", new Column("name", "Louie"));
-    cass.insert("yay for everyone", new Column("motto", "Swish!"));
+    cass.insert("yay for everyone", cass.newColumn("name", "Louie"));
+    cass.insert("yay for everyone", cass.newColumn("motto", "Swish!"));
 
-    log.info("getting a column: %s", cass.getColumn("yay for me", "name"), null);
+    log.info("getting a column: " + cass.getColumn("yay for me", "name"), null);
     // Some(Column(name,Coda,1271789761374109))
 
-    log.info("getting a column that doesn't exist: %s", cass.getColumn("yay for no one", "name"), null);
+    log.info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name"), null);
     // None
 
-    log.info("getting a column that doesn't exist #2: %s", cass.getColumn("yay for no one", "oink"), null);
+    log.info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink"), null);
     // None
 
-    log.info("getting a set of columns: %s", cass.getColumns("yay for me", Set("name", "motto")), null);
+    log.info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")), null);
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a whole row: %s", cass.getRow("yay for me"), null);
+    log.info("getting a whole row: " + cass.getRow("yay for me"), null);
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a column from a set of keys: %s", cass.multigetColumn(Set("yay for me", "yay for you"), "name"), null);
+    log.info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name"), null);
     // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")), null);
+    log.info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")), null);
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.insert(LexicalUUID(), new Column("yay", "boo"));
+    cass.insert(LexicalUUID.create(), cass.newColumn("yay", "boo"));
 
     cass.<String, FixedLong, AsciiString>getColumnAs("key", 2);
-    cass.insert("digits", new Column<VarInt, VarInt>(1, 300));
+    cass.insertAs("digits", cass.newColumn(new VarInt(1), new VarInt(300)));
 
     log.info("Iterating!", null);
     for (Tuple2<String, Column<String,String>> row : cass.rowIterator(2)) {
-      log.info("Found: %s", row._2(), null);
+      log.info("Found: " + row._2(), null);
     }
 
     log.info("removing a column", null);
@@ -86,9 +86,9 @@ public final class CassieRun {
     cass.batch()
       .removeColumn("yay for you", "name")
       .removeColumns("yay for us", Set("name", "motto"))
-      .insert("yay for nobody", new Column("name", "Burt"))
-      .insert("yay for nobody", new Column("motto", "'S funny."))
-      .insert("bits!", new Column("motto", new FixedLong(20019L)))
+      .insert("yay for nobody", cass.newColumn("name", "Burt"))
+      .insert("yay for nobody", cass.newColumn("motto", "'S funny."))
+      .insert("bits!", cass.newColumn("motto", new FixedLong(20019L)))
       .execute();
   }
 }

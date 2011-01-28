@@ -9,6 +9,7 @@ import com.twitter.util.Future;
 import com.twitter.util.Promise;
 
 import com.codahale.cassie.ColumnFamily;
+import com.codahale.cassie.clocks.MicrosecondEpochClock;
 import com.codahale.cassie.connection.ClientProvider;
 import com.codahale.cassie.codecs.Utf8Codec;
 import com.codahale.cassie.ReadConsistency;
@@ -53,7 +54,7 @@ public final class MockCassandraClient {
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
     this.cf = new ColumnFamily("ks", "cf", new SimpleProvider(client),
         Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
-        ReadConsistency.Quorum(), WriteConsistency.Quorum());
+        ReadConsistency.Quorum(), WriteConsistency.Quorum(), MicrosecondEpochClock.get());
   }
 
   public static final class SimpleProvider implements ClientProvider {

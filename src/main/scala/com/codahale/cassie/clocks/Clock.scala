@@ -8,4 +8,7 @@ package com.codahale.cassie.clocks
  */
 trait Clock {
   def timestamp: Long
+
+  /** To conveniently get the singleton/Object from Java. */
+  def get() = this
 }

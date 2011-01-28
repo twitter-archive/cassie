@@ -27,12 +27,20 @@ case class ColumnFamily[Key, Name, Value](
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.Quorum)
+  (implicit clock: Clock)
+
   extends Logging {
 
   import ColumnFamily._
 
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
+
+  /**
+   * @Java
+   * Creates a new Column with an implicit timestamp.
+   */
+  def newColumn[N, V](n: N, v: V) = Column(n, v)
 
   /**
    * Returns the optional value of a given column for a given key as the given
@@ -191,8 +199,11 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def insert[K, N, V](key: K,
-                   column: Column[N, V])
+  def insert(key: Key, column: Column[Name, Value]) {
+    insertAs(key, column)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  }
+
+  def insertAs[K, N, V](key: K, column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) {
     val cp = new thrift.ColumnParent(name)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
