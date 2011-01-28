@@ -10,9 +10,9 @@ import com.twitter.util.Promise;
 
 import com.codahale.cassie.ColumnFamily;
 import com.codahale.cassie.connection.ClientProvider;
-import com.codahale.cassie.codecs.Utf8Codec$;
-import com.codahale.cassie.ReadConsistency$;
-import com.codahale.cassie.WriteConsistency$;
+import com.codahale.cassie.codecs.Utf8Codec;
+import com.codahale.cassie.ReadConsistency;
+import com.codahale.cassie.WriteConsistency;
 
 import org.junit.Test;
 import org.junit.Before;
@@ -52,8 +52,8 @@ public final class MockCassandraClient {
         anySlicePredicate(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
     this.cf = new ColumnFamily("ks", "cf", new SimpleProvider(client),
-        Utf8Codec$.MODULE$, Utf8Codec$.MODULE$, Utf8Codec$.MODULE$,
-        ReadConsistency$.MODULE$.Quorum(), WriteConsistency$.MODULE$.Quorum());
+        Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum(), WriteConsistency.Quorum());
   }
 
   public static final class SimpleProvider implements ClientProvider {

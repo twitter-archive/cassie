@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import com.codahale.cassie.ColumnFamily;
 import com.codahale.cassie.MockCassandraClient;
 import com.codahale.cassie.codecs.Codec;
-import com.codahale.cassie.codecs.Utf8Codec$;
+import com.codahale.cassie.codecs.Utf8Codec;
 
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.ColumnParent;
@@ -21,7 +21,7 @@ import static org.mockito.Matchers.*;
 public class ColumnFamilyTest {
   protected MockCassandraClient mock;
 
-  public final Codec<String> codec = Utf8Codec$.MODULE$;
+  public final Codec<String> codec = Utf8Codec.get();
 
   @Before
   public void before() throws Exception {

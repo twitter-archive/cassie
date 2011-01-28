@@ -243,9 +243,9 @@ case class ColumnFamily[Key, Name, Value](
                                        columnNames: Set[N],
                                        timestamp: Long)
                                       (implicit keyCodec: Codec[K], nameCodec: Codec[N]) {
-    batch() { cf =>
-      cf.removeColumnsWithTimestamp(key, columnNames, timestamp)(keyCodec, nameCodec)
-    }
+    batch()
+      .removeColumnsWithTimestamp(key, columnNames, timestamp)(keyCodec, nameCodec)
+      .execute()
   }
 
   /**
@@ -270,15 +270,15 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   /**
-   * Performs a series of actions in a single request.
+   * @return A Builder that can be used to execute multiple actions in a single
+   * request. 
    */
+  def batch() = new BatchMutationBuilder(this)
+
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def batch()
-           (build: BatchMutationBuilder => Unit) {
-    val builder = new BatchMutationBuilder(name)
-    build(builder)
+  private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) {
     val mutations = builder.mutations
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }

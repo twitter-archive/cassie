@@ -9,6 +9,9 @@ trait Codec[A] {
   def encode(obj: A): ByteBuffer
   def decode(ary: ByteBuffer): A
 
+  /** To conveniently get the singleton/Object from Java. */
+  def get() = this
+
   /** Helpers for conversion from ByteBuffers to byte arrays. Keep explicit! */
   def b2b(buff: ByteBuffer): Array[Byte] = {
     val bytes = new Array[Byte](buff.remaining)
