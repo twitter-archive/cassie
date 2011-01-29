@@ -25,6 +25,7 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
                                        val nameCodec: Codec[Name],
                                        val valueCodec: Codec[Value])
         extends java.util.Iterator[(Key, Column[Name, Value])]
+        with Iterator[(Key, Column[Name, Value])]
         with java.lang.Iterable[(Key, Column[Name, Value])] with Logging {
   private var lastKey: Option[ByteBuffer] = None
   private var cycled = false

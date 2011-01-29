@@ -1,5 +1,6 @@
 package com.codahale.cassie.tests
 
+import scala.collection.JavaConversions._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
@@ -8,7 +9,6 @@ import com.codahale.cassie.codecs.Utf8Codec
 import org.mockito.Mockito.{when, verify}
 import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
-import scalaj.collection.Imports._
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
 import com.codahale.cassie.clocks.Clock
@@ -18,6 +18,9 @@ import com.codahale.cassie._
 import MockCassandraClient._
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
+
+  type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
+  type KeyColumnMap = java.util.Map[java.nio.ByteBuffer,ColumnList]
 
   def newColumn(name: String, value: String, timestamp: Long) = {
     val cosc = new thrift.ColumnOrSuperColumn
@@ -43,7 +46,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
 
-      pred.getValue.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("name"))
+      pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name"))
     }
 
     it("returns none if the column doesn't exist") {
@@ -51,9 +54,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns a option of a column if it exists") {
-      val columns = newColumn("name", "Coda", 2292L) :: Nil
+      val columns = Seq(newColumn("name", "Coda", 2292L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
       cf.getColumn("key", "name") must equal(Some(Column("name", "Coda", 2292L)))
     }
@@ -75,15 +78,15 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns a map of column names to columns") {
-      val columns = newColumn("name", "Coda", 2292L) ::
-                    newColumn("age", "old", 11919L) :: Nil
+      val columns = Seq(newColumn("name", "Coda", 2292L),
+                        newColumn("age", "old", 11919L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
       cf.getRow("key") must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ).asJava)
+      ))
     }
   }
 
@@ -117,19 +120,19 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
 
-      pred.getValue.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("name", "age"))
+      pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name", "age"))
     }
 
     it("returns a map of column names to columns") {
-      val columns = newColumn("name", "Coda", 2292L) ::
-                    newColumn("age", "old", 11919L) :: Nil
+      val columns = Seq(newColumn("name", "Coda", 2292L),
+                        newColumn("age", "old", 11919L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(columns.asJava))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
       cf.getColumns("key", Set("name", "age")) must equal(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ).asJava)
+      ))
     }
   }
 
@@ -139,40 +142,40 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     it("performs a multiget_slice with a column name") {
       cf.consistency(ReadConsistency.One).multigetColumn(Set("key1", "key2"), "name")
 
-      val keys = List("key1", "key2").map{Utf8Codec.encode(_)}.asJava
+      val keys = List("key1", "key2").map{Utf8Codec.encode(_)}
       val cp = new thrift.ColumnParent("cf")
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
       verify(client).multiget_slice(matchEq(keys), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.ONE))
 
-      pred.getValue.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("name"))
+      pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name"))
     }
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("key1") -> (newColumn("name", "Coda", 2292L) :: Nil).asJava,
-        b("key2") -> (newColumn("name", "Niki", 422L) :: Nil).asJava
-      ).asJava
+        b("key1") -> asList(Seq(newColumn("name", "Coda", 2292L))),
+        b("key2") -> asList(Seq(newColumn("name", "Niki", 422L)))
+      )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L),
         "key2" -> Column("name", "Niki", 422L)
-      ).asJava)
+      ))
     }
 
     it("does not explode when the column doesn't exist for a key") {
       val results = Map(
-        b("key1") -> (newColumn("name", "Coda", 2292L) :: Nil).asJava,
-        b("key2") -> Nil.asInstanceOf[List[thrift.ColumnOrSuperColumn]].asJava
-      ).asJava
+        b("key1") -> asList(Seq(newColumn("name", "Coda", 2292L))),
+        b("key2") -> (asList(Seq()): ColumnList)
+      )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
       cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
         "key1" -> Column("name", "Coda", 2292L)
-      ).asJava)
+      ))
     }
   }
 
@@ -182,35 +185,35 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     it("performs a multiget_slice with a set of column names") {
       cf.consistency(ReadConsistency.One).multigetColumns(Set("key1", "key2"), Set("name", "age"))
 
-      val keys = List("key1", "key2").map{ b(_) }.asJava
+      val keys = List("key1", "key2").map{ b(_) }
       val cp = new thrift.ColumnParent("cf")
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
       verify(client).multiget_slice(matchEq(keys), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.ONE))
 
-      pred.getValue.getColumn_names.asScala.map { Utf8Codec.decode(_) } must equal(List("name", "age"))
+      pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name", "age"))
     }
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("key1") -> (newColumn("name", "Coda", 2292L) ::
-                    newColumn("age", "old", 11919L) :: Nil).asJava,
-        b("key2") -> (newColumn("name", "Niki", 422L) ::
-                    newColumn("age", "lithe", 129L) :: Nil).asJava
-      ).asJava
+        b("key1") -> asList(Seq(newColumn("name", "Coda", 2292L),
+                                newColumn("age", "old", 11919L))),
+        b("key2") -> asList(Seq(newColumn("name", "Niki", 422L),
+                                newColumn("age", "lithe", 129L)))
+      )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment(results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
       cf.multigetColumns(Set("key1", "key2"), Set("name", "age")) must equal(Map(
         "key1" -> Map(
           "name" -> Column("name", "Coda", 2292L),
           "age" -> Column("age", "old", 11919L)
-        ).asJava,
+        ),
         "key2" -> Map(
           "name" -> Column("name", "Niki", 422L),
           "age" -> Column("age", "lithe", 129L)
-        ).asJava
-      ).asJava)
+        )
+      ))
     }
   }
 
@@ -309,7 +312,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(445L)
-      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 
@@ -328,7 +331,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val deletion = mutation.getDeletion
 
       deletion.getTimestamp must equal(33)
-      deletion.getPredicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
+      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 
@@ -336,9 +339,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("performs a batch_mutate") {
-      cf.consistency(WriteConsistency.All).batch() { batch =>
-        batch.insert("key", Column("name", "value", 201))
-      }
+      cf.consistency(WriteConsistency.All).batch()
+        .insert("key", Column("name", "value", 201))
+        .execute()
 
       val map = ArgumentCaptor.forClass(classOf[java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]])
 
@@ -380,7 +383,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       iterator.startKey must equal(b(""))
       iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) } must be(List("name"))
+      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) } must be(List("name"))
     }
   }
 
@@ -394,7 +397,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       iterator.startKey must equal(b(""))
       iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.asScala.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
+      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }
   }
 }

@@ -19,5 +19,5 @@ class Keyspace(val name: String, val provider: ClientProvider) {
               defaultKeyCodec: Codec[Key],
               defaultNameCodec: Codec[Name],
               defaultValueCodec: Codec[Value]) =
-    new ColumnFamily(this.name, name, provider, defaultKeyCodec, defaultNameCodec, defaultValueCodec)(clock)
+    new ColumnFamily(this.name, name, provider, clock, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 }

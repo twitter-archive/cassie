@@ -3,6 +3,8 @@ package com.codahale.cassie.jtests.examples;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import scala.Tuple2;
+
 import com.codahale.cassie.*;
 import com.codahale.cassie.clocks.MicrosecondEpochClock;
 import com.codahale.cassie.types.*;
@@ -20,7 +22,7 @@ public final class CassieRun {
     return new HashSet<V>(Arrays.asList(values));
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     // create a cluster with a single seed from which to map keyspaces
     Cluster cluster = new Cluster("localhost");
 
@@ -71,7 +73,7 @@ public final class CassieRun {
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.insert(LexicalUUID.create(), cass.newColumn("yay", "boo"));
+    cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo"));
 
     cass.namesAs(FixedLongCodec.get()).valuesAs(AsciiStringCodec.get()).getColumn("key", 2);
     cass.namesAs(VarIntCodec.get()).valuesAs(VarIntCodec.get())
@@ -94,7 +96,6 @@ public final class CassieRun {
       .removeColumns("yay for us", Set("name", "motto"))
       .insert("yay for nobody", cass.newColumn("name", "Burt"))
       .insert("yay for nobody", cass.newColumn("motto", "'S funny."))
-      .insert("bits!", cass.newColumn("motto", new FixedLong(20019L)))
       .execute();
   }
 }

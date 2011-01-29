@@ -23,15 +23,16 @@ case class ColumnFamily[Key, Name, Value](
     keyspace: String,
     name: String,
     provider: ClientProvider,
+    clock: Clock,
     defaultKeyCodec: Codec[Key],
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum)
-  (implicit clock: Clock) extends Logging {
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum) extends Logging {
 
   import ColumnFamily._
 
+  def clock(clock: Clock) = copy(clock = clock)
   def keysAs[K](codec: Codec[K]): ColumnFamily[K, Name, Value] = copy(defaultKeyCodec = codec)
   def namesAs[N](codec: Codec[N]): ColumnFamily[Key, N, Value] = copy(defaultNameCodec = codec)
   def valuesAs[V](codec: Codec[V]): ColumnFamily[Key, Name, V] = copy(defaultValueCodec = codec)
@@ -42,7 +43,7 @@ case class ColumnFamily[Key, Name, Value](
    * @Java
    * Creates a new Column with an implicit timestamp.
    */
-  def newColumn[N, V](n: N, v: V) = Column(n, v)
+  def newColumn[N, V](n: N, v: V) = Column(n, v)(clock)
 
   /**
    * Returns the optional value of a given column for a given key as the given
@@ -218,10 +219,8 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Removes a column from a key.
    */
-  def removeColumn[K, N](key: K,
-                         columnName: N)
-                        (implicit clock: Clock, keyCodec: Codec[K], nameCodec: Codec[N]) {
-    removeColumnWithTimestamp(key, columnName, clock.timestamp)(keyCodec, nameCodec)
+  def removeColumn(key: Key, columnName: Name) {
+    removeColumnWithTimestamp(key, columnName, clock.timestamp)
   }
 
   /**
@@ -230,42 +229,33 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def removeColumnWithTimestamp[K, N](key: K,
-                                      columnName: N,
-                                      timestamp: Long)
-                                     (implicit keyCodec: Codec[K], nameCodec: Codec[N]) {
+  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) {
     val cp = new thrift.ColumnPath(name)
-    cp.setColumn(nameCodec.encode(columnName))
+    cp.setColumn(defaultNameCodec.encode(columnName))
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level) }
+    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
   /**
    * Removes a set of columns from a key.
    */
-  def removeColumns[K, N](key: K,
-                          columnNames: Set[N])
-                         (implicit clock: Clock, keyCodec: Codec[K], nameCodec: Codec[N]) {
-    removeColumnsWithTimestamp(key, columnNames, clock.timestamp)(keyCodec, nameCodec)
+  def removeColumns(key: Key, columnNames: Set[Name]) {
+    removeColumnsWithTimestamp(key, columnNames, clock.timestamp)
   }
 
   /**
    * Removes a set of columns from a key with a specific timestamp.
    */
-  def removeColumnsWithTimestamp[K, N](key: K,
-                                       columnNames: Set[N],
-                                       timestamp: Long)
-                                      (implicit keyCodec: Codec[K], nameCodec: Codec[N]) {
+  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) {
     batch()
-      .removeColumnsWithTimestamp(key, columnNames, timestamp)(keyCodec, nameCodec)
+      .removeColumnsWithTimestamp(key, columnNames, timestamp)
       .execute()
   }
 
   /**
    * Removes a key.
    */
-  def removeRow(key: Key)
-               (implicit clock: Clock) {
+  def removeRow(key: Key) {
     removeRowWithTimestamp(key, clock.timestamp)
   }
 
@@ -302,7 +292,7 @@ case class ColumnFamily[Key, Name, Value](
    * the column family with the given batch size as the given types.
    */
   def rowIteratorAs[K, N, V](batchSize: Int)
-                         (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Iterator[(K, Column[N, V])] = {
+                         (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(EMPTY, EMPTY, false, Int.MaxValue))
     new ColumnIterator(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
@@ -312,7 +302,7 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a column iterator which iterates over all columns of all rows in
    * the column family with the given batch size as the default types.
    */
-  def rowIterator(batchSize: Int): Iterator[(Key, Column[Name, Value])] = {
+  def rowIterator(batchSize: Int): ColumnIterator[Key, Name, Value] = {
     rowIteratorAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -322,7 +312,7 @@ case class ColumnFamily[Key, Name, Value](
    * in the column family with the given batch size as the given types.
    */
   def columnIteratorAs[K, N, V](batchSize: Int, columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Iterator[(K, Column[N, V])] =
+                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] =
     columnsIteratorAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
   /**
@@ -330,7 +320,7 @@ case class ColumnFamily[Key, Name, Value](
    * in the column family with the given batch size as the default types.
    */
   def columnIterator(batchSize: Int,
-                     columnName: Name): Iterator[(Key, Column[Name, Value])] =
+                     columnName: Name): ColumnIterator[Key, Name, Value] =
     columnIteratorAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   /**
@@ -339,7 +329,7 @@ case class ColumnFamily[Key, Name, Value](
    */
   def columnsIteratorAs[K, N, V](batchSize: Int,
                                  columnNames: Set[N])
-                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Iterator[(K, Column[N, V])] = {
+                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] = {
     val pred = new thrift.SlicePredicate
     pred.setColumn_names(encodeSet(columnNames))
     new ColumnIterator(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
@@ -350,7 +340,7 @@ case class ColumnFamily[Key, Name, Value](
    * in the column family with the given batch size as the default types.
    */
   def columnsIterator(batchSize: Int,
-                      columnNames: Set[Name]): Iterator[(Key, Column[Name, Value])] = {
+                      columnNames: Set[Name]): ColumnIterator[Key, Name, Value] = {
     columnsIteratorAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 

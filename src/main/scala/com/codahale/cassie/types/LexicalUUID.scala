@@ -2,7 +2,7 @@ package com.codahale.cassie.types
 
 import com.codahale.cassie.clocks.Clock
 import java.net.InetAddress.{getLocalHost => localHost}
-import org.apache.commons.codec.binary.Hex.{decodeHex => decode}
+import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteBuffer
 import com.codahale.cassie.FNV1A
 
@@ -10,26 +10,18 @@ object LexicalUUID {
   private val defaultWorkerID = FNV1A(localHost.getHostName.getBytes)
 
   /**
-   * Given a worker ID and a clock, generates a new LexicalUUID. If each node
-   * has unique worker ID and a clock which is guaranteed to never go backwards,
-   * then each generated UUID will be unique. 
-   */
-  def apply(workerID: Long)(implicit clock: Clock): LexicalUUID =
-    LexicalUUID(clock.timestamp, workerID)
-
-  /**
    * Given a clock, generates a new LexicalUUID, using a hash of the machine's
    * hostname as a worker ID.
    */
   def apply()(implicit clock: Clock): LexicalUUID =
-    LexicalUUID(clock.timestamp, defaultWorkerID)
+    new LexicalUUID(LexicalUUID.defaultWorkerID)
 
   /**
-   * Given a UUID formatted as a string, returns it as a LexicalUUID.
+   * Given a UUID formatted as a hex string, returns it as a LexicalUUID.
    */
   def apply(uuid: String): LexicalUUID = {
-    val buf = ByteBuffer.wrap(decode(uuid.toCharArray.filterNot { _ == '-' }))
-    LexicalUUID(buf.getLong(), buf.getLong())
+    val buf = ByteBuffer.wrap(decodeHex(uuid.toCharArray.filterNot { _ == '-' }))
+    new LexicalUUID(buf.getLong(), buf.getLong())
   }
 }
 
@@ -39,6 +31,19 @@ object LexicalUUID {
  * @author coda
  */
 case class LexicalUUID(timestamp: Long, workerID: Long) extends Ordered[LexicalUUID] {
+
+  /**
+   * Given a worker ID and a clock, generates a new LexicalUUID. If each node
+   * has unique worker ID and a clock which is guaranteed to never go backwards,
+   * then each generated UUID will be unique. 
+   */
+  def this(workerID: Long)(implicit clock: Clock) = this(clock.timestamp, workerID)
+
+  /**
+   * Given a clock, generates a new LexicalUUID, using a hash of the machine's
+   * hostname as a worker ID.
+   */
+  def this()(implicit clock: Clock) = this(LexicalUUID.defaultWorkerID)
 
   /**
    * Sort by timestamp, then by worker ID.

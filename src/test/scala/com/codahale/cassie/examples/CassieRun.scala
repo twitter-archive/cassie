@@ -6,7 +6,7 @@ import com.codahale.logula.Logging
 import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
-import scala.collection.JavaConversions.asIterator
+import scala.collection.JavaConversions.{asIterator, asSet}
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
@@ -67,7 +67,7 @@ object CassieRun extends Logging {
     cass.insert(LexicalUUID(), Column("yay", "boo"))
 
     cass.getColumnAs[String, FixedLong, AsciiString]("key", 2)
-    cass.insert("digits", Column[VarInt, VarInt](1, 300))
+    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300))
 
     log.info("Iterating!")
     for ((key, col) <- cass.rowIterator(2): Iterator[(String, Column[String, String])]) {
@@ -81,12 +81,11 @@ object CassieRun extends Logging {
     cass.removeRow("yay for me")
 
     log.info("Batching up some stuff")
-    cass.batch() { cf =>
-      cf.removeColumn("yay for you", "name")
-      cf.removeColumns("yay for us", Set("name", "motto"))
-      cf.insert("yay for nobody", Column("name", "Burt"))
-      cf.insert("yay for nobody", Column("motto", "'S funny."))
-      cf.insert("bits!", Column("motto", FixedLong(20019L)))
-    }
+    cass.batch()
+      .removeColumn("yay for you", "name")
+      .removeColumns("yay for us", Set("name", "motto"))
+      .insert("yay for nobody", Column("name", "Burt"))
+      .insert("yay for nobody", Column("motto", "'S funny."))
+      .execute()
   }
 }

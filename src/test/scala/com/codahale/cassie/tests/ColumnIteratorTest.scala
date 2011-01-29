@@ -71,7 +71,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
 
     it("does a buffered iteration over the columns in the rows in the range") {
       val results = new ArrayBuffer[(String, Column[String, String])]
-      for ((key, col) <- iterator.asScala) {
+      for ((key, col) <- iterator) {
         results += ((key, col))
       }
       results must equal(List(
