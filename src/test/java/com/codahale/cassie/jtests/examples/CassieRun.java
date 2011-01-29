@@ -1,5 +1,8 @@
 package com.codahale.cassie.jtests.examples;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 import com.codahale.cassie.*;
 import com.codahale.cassie.clocks.MicrosecondEpochClock;
 import com.codahale.cassie.types.*;
@@ -12,6 +15,11 @@ import org.apache.log4j.Level;
 
 public final class CassieRun {
   private final static Log log = Log.forClass(CassieRun.class);
+ 
+  public static <V> HashSet<V> Set(V... values) {
+    return new HashSet<V>(Arrays.asList(values));
+  }
+
   public static void main(String[] args) {
     // create a cluster with a single seed from which to map keyspaces
     Cluster cluster = new Cluster("localhost");

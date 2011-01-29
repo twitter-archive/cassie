@@ -1,6 +1,9 @@
 package com.codahale.cassie
 
 import java.nio.ByteBuffer
+import java.util.{List, Map, Set}
+import java.util.Collections.{singleton => singletonSet}
+
 import codecs.{Codec, Utf8Codec}
 import clocks.Clock
 import scalaj.collection.Imports._
@@ -46,7 +49,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
    */
   def removeColumnWithTimestamp[Key, Name](key: Key, columnName: Name, timestamp: Long)
                   (implicit keyCodec: Codec[Key], nameCodec: Codec[Name]) = {
-    removeColumnsWithTimestamp(key, Set(columnName), timestamp)(keyCodec, nameCodec)
+    removeColumnsWithTimestamp(key, singletonSet(columnName), timestamp)(keyCodec, nameCodec)
   }
 
   /**
@@ -63,7 +66,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
   def removeColumnsWithTimestamp[Key, Name](key: Key, columnNames: Set[Name], timestamp: Long)
                   (implicit keyCodec: Codec[Key], nameCodec: Codec[Name]) = {
     val pred = new SlicePredicate
-    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
+    pred.setColumn_names(cf.encodeSet(columnNames))
 
     val deletion = new Deletion(timestamp)
     deletion.setPredicate(pred)

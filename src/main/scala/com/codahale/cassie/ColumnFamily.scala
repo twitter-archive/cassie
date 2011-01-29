@@ -8,7 +8,8 @@ import org.apache.cassandra.thrift
 import com.codahale.logula.Logging
 import java.nio.ByteBuffer
 
-import java.util.{ArrayList, HashMap, Iterator, List, Map}
+import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
+import java.util.Collections.{singleton => singletonSet}
 
 /**
  * A readable, writable column family with batching capabilities. This is a
@@ -50,7 +51,7 @@ case class ColumnFamily[Key, Name, Value](
   def getColumnAs[K, N, V](key: K,
                            columnName: N)
                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Option[Column[N, V]] = {
-    Option(getColumnsAs(key, Set(columnName))(keyCodec, nameCodec, valueCodec).get(columnName))
+    Option(getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).get(columnName))
   }
 
   /**
@@ -116,7 +117,7 @@ case class ColumnFamily[Key, Name, Value](
                             columnNames: Set[N])
                            (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N, Column[N, V]] = {
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
+    pred.setColumn_names(encodeSet(columnNames))
     getSlice(key, pred, keyCodec, nameCodec, valueCodec)
   }
 
@@ -136,7 +137,7 @@ case class ColumnFamily[Key, Name, Value](
   def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Column[N, V]] = {
-    val rows = multigetColumnsAs[K, N, V](keys, Set(columnName))(keyCodec, nameCodec, valueCodec)
+    val rows = multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
       
     val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
     for (rowEntry <- rows.entrySet.asScala)
@@ -166,9 +167,9 @@ case class ColumnFamily[Key, Name, Value](
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Map[N, Column[N, V]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
+    pred.setColumn_names(encodeSet(columnNames))
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    val encodedKeys = keys.toList.map { keyCodec.encode(_) }.asJava
+    val encodedKeys = encodeSet(keys)
     val result = provider.map {
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }()
@@ -322,7 +323,7 @@ case class ColumnFamily[Key, Name, Value](
    */
   def columnIteratorAs[K, N, V](batchSize: Int, columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Iterator[(K, Column[N, V])] =
-    columnsIteratorAs(batchSize, Set(columnName))(keyCodec, nameCodec, valueCodec)
+    columnsIteratorAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
   /**
    * Returns a column iterator which iterates over the given column of all rows
@@ -340,7 +341,7 @@ case class ColumnFamily[Key, Name, Value](
                                  columnNames: Set[N])
                                 (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Iterator[(K, Column[N, V])] = {
     val pred = new thrift.SlicePredicate
-    pred.setColumn_names(columnNames.toList.map { nameCodec.encode(_) }.asJava)
+    pred.setColumn_names(encodeSet(columnNames))
     new ColumnIterator(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
@@ -385,9 +386,16 @@ case class ColumnFamily[Key, Name, Value](
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
     provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }().asScala
   }
+  
+  def encodeSet[V](values: Set[V])(implicit codec: Codec[V]): List[ByteBuffer] = {
+    val output = new ArrayList[ByteBuffer](values.size)
+    for (value <- values.iterator.asScala)
+      output.add(codec.encode(value))
+    output
+  }
 }
 
-private object ColumnFamily
+private[cassie] object ColumnFamily
 {
   val EMPTY = ByteBuffer.allocate(0)
 }
