@@ -2,11 +2,8 @@ package com.codahale.cassie.jtests.examples;
 
 import com.codahale.cassie.*;
 import com.codahale.cassie.clocks.MicrosecondEpochClock;
-import com.codahale.cassie.types.LexicalUUID;
-import com.codahale.cassie.types.VarInt;
-import com.codahale.cassie.types.AsciiString;
-import com.codahale.cassie.types.FixedLong;
-import com.codahale.cassie.codecs.Utf8Codec;
+import com.codahale.cassie.types.*;
+import com.codahale.cassie.codecs.*;
 
   // FIXME: Logula is not Java friendly
 import com.codahale.logula.Logging;
@@ -68,8 +65,9 @@ public final class CassieRun {
     // drop some UUID sauce on things
     cass.insert(LexicalUUID.create(), cass.newColumn("yay", "boo"));
 
-    cass.<String, FixedLong, AsciiString>getColumnAs("key", 2);
-    cass.insertAs("digits", cass.newColumn(new VarInt(1), new VarInt(300)));
+    cass.namesAs(FixedLongCodec.get()).valuesAs(AsciiStringCodec.get()).getColumn("key", 2);
+    cass.namesAs(VarIntCodec.get()).valuesAs(VarIntCodec.get())
+        .insert("digits", cass.newColumn(new VarInt(1), new VarInt(300)));
 
     log.info("Iterating!", null);
     for (Tuple2<String, Column<String,String>> row : cass.rowIterator(2)) {

@@ -14,7 +14,7 @@ import java.util.{ArrayList, HashMap, Iterator, List, Map}
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
  *
- * TODO: add copy methods for codecs
+ * TODO: remove (insert/get)As methods in favor of copying the CF to allow for alternate types.
  *
  * @author coda
  */
@@ -27,12 +27,13 @@ case class ColumnFamily[Key, Name, Value](
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.Quorum)
-  (implicit clock: Clock)
-
-  extends Logging {
+  (implicit clock: Clock) extends Logging {
 
   import ColumnFamily._
 
+  def keysAs[K](codec: Codec[K]): ColumnFamily[K, Name, Value] = copy(defaultKeyCodec = codec)
+  def namesAs[N](codec: Codec[N]): ColumnFamily[Key, N, Value] = copy(defaultNameCodec = codec)
+  def valuesAs[V](codec: Codec[V]): ColumnFamily[Key, Name, V] = copy(defaultValueCodec = codec)
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
 
