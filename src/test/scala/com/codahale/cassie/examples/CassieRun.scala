@@ -10,7 +10,7 @@ import scala.collection.JavaConversions.{asIterator, asSet}
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
-    Logging.configure(_.level = Level.ALL)
+    Logging.configure(_.level = Level.INFO)
 
     implicit val clock = MicrosecondEpochClock
 
@@ -87,5 +87,8 @@ object CassieRun extends Logging {
       .insert("yay for nobody", Column("name", "Burt"))
       .insert("yay for nobody", Column("motto", "'S funny."))
       .execute()
+
+    log.info("Wrappin' up");
+    keyspace.close();
   }
 }
