@@ -1,9 +1,9 @@
-package com.codahale.cassie.jtests;
+package com.twitter.cassie.jtests;
 
 import java.nio.ByteBuffer;
 
-import com.codahale.cassie.Cluster;
-import com.codahale.cassie.Keyspace;
+import com.twitter.cassie.Cluster;
+import com.twitter.cassie.Keyspace;
 
 import org.junit.Test;
 import org.junit.Before;

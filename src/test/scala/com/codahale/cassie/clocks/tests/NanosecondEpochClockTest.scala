@@ -1,8 +1,8 @@
-package com.codahale.cassie.clocks.tests
+package com.twitter.cassie.clocks.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.clocks.NanosecondEpochClock
+import com.twitter.cassie.clocks.NanosecondEpochClock
 
 class NanosecondEpochClockTest extends Spec with MustMatchers {
   describe("the nanoseconds clock") {

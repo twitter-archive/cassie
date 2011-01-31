@@ -1,9 +1,9 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.Column
-import com.codahale.cassie.clocks.Clock
+import com.twitter.cassie.Column
+import com.twitter.cassie.clocks.Clock
 
 class ColumnTest extends Spec with MustMatchers {
   describe("a column with an explicit timestamp") {

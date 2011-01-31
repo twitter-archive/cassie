@@ -1,6 +1,6 @@
-package com.codahale.cassie.types.tests
+package com.twitter.cassie.types.tests
 
-import com.codahale.cassie.types.AsciiString
+import com.twitter.cassie.types.AsciiString
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 

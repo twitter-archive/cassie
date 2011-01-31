@@ -1,4 +1,4 @@
-package com.codahale.cassie.clocks
+package com.twitter.cassie.clocks
 
 import java.util.concurrent.atomic.AtomicLong
 

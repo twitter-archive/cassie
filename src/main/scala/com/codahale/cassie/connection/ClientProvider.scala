@@ -1,4 +1,4 @@
-package com.codahale.cassie.connection
+package com.twitter.cassie.connection
 
 import com.twitter.util.Future
 import org.apache.cassandra.thrift.Cassandra.ServiceToClient

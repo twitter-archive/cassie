@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import connection._
 import java.net.InetSocketAddress
@@ -20,13 +20,13 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
   def this(seedHosts: java.util.Collection[String]) = this(seedHosts.asScala.toSet, 9160)
    
     /**
-   * Returns a [[com.codahale.cassie.Keyspace]] instance with a
-   * [[com.codahale.cassie.connection.ClusterClientProvider]] with the provided
+   * Returns a [[com.twitter.cassie.Keyspace]] instance with a
+   * [[com.twitter.cassie.connection.ClusterClientProvider]] with the provided
    * options.
    * @param name the keyspace's name
    * @param performMapping true to expand the cluster's list of seeds into a full
    *        list of hosts; false if the seed list should be used directly
-   * @see com.codahale.cassie.connection.ClusterClientProvider
+   * @see com.twitter.cassie.connection.ClusterClientProvider
    */
   def keyspace(name: String): KeyspaceBuilder = KeyspaceBuilder(name)
 

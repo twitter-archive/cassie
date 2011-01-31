@@ -1,6 +1,6 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
-import com.codahale.cassie.types.VarLong
+import com.twitter.cassie.types.VarLong
 
 import java.nio.ByteBuffer
 

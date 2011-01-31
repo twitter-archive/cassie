@@ -1,4 +1,4 @@
-package com.codahale.cassie;
+package com.twitter.cassie;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -8,12 +8,12 @@ import java.util.List;
 import com.twitter.util.Future;
 import com.twitter.util.Promise;
 
-import com.codahale.cassie.ColumnFamily;
-import com.codahale.cassie.clocks.MicrosecondEpochClock;
-import com.codahale.cassie.connection.ClientProvider;
-import com.codahale.cassie.codecs.Utf8Codec;
-import com.codahale.cassie.ReadConsistency;
-import com.codahale.cassie.WriteConsistency;
+import com.twitter.cassie.ColumnFamily;
+import com.twitter.cassie.clocks.MicrosecondEpochClock;
+import com.twitter.cassie.connection.ClientProvider;
+import com.twitter.cassie.codecs.Utf8Codec;
+import com.twitter.cassie.ReadConsistency;
+import com.twitter.cassie.WriteConsistency;
 
 import org.junit.Test;
 import org.junit.Before;

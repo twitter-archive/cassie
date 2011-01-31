@@ -1,4 +1,4 @@
-package com.codahale.cassie.tests.util
+package com.twitter.cassie.tests.util
 
 
 import java.util.concurrent.CountDownLatch

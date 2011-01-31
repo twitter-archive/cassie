@@ -1,6 +1,6 @@
-package com.codahale.cassie.tests.examples
+package com.twitter.cassie.tests.examples
 
-import com.codahale.cassie._
+import com.twitter.cassie._
 import clocks.MicrosecondEpochClock
 import com.codahale.logula.Logging
 import org.apache.log4j.Level

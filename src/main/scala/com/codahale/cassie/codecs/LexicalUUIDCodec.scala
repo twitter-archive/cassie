@@ -1,6 +1,6 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
-import com.codahale.cassie.types.LexicalUUID
+import com.twitter.cassie.types.LexicalUUID
 import java.nio.ByteBuffer
 
 /**

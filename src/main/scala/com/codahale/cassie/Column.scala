@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import clocks.Clock
 import scalaj.collection.Imports._

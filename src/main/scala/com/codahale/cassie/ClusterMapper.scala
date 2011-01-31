@@ -1,11 +1,11 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import scala.util.parsing.json.JSON
 import java.io.IOException
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
 import scalaj.collection.Imports._
-import com.codahale.cassie.connection.ClusterClientProvider
+import com.twitter.cassie.connection.ClusterClientProvider
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.

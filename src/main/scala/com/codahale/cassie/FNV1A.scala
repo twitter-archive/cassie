@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 /**
  * The FNV1-A 64-bit hashing algorithm.

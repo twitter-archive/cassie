@@ -1,4 +1,4 @@
-package com.codahale.cassie.types
+package com.twitter.cassie.types
 
 /**
  * A Base64-encoded array of bytes.

@@ -1,4 +1,4 @@
-package com.codahale.cassie.connection
+package com.twitter.cassie.connection
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit

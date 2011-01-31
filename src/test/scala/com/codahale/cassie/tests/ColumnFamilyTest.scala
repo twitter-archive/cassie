@@ -1,19 +1,19 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import scala.collection.JavaConversions._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.apache.cassandra.thrift.Cassandra.ServiceToClient
-import com.codahale.cassie.codecs.Utf8Codec
+import com.twitter.cassie.codecs.Utf8Codec
 import org.mockito.Mockito.{when, verify}
 import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
-import com.codahale.cassie.clocks.Clock
+import com.twitter.cassie.clocks.Clock
 import thrift.Mutation
-import com.codahale.cassie._
+import com.twitter.cassie._
 
 import MockCassandraClient._
 

@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import org.apache.cassandra.thrift
 

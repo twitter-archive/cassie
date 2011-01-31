@@ -1,4 +1,4 @@
-package com.codahale.cassie.types
+package com.twitter.cassie.types
 
 /**
  * A 64-bit integer.

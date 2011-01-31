@@ -1,10 +1,10 @@
-package com.codahale.cassie.codecs.tests
+package com.twitter.cassie.codecs.tests
 
-import com.codahale.cassie.codecs.tests.ByteBufferLiteral._
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.FixedLongCodec
-import com.codahale.cassie.types.FixedLong
+import com.twitter.cassie.codecs.FixedLongCodec
+import com.twitter.cassie.types.FixedLong
 
 class FixedLongCodecTest extends Spec with MustMatchers {
   describe("encoding a long") {

@@ -1,13 +1,13 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, Spec}
-import com.codahale.cassie.tests.util.MockCassandraServer
+import com.twitter.cassie.tests.util.MockCassandraServer
 import java.net.InetSocketAddress
 import org.apache.cassandra.thrift
 import scalaj.collection.Imports._
-import com.codahale.cassie.ClusterMapper
+import com.twitter.cassie.ClusterMapper
 import com.codahale.logula.Logging
 import org.apache.log4j.Level
 

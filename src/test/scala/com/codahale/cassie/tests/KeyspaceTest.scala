@@ -1,12 +1,12 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import com.codahale.cassie.codecs.Utf8Codec
-import com.codahale.cassie.{WriteConsistency, ReadConsistency, Keyspace}
-import com.codahale.cassie.clocks.MicrosecondEpochClock
-import com.codahale.cassie.connection.ClientProvider
+import com.twitter.cassie.codecs.Utf8Codec
+import com.twitter.cassie.{WriteConsistency, ReadConsistency, Keyspace}
+import com.twitter.cassie.clocks.MicrosecondEpochClock
+import com.twitter.cassie.connection.ClientProvider
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
   describe("a keyspace") {

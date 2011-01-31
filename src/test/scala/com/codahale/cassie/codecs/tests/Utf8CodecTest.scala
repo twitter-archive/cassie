@@ -1,9 +1,9 @@
-package com.codahale.cassie.codecs.tests
+package com.twitter.cassie.codecs.tests
 
-import com.codahale.cassie.codecs.tests.ByteBufferLiteral._
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.Utf8Codec
+import com.twitter.cassie.codecs.Utf8Codec
 
 class Utf8CodecTest extends Spec with MustMatchers {
   describe("encoding a string") {

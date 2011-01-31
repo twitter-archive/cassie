@@ -1,7 +1,7 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
-import com.codahale.cassie.types.VarInt
+import com.twitter.cassie.types.VarInt
 
 /**
  * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length

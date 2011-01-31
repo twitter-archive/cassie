@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import java.nio.ByteBuffer
 import java.util.{List, Map, Set}

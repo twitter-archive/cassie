@@ -1,10 +1,10 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
-import com.codahale.cassie.Cluster
+import com.twitter.cassie.Cluster
 import org.scalatest.mock.MockitoSugar
-import com.codahale.cassie.connection.ClientProvider
+import com.twitter.cassie.connection.ClientProvider
 
 class ClusterTest extends Spec with MustMatchers with MockitoSugar {
   describe("a cluster") {

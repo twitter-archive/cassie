@@ -1,4 +1,4 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import java.nio.ByteBuffer
 import scalaj.collection.Imports._
@@ -6,11 +6,11 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
 import collection.mutable.ArrayBuffer
-import com.codahale.cassie.{Column, ColumnFamily, ColumnIterator}
+import com.twitter.cassie.{Column, ColumnFamily, ColumnIterator}
 import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.thrift
-import com.codahale.cassie.codecs.{Utf8Codec}
+import com.twitter.cassie.codecs.{Utf8Codec}
 
 class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
   def newColumn(name: String, value: String, timestamp: Long) = {

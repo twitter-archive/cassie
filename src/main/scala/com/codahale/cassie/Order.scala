@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 /**
  * An ordering of columns.

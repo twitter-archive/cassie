@@ -1,11 +1,11 @@
-package com.codahale.cassie.jtests;
+package com.twitter.cassie.jtests;
 
 import java.nio.ByteBuffer;
 
-import com.codahale.cassie.ColumnFamily;
-import com.codahale.cassie.MockCassandraClient;
-import com.codahale.cassie.codecs.Codec;
-import com.codahale.cassie.codecs.Utf8Codec;
+import com.twitter.cassie.ColumnFamily;
+import com.twitter.cassie.MockCassandraClient;
+import com.twitter.cassie.codecs.Codec;
+import com.twitter.cassie.codecs.Utf8Codec;
 
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.ColumnParent;

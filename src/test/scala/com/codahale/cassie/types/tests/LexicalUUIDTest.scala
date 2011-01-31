@@ -1,9 +1,9 @@
-package com.codahale.cassie.types.tests
+package com.twitter.cassie.types.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.types.LexicalUUID
-import com.codahale.cassie.clocks.Clock
+import com.twitter.cassie.types.LexicalUUID
+import com.twitter.cassie.clocks.Clock
 
 class LexicalUUIDTest extends Spec with MustMatchers {
   describe("a lexical UUID") {

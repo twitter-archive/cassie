@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers

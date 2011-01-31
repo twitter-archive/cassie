@@ -1,4 +1,4 @@
-package com.codahale.cassie
+package com.twitter.cassie
 
 import clocks.Clock
 import codecs.Codec
@@ -7,7 +7,7 @@ import connection.ClientProvider
 /**
  * A Cassandra keyspace, which maintains a connection pool.
  *
- * @param provider a [[com.codahale.cassie.connection.ClientProvider]] instance
+ * @param provider a [[com.twitter.cassie.connection.ClientProvider]] instance
  * @author coda
  */
 class Keyspace(val name: String, val provider: ClientProvider) {

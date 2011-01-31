@@ -1,8 +1,8 @@
-package com.codahale.cassie.tests
+package com.twitter.cassie.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.WriteConsistency
+import com.twitter.cassie.WriteConsistency
 import org.apache.cassandra.thrift.ConsistencyLevel
 
 class WriteConsistencyTest extends Spec with MustMatchers {

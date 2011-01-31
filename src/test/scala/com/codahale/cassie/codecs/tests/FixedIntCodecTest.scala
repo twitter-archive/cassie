@@ -1,10 +1,10 @@
-package com.codahale.cassie.codecs.tests
+package com.twitter.cassie.codecs.tests
 
-import com.codahale.cassie.codecs.tests.ByteBufferLiteral._
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.FixedIntCodec
-import com.codahale.cassie.types.FixedInt
+import com.twitter.cassie.codecs.FixedIntCodec
+import com.twitter.cassie.types.FixedInt
 
 class FixedIntCodecTest extends Spec with MustMatchers {
   describe("encoding an int") {

@@ -1,14 +1,14 @@
-package com.codahale.cassie.jtests.examples;
+package com.twitter.cassie.jtests.examples;
 
 import java.util.Arrays;
 import java.util.HashSet;
 
 import scala.Tuple2;
 
-import com.codahale.cassie.*;
-import com.codahale.cassie.clocks.MicrosecondEpochClock;
-import com.codahale.cassie.types.*;
-import com.codahale.cassie.codecs.*;
+import com.twitter.cassie.*;
+import com.twitter.cassie.clocks.MicrosecondEpochClock;
+import com.twitter.cassie.types.*;
+import com.twitter.cassie.codecs.*;
 
 public final class CassieRun {
   public static <V> HashSet<V> Set(V... values) {

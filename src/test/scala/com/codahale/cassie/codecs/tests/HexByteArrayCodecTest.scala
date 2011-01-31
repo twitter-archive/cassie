@@ -1,9 +1,9 @@
-package com.codahale.cassie.codecs.tests
+package com.twitter.cassie.codecs.tests
 
-import com.codahale.cassie.codecs.tests.ByteBufferLiteral._
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.codecs.HexByteArrayCodec
+import com.twitter.cassie.codecs.HexByteArrayCodec
 
 class HexByteArrayCodecTest extends Spec with MustMatchers {
   describe("encoding an array of bytes") {

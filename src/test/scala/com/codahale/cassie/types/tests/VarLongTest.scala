@@ -1,8 +1,8 @@
-package com.codahale.cassie.types.tests
+package com.twitter.cassie.types.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.types.VarLong
+import com.twitter.cassie.types.VarLong
 
 class VarLongTest extends Spec with MustMatchers {
   describe("a VarLong") {

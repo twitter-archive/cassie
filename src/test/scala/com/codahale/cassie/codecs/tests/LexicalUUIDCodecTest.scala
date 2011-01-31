@@ -1,10 +1,10 @@
-package com.codahale.cassie.codecs.tests
+package com.twitter.cassie.codecs.tests
 
-import com.codahale.cassie.codecs.tests.ByteBufferLiteral._
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.types.LexicalUUID
-import com.codahale.cassie.codecs.LexicalUUIDCodec
+import com.twitter.cassie.types.LexicalUUID
+import com.twitter.cassie.codecs.LexicalUUIDCodec
 
 class LexicalUUIDCodecTest extends Spec with MustMatchers {
   val uuid = LexicalUUID(0x990213812L, 0x899813298123L)

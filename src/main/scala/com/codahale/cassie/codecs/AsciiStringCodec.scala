@@ -1,8 +1,8 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
-import com.codahale.cassie.types.AsciiString
+import com.twitter.cassie.types.AsciiString
 
 /**
  * Encodes and decodes values as US-ASCII strings.

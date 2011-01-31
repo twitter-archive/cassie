@@ -1,10 +1,10 @@
-package com.codahale.cassie.types
+package com.twitter.cassie.types
 
-import com.codahale.cassie.clocks.Clock
+import com.twitter.cassie.clocks.Clock
 import java.net.InetAddress.{getLocalHost => localHost}
 import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteBuffer
-import com.codahale.cassie.FNV1A
+import com.twitter.cassie.FNV1A
 
 object LexicalUUID {
   private val defaultWorkerID = FNV1A(localHost.getHostName.getBytes)

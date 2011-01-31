@@ -1,7 +1,7 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
-import com.codahale.cassie.types.HexByteArray
+import com.twitter.cassie.types.HexByteArray
 import org.apache.commons.codec.binary.Hex
 
 /**

@@ -1,4 +1,4 @@
-package com.codahale.cassie.clocks
+package com.twitter.cassie.clocks
 
 /**
  * A clock which returns the time since Jan 1, 1970 UTC in microseconds.

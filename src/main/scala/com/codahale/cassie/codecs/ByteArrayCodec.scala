@@ -1,4 +1,4 @@
-package com.codahale.cassie.codecs
+package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
 

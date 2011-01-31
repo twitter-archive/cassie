@@ -1,8 +1,8 @@
-package com.codahale.cassie.types.tests
+package com.twitter.cassie.types.tests
 
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
-import com.codahale.cassie.types.HexByteArray
+import com.twitter.cassie.types.HexByteArray
 
 class HexByteArrayTest extends Spec with MustMatchers {
     val ary = Array[Byte](1, 2, 3)
