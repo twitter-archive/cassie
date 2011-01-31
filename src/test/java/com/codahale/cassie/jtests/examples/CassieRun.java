@@ -22,6 +22,10 @@ public final class CassieRun {
     return new HashSet<V>(Arrays.asList(values));
   }
 
+  public static void info(String str) {
+    log.info(str, new scala.collection.mutable.ArraySeq(1));
+  }
+
   public static void main(String[] args) throws Exception {
     // create a cluster with a single seed from which to map keyspaces
     Cluster cluster = new Cluster("localhost");
@@ -38,7 +42,7 @@ public final class CassieRun {
     // create a column family
     ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
 
-    log.info("inserting some columns", null);
+    info("inserting some columns");
     cass.insert("yay for me", cass.newColumn("name", "Coda"));
     cass.insert("yay for me", cass.newColumn("motto", "Moar lean."));
 
@@ -51,25 +55,25 @@ public final class CassieRun {
     cass.insert("yay for everyone", cass.newColumn("name", "Louie"));
     cass.insert("yay for everyone", cass.newColumn("motto", "Swish!"));
 
-    log.info("getting a column: " + cass.getColumn("yay for me", "name"), null);
+    info("getting a column: " + cass.getColumn("yay for me", "name"));
     // Some(Column(name,Coda,1271789761374109))
 
-    log.info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name"), null);
+    info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name"));
     // None
 
-    log.info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink"), null);
+    info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink"));
     // None
 
-    log.info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")), null);
+    info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")));
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a whole row: " + cass.getRow("yay for me"), null);
+    info("getting a whole row: " + cass.getRow("yay for me"));
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name"), null);
+    info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name"));
     // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")), null);
+    info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")));
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
@@ -79,18 +83,18 @@ public final class CassieRun {
     cass.namesAs(VarIntCodec.get()).valuesAs(VarIntCodec.get())
         .insert("digits", cass.newColumn(new VarInt(1), new VarInt(300)));
 
-    log.info("Iterating!", null);
+    info("Iterating!");
     for (Tuple2<String, Column<String,String>> row : cass.rowIterator(2)) {
-      log.info("Found: " + row._2(), null);
+      info("Found: " + row._2());
     }
 
-    log.info("removing a column", null);
+    info("removing a column");
     cass.removeColumn("yay for me", "motto");
 
-    log.info("removing a row", null);
+    info("removing a row");
     cass.removeRow("yay for me");
 
-    log.info("Batching up some stuff", null);
+    info("Batching up some stuff");
     cass.batch()
       .removeColumn("yay for you", "name")
       .removeColumns("yay for us", Set("name", "motto"))

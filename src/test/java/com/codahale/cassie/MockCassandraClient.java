@@ -44,9 +44,9 @@ public final class MockCassandraClient {
   public final ColumnFamily<String,String,String> cf;
 
   public MockCassandraClient() {
-      this("ks");
+      this("ks", "cf");
   }
-  public MockCassandraClient(String ks) {
+  public MockCassandraClient(String ks, String cf) {
     this.client = mock(ServiceToClient.class);
     // stub out some standard cases
     when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
@@ -55,7 +55,7 @@ public final class MockCassandraClient {
     when(client.multiget_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
         anySlicePredicate(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
-    this.cf = new ColumnFamily(ks, "cf", new SimpleProvider(client),
+    this.cf = new ColumnFamily(ks, cf, new SimpleProvider(client),
         MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum(), WriteConsistency.Quorum());
   }

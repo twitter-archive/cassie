@@ -83,10 +83,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getRow("key") must equal(Map(
+      cf.getRow("key") must equal(asMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ))
+      )))
     }
   }
 
@@ -129,10 +129,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getColumns("key", Set("name", "age")) must equal(Map(
+      cf.getColumns("key", Set("name", "age")) must equal(asMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
-      ))
+      )))
     }
   }
 
@@ -159,10 +159,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name") must equal(asMap(Map(
         "key1" -> Column("name", "Coda", 2292L),
         "key2" -> Column("name", "Niki", 422L)
-      ))
+      )))
     }
 
     it("does not explode when the column doesn't exist for a key") {
@@ -173,9 +173,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name") must equal(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name") must equal(asMap(Map(
         "key1" -> Column("name", "Coda", 2292L)
-      ))
+      )))
     }
   }
 
@@ -204,16 +204,16 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumns(Set("key1", "key2"), Set("name", "age")) must equal(Map(
-        "key1" -> Map(
+      cf.multigetColumns(Set("key1", "key2"), Set("name", "age")) must equal(asMap(Map(
+        "key1" -> asMap(Map(
           "name" -> Column("name", "Coda", 2292L),
           "age" -> Column("age", "old", 11919L)
-        ),
-        "key2" -> Map(
+        )),
+        "key2" -> asMap(Map(
           "name" -> Column("name", "Niki", 422L),
           "age" -> Column("age", "lithe", 129L)
-        )
-      ))
+        ))
+      )))
     }
   }
 
@@ -229,23 +229,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       verify(client).insert(matchEq(b("key")), cp.capture, matchEq(col), matchEq(thrift.ConsistencyLevel.QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
-    }
-  }
-
-  describe("removing a column with an implicit timestamp") {
-    val (client, cf) = setup
-    implicit val clock = new Clock {
-      def timestamp = 445
-    }
-
-    it("performs a remove") {
-      cf.removeColumn("key", "age")
-
-      val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq(b("key")), cp.capture, matchEq(445L), matchEq(thrift.ConsistencyLevel.QUORUM))
-
-      cp.getValue.getColumn_family must equal("cf")
-      Utf8Codec.decode(cp.getValue.column) must equal("age")
     }
   }
 
@@ -274,45 +257,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       cp.getValue.column_family must equal("cf")
       cp.getValue.column must be(null)
-    }
-  }
-
-  describe("removing a row with an implicit timestamp") {
-    val (client, cf) = setup
-    implicit val clock = new Clock {
-      def timestamp = 445
-    }
-
-    it("performs a remove") {
-      cf.removeRow("key")
-
-      val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq(b("key")), cp.capture, matchEq(445L), matchEq(thrift.ConsistencyLevel.QUORUM))
-
-      cp.getValue.column_family must equal("cf")
-      cp.getValue.column must be(null)
-    }
-  }
-
-  describe("removing a set of columns from a row with an implicit timestamp") {
-    val (client, cf) = setup
-    implicit val clock = new Clock {
-      def timestamp = 445
-    }
-
-    it("performs a batch mutate") {
-      cf.removeColumns("key", Set("one", "two"))
-
-      val map = ArgumentCaptor.forClass(classOf[java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]])
-
-      verify(client).batch_mutate(map.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
-
-      val mutations = map.getValue
-      val mutation = mutations.get(b("key")).get("cf").get(0)
-      val deletion = mutation.getDeletion
-
-      deletion.getTimestamp must equal(445L)
-      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 
