@@ -62,13 +62,17 @@ public final class MockCassandraClient {
 
   public static final class SimpleProvider implements ClientProvider {
     public final ServiceToClient client;
+    public boolean closed = false;
     public SimpleProvider(ServiceToClient client) {
       this.client = client;
     }
     @Override
     public <A> Future<A> map(scala.Function1<ServiceToClient, Future<A>> func) {
+      assert !closed;
       return func.apply(client);
     }
+    @Override
+    public void close() { closed = true; }
   }
 
   public static class Fulfillment<A> extends Promise<A> {

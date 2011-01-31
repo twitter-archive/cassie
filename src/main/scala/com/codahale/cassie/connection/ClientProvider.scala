@@ -17,4 +17,9 @@ trait ClientProvider {
    * @return `f(client)`
    */
   def map[A](f: ServiceToClient => Future[A]): Future[A]
+
+  /**
+   * Releases any resources held by the provider.
+   */
+  def close() = {}
 }

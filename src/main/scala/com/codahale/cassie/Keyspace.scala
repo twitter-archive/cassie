@@ -5,7 +5,7 @@ import codecs.Codec
 import connection.ClientProvider
 
 /**
- * A Cassandra keyspace.
+ * A Cassandra keyspace, which maintains a connection pool.
  *
  * @param provider a [[com.codahale.cassie.connection.ClientProvider]] instance
  * @author coda
@@ -20,4 +20,9 @@ class Keyspace(val name: String, val provider: ClientProvider) {
               defaultNameCodec: Codec[Name],
               defaultValueCodec: Codec[Value]) =
     new ColumnFamily(this.name, name, provider, clock, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  
+  /**
+   * Closes connections to the cluster for this keyspace.
+   */
+  def close() = provider.close()
 }

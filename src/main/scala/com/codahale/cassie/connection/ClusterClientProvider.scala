@@ -51,7 +51,7 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
 
   def map[A](f: ServiceToClient => Future[A]) = f(client)
 
-  def close() = service.close()
+  override def close() = service.close()
 
   case class CassandraProtocol(keyspace: String) extends Protocol[ThriftClientRequest, Array[Byte]]
   {
