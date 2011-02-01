@@ -2,7 +2,7 @@ import sbt._
 import com.twitter.sbt._
 
 class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
-  with DefaultRepos with CompileFinagleThrift {
+  with DefaultRepos with CompileFinagleThrift with SubversionPublisher {
   /**
    * Repositories
    */
@@ -24,7 +24,9 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
    */
   val finagle = "com.twitter" % "finagle" % "1.1.8" 
   val finagleThrift = "com.twitter" % "finagle-thrift" % "1.1.8"
-  val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.2" % "provided" 
+  val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.2" % "provided"
+
+  override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
   /**
    * Fetch Cassandra itself, with only the client dependencies
