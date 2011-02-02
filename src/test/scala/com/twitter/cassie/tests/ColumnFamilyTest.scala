@@ -17,6 +17,10 @@ import com.twitter.cassie._
 
 import MockCassandraClient._
 
+/**
+ * Note that almost all calls on a ColumnFamily would normally be asynchronous.
+ * But in this case, MockCassandraClient takes asynchronicity out of the equation.
+ */
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
   type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]

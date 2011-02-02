@@ -204,24 +204,24 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def insert(key: Key, column: Column[Name, Value]) {
+  def insert(key: Key, column: Column[Name, Value]) = {
     insertAs(key, column)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
   def insertAs[K, N, V](key: K, column: Column[N, V])
-                  (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) {
+                  (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val cp = new thrift.ColumnParent(name)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
       column.timestamp, writeConsistency.level)
     provider.map {
       _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
-    }()
+    }
   }
 
   /**
    * Removes a column from a key.
    */
-  def removeColumn(key: Key, columnName: Name) {
+  def removeColumn(key: Key, columnName: Name) = {
     removeColumnWithTimestamp(key, columnName, clock.timestamp)
   }
 
@@ -231,24 +231,24 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) {
+  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) = {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(defaultNameCodec.encode(columnName))
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }()
+    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
   /**
    * Removes a set of columns from a key.
    */
-  def removeColumns(key: Key, columnNames: Set[Name]) {
+  def removeColumns(key: Key, columnNames: Set[Name]) = {
     removeColumnsWithTimestamp(key, columnNames, clock.timestamp)
   }
 
   /**
    * Removes a set of columns from a key with a specific timestamp.
    */
-  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) {
+  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) = {
     batch()
       .removeColumnsWithTimestamp(key, columnNames, timestamp)
       .execute()
@@ -257,7 +257,7 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Removes a key.
    */
-  def removeRow(key: Key) {
+  def removeRow(key: Key) = {
     removeRowWithTimestamp(key, clock.timestamp)
   }
 
@@ -267,8 +267,7 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def removeRowWithTimestamp(key: Key,
-                             timestamp: Long) {
+  def removeRowWithTimestamp(key: Key, timestamp: Long) = {
     val cp = new thrift.ColumnPath(name)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
     provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }()
