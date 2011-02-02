@@ -213,7 +213,7 @@ case class ColumnFamily[Key, Name, Value](
       column.timestamp, writeConsistency.level)
     provider.map {
       _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
-    }
+    }()
   }
 
   /**
@@ -233,7 +233,7 @@ case class ColumnFamily[Key, Name, Value](
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(defaultNameCodec.encode(columnName))
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
+    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }()
   }
 
   /**
@@ -269,7 +269,7 @@ case class ColumnFamily[Key, Name, Value](
                              timestamp: Long) {
     val cp = new thrift.ColumnPath(name)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
+    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }()
   }
 
   /**
@@ -284,7 +284,7 @@ case class ColumnFamily[Key, Name, Value](
   private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) {
     val mutations = builder.mutations
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
+    provider.map { _.batch_mutate(mutations, writeConsistency.level) }()
   }
 
   /**

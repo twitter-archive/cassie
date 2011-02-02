@@ -21,10 +21,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 import org.apache.cassandra.thrift.Cassandra.ServiceToClient;
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.ColumnParent;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.thrift.*;
 
 public final class MockCassandraClient {
   public static ByteBuffer anyByteBuffer() {
@@ -33,8 +30,14 @@ public final class MockCassandraClient {
   public static ColumnParent anyColumnParent() {
     return any(ColumnParent.class);
   }
+  public static ColumnPath anyColumnPath() {
+    return any(ColumnPath.class);
+  }
   public static SlicePredicate anySlicePredicate() {
     return any(SlicePredicate.class);
+  }
+  public static org.apache.cassandra.thrift.Column anyColumn() {
+    return any(org.apache.cassandra.thrift.Column.class);
   }
   public static ConsistencyLevel anyConsistencyLevel() {
     return any(ConsistencyLevel.class);
@@ -49,6 +52,12 @@ public final class MockCassandraClient {
   public MockCassandraClient(String ks, String cf) {
     this.client = mock(ServiceToClient.class);
     // stub out some standard cases
+    when(client.batch_mutate(anyMap(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(null));
+    when(client.remove(anyByteBuffer(), anyColumnPath(), anyInt(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(null));
+    when(client.insert(anyByteBuffer(), anyColumnParent(), anyColumn(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(null));
     when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
         anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new ArrayList<ColumnOrSuperColumn>()));
