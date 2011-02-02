@@ -232,20 +232,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
-  describe("removing a column with a specific timestamp") {
-    val (client, cf) = setup
-
-    it("performs a remove") {
-      cf.removeColumnWithTimestamp("key", "age", 55)
-
-      val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq(b("key")), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
-
-      cp.getValue.getColumn_family must equal("cf")
-      Utf8Codec.decode(cp.getValue.column) must equal("age")
-    }
-  }
-
   describe("removing a row with a specific timestamp") {
     val (client, cf) = setup
 
@@ -257,25 +243,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       cp.getValue.column_family must equal("cf")
       cp.getValue.column must be(null)
-    }
-  }
-
-  describe("removing a set of columns from a row with an explicit timestamp") {
-    val (client, cf) = setup
-
-    it("performs a batch mutate") {
-      cf.removeColumnsWithTimestamp("key", Set("one", "two"), 33)
-
-      val map = ArgumentCaptor.forClass(classOf[java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]])
-
-      verify(client).batch_mutate(map.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
-
-      val mutations = map.getValue
-      val mutation = mutations.get(b("key")).get("cf").get(0)
-      val deletion = mutation.getDeletion
-
-      deletion.getTimestamp must equal(33)
-      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
 
