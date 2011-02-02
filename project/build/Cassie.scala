@@ -29,11 +29,6 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
   /**
-   * Fetch Cassandra itself, with only the client dependencies
-   */
-  val cassandra = "org.apache.cassandra" % "cassandra-all" % "0.7.0" intransitive()
-
-  /**
    * Test Dependencies
    */
   val scalaTest =  "org.scalatest" % "scalatest" % "1.2" % "test" withSources() intransitive()
