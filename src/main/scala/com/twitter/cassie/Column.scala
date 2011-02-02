@@ -10,7 +10,7 @@ object Column {
    * Creates a new column with the provided name and value and the latest
    * timestamp from the implicit clock parameter.
    */
-  def apply[A, B](name: A, value: B)(implicit clock: Clock): Column[A, B] =
+  def apply[A, B](name: A, value: B, clock: Clock): Column[A, B] =
     Column(name, value, clock.timestamp)
 
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], colOrSCol: thrift.ColumnOrSuperColumn): Column[A, B] = {

@@ -26,7 +26,7 @@ class ColumnTest extends Spec with MustMatchers {
     implicit val clock = new Clock {
       def timestamp = 599238L
     }
-    val col = Column("id", 300)
+    val col = Column("id", 300, clock)
 
     it("has a name") {
       col.name must equal("id")

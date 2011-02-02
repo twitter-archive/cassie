@@ -43,7 +43,7 @@ case class ColumnFamily[Key, Name, Value](
    * @Java
    * Creates a new Column with an implicit timestamp.
    */
-  def newColumn[N, V](n: N, v: V) = Column(n, v)(clock)
+  def newColumn[N, V](n: N, v: V) = Column(n, v, clock)
 
   /**
    * Returns the optional value of a given column for a given key as the given
