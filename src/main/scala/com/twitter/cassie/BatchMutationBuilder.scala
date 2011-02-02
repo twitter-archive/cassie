@@ -72,7 +72,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
   }
 
   /**
-   * Submits the batch of operations.
+   * Submits the batch of operations, returning a future to allow blocking for success.
    */
   def execute() = cf.batch(this)
 

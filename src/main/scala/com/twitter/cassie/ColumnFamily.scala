@@ -285,7 +285,7 @@ case class ColumnFamily[Key, Name, Value](
   private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) {
     val mutations = builder.mutations
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }()
+    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
   /**
