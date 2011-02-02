@@ -1,6 +1,8 @@
 package com.twitter.cassie.tests
 
 import java.nio.ByteBuffer
+import java.util.{ArrayList, Arrays}
+
 import scalaj.collection.Imports._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
@@ -11,6 +13,8 @@ import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.thrift
 import com.twitter.cassie.codecs.{Utf8Codec}
+
+import com.twitter.cassie.MockCassandraClient.Fulfillment
 
 class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
   def newColumn(name: String, value: String, timestamp: Long) = {
@@ -30,7 +34,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
     val predicate = mock[thrift.SlicePredicate]
 
     val cf = mock[ColumnFamily[String, String, String]]
-    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(List[thrift.KeySlice]())
+    when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(new Fulfillment(new ArrayList[thrift.KeySlice]()))
 
     val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec)
 
@@ -60,11 +64,11 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
 
     val cf = mock[ColumnFamily[String, String, String]]
     when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(
-      List(slice),
-      List(slice1),
-      List(slice2),
-      List(slice3),
-      List(slice3)
+      new Fulfillment(new ArrayList(Arrays.asList(slice))),
+      new Fulfillment(new ArrayList(Arrays.asList(slice1))),
+      new Fulfillment(new ArrayList(Arrays.asList(slice2))),
+      new Fulfillment(new ArrayList(Arrays.asList(slice3))),
+      new Fulfillment(new ArrayList(Arrays.asList(slice3)))
     )
 
     val iterator = new ColumnIterator(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec)

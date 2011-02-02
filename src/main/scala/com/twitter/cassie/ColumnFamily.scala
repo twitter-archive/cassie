@@ -270,7 +270,7 @@ case class ColumnFamily[Key, Name, Value](
   def removeRowWithTimestamp(key: Key, timestamp: Long) = {
     val cp = new thrift.ColumnPath(name)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }()
+    provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
   /**
@@ -282,7 +282,7 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) {
+  private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) = {
     val mutations = builder.mutations
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
@@ -375,7 +375,7 @@ case class ColumnFamily[Key, Name, Value](
     range.setStart_key(startKey)
     range.setEnd_key(endKey)
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
-    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }().asScala
+    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
   }
   
   def encodeSet[V](values: Set[V])(implicit codec: Codec[V]): List[ByteBuffer] = {

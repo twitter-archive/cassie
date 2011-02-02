@@ -1,6 +1,10 @@
 package com.twitter.cassie
 
 import java.nio.ByteBuffer
+import java.util.List
+
+import com.twitter.util.Future
+
 import codecs.Codec
 import scalaj.collection.Imports._
 import collection.mutable.ArrayBuffer
@@ -29,6 +33,7 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
         with java.lang.Iterable[(Key, Column[Name, Value])] with Logging {
   private var lastKey: Option[ByteBuffer] = None
   private var cycled = false
+  private var outstanding: Option[Future[List[KeySlice]]] = None
   private val buffer = new ArrayBuffer[(Key, Column[Name, Value])]
 
   def next() = {
@@ -54,8 +59,9 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
   def remove() = throw new UnsupportedOperationException()
 
   private def getNextSlice() {
-    val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)
-    val slice = cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate)
+    // if we had an outstanding request triggered during the last call, block to
+    // return it, otherwise block for a new request immediately
+    val slice = outstanding.getOrElse(requestNextSlice())().asScala
     val filterPred = (ks: KeySlice) => lastKey.map { _ == ks.key }.getOrElse(false)
     buffer ++= slice.filterNot(filterPred).flatMap { ks =>
       ks.columns.asScala.map { col =>
@@ -66,6 +72,13 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
       val lastFoundKey = Some(slice.last.key)
       cycled = lastKey == lastFoundKey
       lastKey = lastFoundKey
-    }    
+    }
+    // eagerly request the next slice
+    outstanding = if (cycled) None else Some(requestNextSlice())
+  }
+
+  private def requestNextSlice(): Future[List[KeySlice]] = {
+    val effectiveCount = lastKey.map { _ => batchSize }.getOrElse(batchSize+1)
+    cf.getRangeSlice(lastKey.getOrElse(startKey), endKey, effectiveCount, predicate)
   }
 }
