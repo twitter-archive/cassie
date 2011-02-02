@@ -9,56 +9,49 @@ import clocks.Clock
 import scalaj.collection.Imports._
 import collection.mutable.{ArrayBuffer, HashMap}
 import org.apache.cassandra.thrift.{SlicePredicate, Deletion, Mutation, Column => TColumn, ColumnOrSuperColumn}
+import scala.collection.mutable.ListBuffer
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
  * TODO: Port to Java collections.
- *
- * @author coda
  */
 private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,Name,Value]) {
-  private val ops = new HashMap[ByteBuffer, HashMap[String, ArrayBuffer[Mutation]]]()
 
-  /**
-   * Inserts a column.
-   */
-  def insert(key: Key, column: Column[Name, Value]) = {
-    val cosc = new ColumnOrSuperColumn
-    cosc.setColumn(
-      new TColumn(
-        cf.defaultNameCodec.encode(column.name),
-        cf.defaultValueCodec.encode(column.value),
-        column.timestamp
-      )
-    )
-    val mutation = new Mutation
-    mutation.setColumn_or_supercolumn(cosc)
-    addMutation(key, mutation)
+  case class Op
+  case class Insert(key: Key, column: Column[Name, Value]) extends Op
+  case class ColumnDeletions(key: Key, columnNames: Set[Name]) extends Op
+  case class TimestampedColumnDeletions(key: Key, columnNames: Set[Name], timestamp: Long) extends Op
+
+  private val ops = new ListBuffer[Op]
+
+  def insert(key: Key, column: Column[Name, Value]) = synchronized {
+    ops.append(Insert(key, column))
+    this
   }
 
-  /**
-   * Removes a column from a row.
-   */
   def removeColumn(key: Key, columnName: Name) =
-    removeColumnWithTimestamp(key, columnName, cf.clock.timestamp)
+    removeColumns(key, singletonSet(columnName))
 
-  /**
-   * Removes a column from a row with a specific timestamp.
-   */
-  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) =
+  def removeColumns(key: Key, columnNames: Set[Name]) = synchronized {
+    ops.append(ColumnDeletions(key, columnNames))
+    this
+  }
+
+  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) = {
     removeColumnsWithTimestamp(key, singletonSet(columnName), timestamp)
+  }
 
-  /**
-   * Removes a set of columns from a row.
-   */
-  def removeColumns(key: Key, columnNames: Set[Name]) = 
-    removeColumnsWithTimestamp(key, columnNames, cf.clock.timestamp)
+  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) = synchronized {
+    ops.append(TimestampedColumnDeletions(key, columnNames, timestamp))
+    this
+  }
 
-  /**
-   * Removes a set of columns from a row with a specific timestamp.
-   */
-  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) = {
+  def execute() = {
+    cf.batch(mutations)
+  }
+
+  private[cassie] def deleteMutation(key: Key, columnNames: Set[Name], timestamp: Long) = {
     val pred = new SlicePredicate
     pred.setColumn_names(cf.encodeSet(columnNames)(cf.defaultNameCodec))
 
@@ -67,30 +60,45 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
 
     val mutation = new Mutation
     mutation.setDeletion(deletion)
-
-    addMutation(key, mutation)
+    mutation
   }
 
-  /**
-   * Submits the batch of operations.
-   */
-  def execute() = cf.batch(this)
+  private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = synchronized {
+    val timestamp = cf.clock.timestamp
+    val mutations = new HashMap[ByteBuffer, HashMap[String, ArrayBuffer[Mutation]]]()
 
-  private def addMutation(key: Key, mutation: Mutation) = {
-    synchronized {
-      ops.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
-              getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+    ops.map { op =>
+      op match {
+        case Insert(key, column) => {
+          val cosc = new ColumnOrSuperColumn
+          cosc.setColumn(
+            new TColumn(
+              cf.defaultNameCodec.encode(column.name),
+              cf.defaultValueCodec.encode(column.value),
+              column.timestamp
+            )
+          )
+          val mutation = new Mutation
+          mutation.setColumn_or_supercolumn(cosc)
+          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
+                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+        }
+        case ColumnDeletions(key, columnNames) => {
+          val mutation = deleteMutation(key, columnNames, timestamp)
+          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
+                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+        }
+        case TimestampedColumnDeletions(key, columnNames, ts) => {
+          val mutation = deleteMutation(key, columnNames, ts)
+          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
+                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+        }
+      }
     }
-    this
-  }
-
-  private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = {
-    synchronized {
-      ops.map { case (key, cfMap) =>
-        key -> cfMap.map { case (cf, m) =>
-          cf -> m.asJava
-        }.asJava
+    mutations.map { case (key, cfMap) =>
+      key -> cfMap.map { case (cf, m) =>
+        cf -> m.asJava
       }.asJava
-    }
+    }.asJava
   }
 }

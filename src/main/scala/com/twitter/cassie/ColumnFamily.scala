@@ -10,6 +10,8 @@ import java.nio.ByteBuffer
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import java.util.Collections.{singleton => singletonSet}
+import org.apache.cassandra.thrift.Mutation
+
 
 /**
  * A readable, writable column family with batching capabilities. This is a
@@ -281,8 +283,7 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  private[cassie] def batch(builder: BatchMutationBuilder[Key,Name,Value]) {
-    val mutations = builder.mutations
+  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
