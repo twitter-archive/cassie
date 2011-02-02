@@ -159,7 +159,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name") must equal(asMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asMap(Map(
         "key1" -> Column("name", "Coda", 2292L),
         "key2" -> Column("name", "Niki", 422L)
       )))
@@ -173,7 +173,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name") must equal(asMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asMap(Map(
         "key1" -> Column("name", "Coda", 2292L)
       )))
     }
@@ -204,7 +204,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      cf.multigetColumns(Set("key1", "key2"), Set("name", "age")) must equal(asMap(Map(
+      cf.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(asMap(Map(
         "key1" -> asMap(Map(
           "name" -> Column("name", "Coda", 2292L),
           "age" -> Column("age", "old", 11919L)

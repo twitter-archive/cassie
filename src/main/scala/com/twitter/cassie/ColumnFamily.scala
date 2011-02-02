@@ -11,6 +11,8 @@ import java.nio.ByteBuffer
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import java.util.Collections.{singleton => singletonSet}
 
+import com.twitter.util.Future
+
 /**
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
@@ -137,14 +139,14 @@ case class ColumnFamily[Key, Name, Value](
    */
   def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Column[N, V]] = {
-    val rows = multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
-      
-    val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
-    for (rowEntry <- rows.entrySet.asScala)
-      if (!rowEntry.getValue.isEmpty)
-        cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
-    cols
+                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] = {
+    multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).map { rows =>
+      val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
+      for (rowEntry <- rows.entrySet.asScala)
+        if (!rowEntry.getValue.isEmpty)
+          cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
+      cols
+    }
   }
 
   /**
@@ -152,7 +154,7 @@ case class ColumnFamily[Key, Name, Value](
    * types.
    */
   def multigetColumn(keys: Set[Key],
-                     columnName: Name): Map[Key, Column[Name, Value]] = {
+                     columnName: Name): Future[Map[Key, Column[Name, Value]]] = {
     multigetColumnAs[Key, Name, Value](keys, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -165,34 +167,34 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.InvalidRequestException])
   def multigetColumnsAs[K, N, V](keys: Set[K],
                               columnNames: Set[N])
-                             (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[K, Map[N, Column[N, V]]] = {
+                             (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Map[N, Column[N, V]]]] = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(encodeSet(columnNames))
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
     val encodedKeys = encodeSet(keys)
-    val result = provider.map {
+    provider.map {
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
-    }()
-    // decode result
-    val rows: Map[K, Map[N, Column[N, V]]] = new HashMap(result.size)
-    for (rowEntry <- result.entrySet.asScala) {
-      val cols: Map[N, Column[N, V]] = new HashMap(rowEntry.getValue.size)
-      for (cosc <- rowEntry.getValue.asScala) {
-        val col = Column.convert(nameCodec, valueCodec, cosc)
-        cols.put(col.name, col)
+    }.map { result =>
+      // decode result
+      val rows: Map[K, Map[N, Column[N, V]]] = new HashMap(result.size)
+      for (rowEntry <- result.entrySet.asScala) {
+        val cols: Map[N, Column[N, V]] = new HashMap(rowEntry.getValue.size)
+        for (cosc <- rowEntry.getValue.asScala) {
+          val col = Column.convert(nameCodec, valueCodec, cosc)
+          cols.put(col.name, col)
+        }
+        rows.put(keyCodec.decode(rowEntry.getKey), cols)
       }
-      rows.put(keyCodec.decode(rowEntry.getKey), cols)
+      rows
     }
-    rows
   }
 
   /**
    * Returns a map of keys to a map of column names to the columns for a given
    * set of keys and columns as the default types.
    */
-  def multigetColumns(keys: Set[Key],
-                      columnNames: Set[Name]): Map[Key, Map[Name, Column[Name, Value]]] = {
+  def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
     multigetColumnsAs[Key, Name, Value](keys, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
