@@ -75,7 +75,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
             new TColumn(
               cf.defaultNameCodec.encode(column.name),
               cf.defaultValueCodec.encode(column.value),
-              column.timestamp
+              column.timestamp.getOrElse(timestamp)
             )
           )
           val mutation = new Mutation

@@ -30,17 +30,17 @@ object CassieRun extends Logging {
     val cass = keyspace.columnFamily[String, String, String]("Standard1")
 
     log.info("inserting some columns")
-    cass.insert("yay for me", Column("name", "Coda", clock))
-    cass.insert("yay for me", Column("motto", "Moar lean.", clock))
+    cass.insert("yay for me", Column("name", "Coda"))
+    cass.insert("yay for me", Column("motto", "Moar lean."))
 
-    cass.insert("yay for you", Column("name", "Niki", clock))
-    cass.insert("yay for you", Column("motto", "Told ya.", clock))
+    cass.insert("yay for you", Column("name", "Niki"))
+    cass.insert("yay for you", Column("motto", "Told ya."))
 
-    cass.insert("yay for us", Column("name", "Biscuit", clock))
-    cass.insert("yay for us", Column("motto", "Mlalm.", clock))
+    cass.insert("yay for us", Column("name", "Biscuit"))
+    cass.insert("yay for us", Column("motto", "Mlalm."))
 
-    cass.insert("yay for everyone", Column("name", "Louie", clock))
-    cass.insert("yay for everyone", Column("motto", "Swish!", clock))
+    cass.insert("yay for everyone", Column("name", "Louie"))
+    cass.insert("yay for everyone", Column("motto", "Swish!"))
 
     log.info("getting a column: %s", cass.getColumn("yay for me", "name"))
     // Some(Column(name,Coda,1271789761374109))
@@ -64,10 +64,10 @@ object CassieRun extends Logging {
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.insert(LexicalUUID(), Column("yay", "boo", clock))
+    cass.insert(LexicalUUID(), Column("yay", "boo"))
 
     cass.getColumnAs[String, FixedLong, AsciiString]("key", 2)
-    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300, clock))
+    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300))
 
     log.info("Iterating!")
     for ((key, col) <- cass.rowIterator(2): Iterator[(String, Column[String, String])]) {
@@ -84,8 +84,8 @@ object CassieRun extends Logging {
     cass.batch()
       .removeColumn("yay for you", "name")
       .removeColumns("yay for us", Set("name", "motto"))
-      .insert("yay for nobody", Column("name", "Burt", clock))
-      .insert("yay for nobody", Column("motto", "'S funny.", clock))
+      .insert("yay for nobody", Column("name", "Burt"))
+      .insert("yay for nobody", Column("motto", "'S funny."))
       .execute()
 
     log.info("Wrappin' up");
