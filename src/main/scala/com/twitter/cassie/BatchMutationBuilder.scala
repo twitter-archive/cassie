@@ -21,7 +21,6 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
   case class Op
   case class Insert(key: Key, column: Column[Name, Value]) extends Op
   case class ColumnDeletions(key: Key, columnNames: Set[Name]) extends Op
-  case class TimestampedColumnDeletions(key: Key, columnNames: Set[Name], timestamp: Long) extends Op
 
   private val ops = new ListBuffer[Op]
 
@@ -38,29 +37,8 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
     this
   }
 
-  def removeColumnWithTimestamp(key: Key, columnName: Name, timestamp: Long) = {
-    removeColumnsWithTimestamp(key, singletonSet(columnName), timestamp)
-  }
-
-  def removeColumnsWithTimestamp(key: Key, columnNames: Set[Name], timestamp: Long) = synchronized {
-    ops.append(TimestampedColumnDeletions(key, columnNames, timestamp))
-    this
-  }
-
   def execute() = {
     cf.batch(mutations)
-  }
-
-  private[cassie] def deleteMutation(key: Key, columnNames: Set[Name], timestamp: Long) = {
-    val pred = new SlicePredicate
-    pred.setColumn_names(cf.encodeSet(columnNames)(cf.defaultNameCodec))
-
-    val deletion = new Deletion(timestamp)
-    deletion.setPredicate(pred)
-
-    val mutation = new Mutation
-    mutation.setDeletion(deletion)
-    mutation
   }
 
   private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = synchronized {
@@ -84,12 +62,15 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
                   getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
         }
         case ColumnDeletions(key, columnNames) => {
-          val mutation = deleteMutation(key, columnNames, timestamp)
-          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
-                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
-        }
-        case TimestampedColumnDeletions(key, columnNames, ts) => {
-          val mutation = deleteMutation(key, columnNames, ts)
+          val pred = new SlicePredicate
+          pred.setColumn_names(cf.encodeSet(columnNames)(cf.defaultNameCodec))
+
+          val deletion = new Deletion(timestamp)
+          deletion.setPredicate(pred)
+
+          val mutation = new Mutation
+          mutation.setDeletion(deletion)
+
           mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(key), new HashMap).
                   getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
         }

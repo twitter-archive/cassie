@@ -254,13 +254,6 @@ Or even a row:
     
     people.removeRow("puddle")
 
-If you need to ensure your delete action has a specific timestamp, you can:
-
-    people.removeColumnWithTimestamp("puddle", "name", 40010L)
-    people.removeColumnsWithTimestamp("puddle", Set("name", "motto"), 818181L)
-    people.removeRowWithTimestamp("puddle", 901289282L)
-
-
 Generating Unique IDs
 ---------------------
 

@@ -212,7 +212,7 @@ case class ColumnFamily[Key, Name, Value](
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) {
     val cp = new thrift.ColumnParent(name)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      Some(column.timestamp), writeConsistency.level)
+      column.timestamp.get, writeConsistency.level)
     provider.map {
       _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
     }
