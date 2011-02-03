@@ -43,7 +43,7 @@ case class ColumnFamily[Key, Name, Value](
 
   /**
    * @Java
-   * Creates a new Column with an implicit timestamp.
+   * Creates a new Column with.
    */
   def newColumn[N, V](n: N, v: V) = Column(n, v)
 
@@ -212,7 +212,7 @@ case class ColumnFamily[Key, Name, Value](
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) {
     val cp = new thrift.ColumnParent(name)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      column.timestamp, writeConsistency.level)
+      Some(column.timestamp), writeConsistency.level)
     provider.map {
       _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
     }
