@@ -14,8 +14,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
     val keyspace = new Keyspace("MyApp", provider)
 
     it("builds a column family with the same ClientProvider") {
-      implicit val clock = MicrosecondEpochClock
-      val cf = keyspace.columnFamily[String, String, String]("People")
+      val cf = keyspace.columnFamily[String, String, String]("People", MicrosecondEpochClock)
       cf.keyspace must equal("MyApp")
       cf.name must equal("People")
       cf.readConsistency must equal(ReadConsistency.Quorum)

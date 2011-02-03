@@ -12,8 +12,6 @@ object CassieRun extends Logging {
   def main(args: Array[String]) {
     Logging.configure(_.level = Level.INFO)
 
-    implicit val clock = MicrosecondEpochClock
-
     // create a cluster with a single seed from which to map keyspaces
     val cluster = new Cluster("localhost")
 
@@ -27,7 +25,7 @@ object CassieRun extends Logging {
       .connect()
 
     // create a column family
-    val cass = keyspace.columnFamily[String, String, String]("Standard1")
+    val cass = keyspace.columnFamily[String, String, String]("Standard1", MicrosecondEpochClock)
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda")).apply()
@@ -64,7 +62,7 @@ object CassieRun extends Logging {
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.insert(LexicalUUID(), Column("yay", "boo")).apply()
+    cass.insert(LexicalUUID(cass.clock), Column("yay", "boo")).apply()
 
     cass.getColumnAs[String, FixedLong, AsciiString]("key", 2).apply()
     cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300)).apply()

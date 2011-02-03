@@ -68,12 +68,8 @@ writes and deletes should be processed. Cassie comes with a few different clock
 implementations, but you'll probably want to use `MicrosecondEpochClock`, which
 is a strictly-increasing clock of microseconds since January 1st, 1970.
 
-Set it up as an implicit variable:
-    
-    implicit val clock = MicrosecondEpochClock
-
 (For each operation which requires a timestamp, you always have the option of
-passing in a specific timestamp. In general, though, you should stick with this
+passing in a specific timestamp. In general, though, you should stick with the
 default.)
 
 
@@ -111,8 +107,8 @@ Accessing Column Families
 
 Once you've got a `Keyspace` instance, you can load your column families:
 
-    val people = keyspace.columnFamily[String, String, String]("People")
-    val numbers = keyspace.columnFamily[String, String, VarInt]("People",
+    val people = keyspace.columnFamily[String, String, String]("People", MicrosecondEpochClock)
+    val numbers = keyspace.columnFamily[String, String, VarInt]("People", MicrosecondEpochClock,
                     defaultReadConsistency = ReadConsistency.One,
                     defaultWriteConsistency = WriteConsistency.Any)
 
@@ -257,13 +253,6 @@ Or a set of columns:
 Or even a row:
     
     people.removeRow("puddle")
-
-If you need to ensure your delete action has a specific timestamp, you can:
-
-    people.removeColumnWithTimestamp("puddle", "name", 40010L)
-    people.removeColumnsWithTimestamp("puddle", Set("name", "motto"), 818181L)
-    people.removeRowWithTimestamp("puddle", 901289282L)
-
 
 Generating Unique IDs
 ---------------------

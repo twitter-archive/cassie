@@ -35,11 +35,11 @@ class LexicalUUIDTest extends Spec with MustMatchers {
   }
 
   describe("generating a lexical UUID") {
-    implicit val clock = new Clock {
+    val clock = new Clock {
       def timestamp = 19910019L
     }
 
-    val uuid = new LexicalUUID(1001)
+    val uuid = new LexicalUUID(clock, 1001)
 
     it("uses the timestamp from the clock and the provided worker ID") {
       uuid.toString must equal("00000000-012f-cd83-00000000000003e9")

@@ -42,20 +42,6 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     }
   }
 
-  describe("removing a column with an explicit timestamp") {
-    val builder = setup()
-    builder.removeColumnWithTimestamp("key", "column", 22)
-    val mutations = Mutations(builder)
-
-    it("adds a deletion mutation") {
-      val mutation = mutations.get(enc("key")).get("People").get(0)
-      val deletion = mutation.getDeletion
-
-      deletion.getTimestamp must equal(22)
-      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("column"))
-    }
-  }
-
   describe("removing a set of columns with an implicit timestamp") {
     val builder = setup()
     builder.removeColumns("key", Set("one", "two"))
@@ -65,20 +51,6 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
       val mutation = mutations.get(enc("key")).get("People").get(0)
       val deletion = mutation.getDeletion
 
-      deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
-    }
-  }
-
-  describe("removing a set of columns with an explicit timestamp") {
-    val builder = setup()
-    builder.removeColumnsWithTimestamp("key", Set("one", "two"), 22)
-    val mutations = Mutations(builder)
-
-    it("adds a deletion mutation") {
-      val mutation = mutations.get(enc("key")).get("People").get(0)
-      val deletion = mutation.getDeletion
-
-      deletion.getTimestamp must equal(22)
       deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }

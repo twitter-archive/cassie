@@ -6,12 +6,8 @@ import codecs.Codec
 import org.apache.cassandra.thrift
 
 object Column {
-  /**
-   * Creates a new column with the provided name and value and the latest
-   * timestamp from the implicit clock parameter.
-   */
-  def apply[A, B](name: A, value: B)(implicit clock: Clock): Column[A, B] =
-    Column(name, value, clock.timestamp)
+
+  def apply[A, B](name: A, value: B, timestamp: Long): Column[A, B] = apply(name, value, Some(timestamp))
 
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], colOrSCol: thrift.ColumnOrSuperColumn): Column[A, B] = {
     Column(
@@ -25,7 +21,7 @@ object Column {
     new thrift.Column(
       nameCodec.encode(col.name),
       valueCodec.encode(col.value),
-      col.timestamp
+      col.timestamp.getOrElse { throw new RuntimeException("Thrift requires a timestamp")}
     )
   }
 }
@@ -35,7 +31,7 @@ object Column {
  *
  * @author coda
  */
-case class Column[A, B](name: A, value: B, timestamp: Long) {
+case class Column[A, B](name: A, value: B, timestamp: Option[Long] = None) {
   def pair = name -> this
 }
 

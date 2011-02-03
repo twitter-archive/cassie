@@ -13,8 +13,8 @@ object LexicalUUID {
    * Given a clock, generates a new LexicalUUID, using a hash of the machine's
    * hostname as a worker ID.
    */
-  def apply()(implicit clock: Clock): LexicalUUID =
-    new LexicalUUID(LexicalUUID.defaultWorkerID)
+  def apply(clock: Clock): LexicalUUID =
+    new LexicalUUID(clock, LexicalUUID.defaultWorkerID)
 
   /**
    * Given a UUID formatted as a hex string, returns it as a LexicalUUID.
@@ -37,13 +37,13 @@ case class LexicalUUID(timestamp: Long, workerID: Long) extends Ordered[LexicalU
    * has unique worker ID and a clock which is guaranteed to never go backwards,
    * then each generated UUID will be unique. 
    */
-  def this(workerID: Long)(implicit clock: Clock) = this(clock.timestamp, workerID)
+  def this(clock: Clock, workerID: Long) = this(clock.timestamp, workerID)
 
   /**
    * Given a clock, generates a new LexicalUUID, using a hash of the machine's
    * hostname as a worker ID.
    */
-  def this()(implicit clock: Clock) = this(LexicalUUID.defaultWorkerID)
+  def this(clock: Clock) = this(clock.timestamp, LexicalUUID.defaultWorkerID)
 
   /**
    * Sort by timestamp, then by worker ID.
