@@ -30,44 +30,44 @@ object CassieRun extends Logging {
     val cass = keyspace.columnFamily[String, String, String]("Standard1")
 
     log.info("inserting some columns")
-    cass.insert("yay for me", Column("name", "Coda"))
-    cass.insert("yay for me", Column("motto", "Moar lean."))
+    cass.insert("yay for me", Column("name", "Coda")).apply()
+    cass.insert("yay for me", Column("motto", "Moar lean.")).apply()
 
-    cass.insert("yay for you", Column("name", "Niki"))
-    cass.insert("yay for you", Column("motto", "Told ya."))
+    cass.insert("yay for you", Column("name", "Niki")).apply()
+    cass.insert("yay for you", Column("motto", "Told ya.")).apply()
 
-    cass.insert("yay for us", Column("name", "Biscuit"))
-    cass.insert("yay for us", Column("motto", "Mlalm."))
+    cass.insert("yay for us", Column("name", "Biscuit")).apply()
+    cass.insert("yay for us", Column("motto", "Mlalm.")).apply()
 
-    cass.insert("yay for everyone", Column("name", "Louie"))
-    cass.insert("yay for everyone", Column("motto", "Swish!"))
+    cass.insert("yay for everyone", Column("name", "Louie")).apply()
+    cass.insert("yay for everyone", Column("motto", "Swish!")).apply()
 
-    log.info("getting a column: %s", cass.getColumn("yay for me", "name"))
+    log.info("getting a column: %s", cass.getColumn("yay for me", "name").apply())
     // Some(Column(name,Coda,1271789761374109))
 
-    log.info("getting a column that doesn't exist: %s", cass.getColumn("yay for no one", "name"))
+    log.info("getting a column that doesn't exist: %s", cass.getColumn("yay for no one", "name").apply())
     // None
 
-    log.info("getting a column that doesn't exist #2: %s", cass.getColumn("yay for no one", "oink"))
+    log.info("getting a column that doesn't exist #2: %s", cass.getColumn("yay for no one", "oink").apply())
     // None
 
-    log.info("getting a set of columns: %s", cass.getColumns("yay for me", Set("name", "motto")))
+    log.info("getting a set of columns: %s", cass.getColumns("yay for me", Set("name", "motto")).apply())
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a whole row: %s", cass.getRow("yay for me"))
+    log.info("getting a whole row: %s", cass.getRow("yay for me").apply())
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a column from a set of keys: %s", cass.multigetColumn(Set("yay for me", "yay for you"), "name"))
+    log.info("getting a column from a set of keys: %s", cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply())
     // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
 
-    log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")))
+    log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply())
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.insert(LexicalUUID(), Column("yay", "boo"))
+    cass.insert(LexicalUUID(), Column("yay", "boo")).apply()
 
-    cass.getColumnAs[String, FixedLong, AsciiString]("key", 2)
-    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300))
+    cass.getColumnAs[String, FixedLong, AsciiString]("key", 2).apply()
+    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300)).apply()
 
     log.info("Iterating!")
     for ((key, col) <- cass.rowIterator(2): Iterator[(String, Column[String, String])]) {
@@ -75,10 +75,10 @@ object CassieRun extends Logging {
     }
 
     log.info("removing a column")
-    cass.removeColumn("yay for me", "motto")
+    cass.removeColumn("yay for me", "motto").apply()
 
     log.info("removing a row")
-    cass.removeRow("yay for me")
+    cass.removeRow("yay for me").apply()
 
     log.info("Batching up some stuff")
     cass.batch()
@@ -86,7 +86,7 @@ object CassieRun extends Logging {
       .removeColumns("yay for us", Set("name", "motto"))
       .insert("yay for nobody", Column("name", "Burt"))
       .insert("yay for nobody", Column("motto", "'S funny."))
-      .execute()
+      .execute().apply()
 
     log.info("Wrappin' up");
     keyspace.close();

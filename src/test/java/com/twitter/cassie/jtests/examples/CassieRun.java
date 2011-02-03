@@ -35,46 +35,46 @@ public final class CassieRun {
     // create a column family
     ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
 
-    info("inserting some columns");
-    cass.insert("yay for me", cass.newColumn("name", "Coda"));
-    cass.insert("yay for me", cass.newColumn("motto", "Moar lean."));
+    info("inserting some columns asynchronously");
+    cass.insert("yay for me", cass.newColumn("name", "Coda")).apply();
+    cass.insert("yay for me", cass.newColumn("motto", "Moar lean.")).apply();
 
-    cass.insert("yay for you", cass.newColumn("name", "Niki"));
-    cass.insert("yay for you", cass.newColumn("motto", "Told ya."));
+    cass.insert("yay for you", cass.newColumn("name", "Niki")).apply();
+    cass.insert("yay for you", cass.newColumn("motto", "Told ya.")).apply();
 
-    cass.insert("yay for us", cass.newColumn("name", "Biscuit"));
-    cass.insert("yay for us", cass.newColumn("motto", "Mlalm."));
+    cass.insert("yay for us", cass.newColumn("name", "Biscuit")).apply();
+    cass.insert("yay for us", cass.newColumn("motto", "Mlalm.")).apply();
 
-    cass.insert("yay for everyone", cass.newColumn("name", "Louie"));
-    cass.insert("yay for everyone", cass.newColumn("motto", "Swish!"));
+    cass.insert("yay for everyone", cass.newColumn("name", "Louie")).apply();
+    cass.insert("yay for everyone", cass.newColumn("motto", "Swish!")).apply();
 
-    info("getting a column: " + cass.getColumn("yay for me", "name"));
+    info("getting a column: " + cass.getColumn("yay for me", "name").apply());
     // Some(Column(name,Coda,1271789761374109))
 
-    info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name"));
+    info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name").apply());
     // None
 
-    info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink"));
+    info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink").apply());
     // None
 
-    info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")));
+    info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")).apply());
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    info("getting a whole row: " + cass.getRow("yay for me"));
+    info("getting a whole row: " + cass.getRow("yay for me").apply());
     // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
 
-    info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name"));
+    info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply());
     // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
 
-    info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")));
+    info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply());
     // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
 
     // drop some UUID sauce on things
-    cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo"));
+    cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo")).apply();
 
-    cass.namesAs(FixedLongCodec.get()).valuesAs(AsciiStringCodec.get()).getColumn("key", new FixedLong(2));
+    cass.namesAs(FixedLongCodec.get()).valuesAs(AsciiStringCodec.get()).getColumn("key", new FixedLong(2)).apply();
     cass.namesAs(VarIntCodec.get()).valuesAs(VarIntCodec.get())
-        .insert("digits", cass.newColumn(new VarInt(1), new VarInt(300)));
+        .insert("digits", cass.newColumn(new VarInt(1), new VarInt(300))).apply();
 
     info("Iterating!");
     for (Tuple2<String, Column<String,String>> row : cass.rowIterator(2)) {
@@ -82,10 +82,10 @@ public final class CassieRun {
     }
 
     info("removing a column");
-    cass.removeColumn("yay for me", "motto");
+    cass.removeColumn("yay for me", "motto").apply();
 
     info("removing a row");
-    cass.removeRow("yay for me");
+    cass.removeRow("yay for me").apply();
 
     info("Batching up some stuff");
     cass.batch()
@@ -93,7 +93,7 @@ public final class CassieRun {
       .removeColumns("yay for us", Set("name", "motto"))
       .insert("yay for nobody", cass.newColumn("name", "Burt"))
       .insert("yay for nobody", cass.newColumn("motto", "'S funny."))
-      .execute();
+      .execute().apply();
 
     info("Wrappin' up");
     keyspace.close();
