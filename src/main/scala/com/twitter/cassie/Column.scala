@@ -21,7 +21,7 @@ object Column {
     new thrift.Column(
       nameCodec.encode(col.name),
       valueCodec.encode(col.value),
-      col.timestamp.getOrElse(0) // TODO throw
+      col.timestamp.getOrElse { throw new RuntimeException("Thrift requires a timestamp")}
     )
   }
 }
