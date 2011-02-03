@@ -54,7 +54,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns none if the column doesn't exist") {
-      cf.getColumn("key", "name") must equal(None)
+      cf.getColumn("key", "name")() must equal(None)
     }
 
     it("returns a option of a column if it exists") {
@@ -62,7 +62,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getColumn("key", "name") must equal(Some(Column("name", "Coda", 2292L)))
+      cf.getColumn("key", "name")() must equal(Some(Column("name", "Coda", 2292L)))
     }
   }
 
@@ -87,7 +87,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getRow("key") must equal(asMap(Map(
+      cf.getRow("key")() must equal(asMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       )))
@@ -133,7 +133,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getColumns("key", Set("name", "age")) must equal(asMap(Map(
+      cf.getColumns("key", Set("name", "age"))() must equal(asMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       )))

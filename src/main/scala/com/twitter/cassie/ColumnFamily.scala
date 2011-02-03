@@ -53,8 +53,9 @@ case class ColumnFamily[Key, Name, Value](
    */
   def getColumnAs[K, N, V](key: K,
                            columnName: N)
-                          (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Option[Column[N, V]] = {
-    Option(getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).get(columnName))
+                          (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Option[Column[N, V]]] = {
+    getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
+      .map { resmap => Option(resmap.get(columnName)) }
   }
 
   /**
@@ -62,7 +63,7 @@ case class ColumnFamily[Key, Name, Value](
    * types.
    */
   def getColumn(key: Key,
-                columnName: Name): Option[Column[Name, Value]] = {
+                columnName: Name): Future[Option[Column[Name, Value]]] = {
     getColumnAs[Key, Name, Value](key, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -72,7 +73,7 @@ case class ColumnFamily[Key, Name, Value](
    * slow and horrible.
    */
   def getRowAs[K, N, V](key: K)
-                    (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N, Column[N, V]] = {
+                    (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
     getRowSliceAs[K, N, V](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec, valueCodec)
   }
 
@@ -81,7 +82,7 @@ case class ColumnFamily[Key, Name, Value](
    * default types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def getRow(key: Key): Map[Name, Column[Name, Value]] = {
+  def getRow(key: Key): Future[Map[Name, Column[Name, Value]]] = {
     getRowAs[Key, Name, Value](key)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -93,7 +94,7 @@ case class ColumnFamily[Key, Name, Value](
                              endColumnName: Option[N],
                              count: Int,
                              order: Order)
-                            (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N, Column[N, V]] = {
+                            (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
     val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
     val pred = new thrift.SlicePredicate()
@@ -108,7 +109,7 @@ case class ColumnFamily[Key, Name, Value](
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
                   count: Int,
-                  order: Order): Map[Name, Column[Name, Value]] = {
+                  order: Order): Future[Map[Name, Column[Name, Value]]] = {
     getRowSliceAs[Key, Name, Value](key, startColumnName, endColumnName, count, order)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -118,7 +119,7 @@ case class ColumnFamily[Key, Name, Value](
    */
   def getColumnsAs[K, N, V](key: K,
                             columnNames: Set[N])
-                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N, Column[N, V]] = {
+                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(encodeSet(columnNames))
     getSlice(key, pred, keyCodec, nameCodec, valueCodec)
@@ -129,7 +130,7 @@ case class ColumnFamily[Key, Name, Value](
    * the default types.
    */
   def getColumns(key: Key,
-                 columnNames: Set[Name]): Map[Name, Column[Name, Value]] = {
+                 columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]] = {
     getColumnsAs[Key, Name, Value](key, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
@@ -350,17 +351,18 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.InvalidRequestException])
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
-                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Map[N,Column[N,V]] = {
+                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N,Column[N,V]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    val result = provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }()
-
-    val cols: Map[N,Column[N,V]] = new HashMap(result.size)
-    for (cosc <- result.iterator) {
-      val col = Column.convert(nameCodec, valueCodec, cosc)
-      cols.put(col.name, col)
-    }
-    cols
+    provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
+      .map { result =>
+        val cols: Map[N,Column[N,V]] = new HashMap(result.size)
+        for (cosc <- result.iterator) {
+          val col = Column.convert(nameCodec, valueCodec, cosc)
+          cols.put(col.name, col)
+        }
+        cols
+      }
   }
 
   @throws(classOf[thrift.TimedOutException])
