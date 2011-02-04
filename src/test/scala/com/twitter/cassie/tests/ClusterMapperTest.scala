@@ -6,22 +6,23 @@ import org.scalatest.{BeforeAndAfterAll, Spec}
 import com.twitter.cassie.tests.util.MockCassandraServer
 import java.net.InetSocketAddress
 import org.apache.cassandra.thrift
-import scalaj.collection.Imports._
+
 import com.twitter.cassie.ClusterMapper
 import com.codahale.logula.Logging
 import org.apache.log4j.Level
+import scala.collection.JavaConversions._
 
 class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
   val ring = tr("start", "end", "c1.example.com") ::
     tr("start", "end", "c2.example.com") :: Nil
-  when(server.cassandra.describe_ring("keyspace")).thenReturn(ring.asJava)
+  when(server.cassandra.describe_ring("keyspace")).thenReturn(asJavaList(ring))
 
   def tr(start: String, end: String, endpoints: String*): thrift.TokenRange = {
     val tr = new thrift.TokenRange()
     tr.setStart_token(start)
     tr.setEnd_token(end)
-    tr.setEndpoints(endpoints.asJava)
+    tr.setEndpoints(asJavaList(endpoints))
   }
 
   override protected def beforeAll() {

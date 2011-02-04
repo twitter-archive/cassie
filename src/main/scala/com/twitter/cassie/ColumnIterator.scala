@@ -2,11 +2,11 @@ package com.twitter.cassie
 
 import java.nio.ByteBuffer
 import java.util.List
-
+import scala.collection.JavaConversions._
 import com.twitter.util.Future
 
 import codecs.Codec
-import scalaj.collection.Imports._
+
 import collection.mutable.ArrayBuffer
 import com.codahale.logula.Logging
 import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
@@ -61,10 +61,10 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
   private def getNextSlice() {
     // if we had an outstanding request triggered during the last call, block to
     // return it, otherwise block for a new request immediately
-    val slice = outstanding.getOrElse(requestNextSlice())().asScala
+    val slice = asScalaIterable(outstanding.getOrElse(requestNextSlice())())
     val filterPred = (ks: KeySlice) => lastKey.map { _ == ks.key }.getOrElse(false)
     buffer ++= slice.filterNot(filterPred).flatMap { ks =>
-      ks.columns.asScala.map { col =>
+      asScalaIterable(ks.columns).map { col =>
         keyCodec.decode(ks.key) -> Column.convert(nameCodec, valueCodec, col)
       }
     }

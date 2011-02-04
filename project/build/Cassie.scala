@@ -14,9 +14,6 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
   val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
-
-  val scalaJ = "org.scalaj" %% "scalaj-collection" % "1.0"
-
   val logula = "com.codahale" %% "logula" % "2.0.0" withSources()
 
   /**

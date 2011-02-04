@@ -3,15 +3,15 @@ package com.twitter.cassie
 import clocks.Clock
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
-import scalaj.collection.Imports._
+
 import org.apache.cassandra.thrift
 import com.codahale.logula.Logging
 import java.nio.ByteBuffer
-
-import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import java.util.Collections.{singleton => singletonSet}
+ 
+import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import org.apache.cassandra.thrift.Mutation
-
+import scala.collection.JavaConversions._
 
 import com.twitter.util.Future
 
@@ -145,7 +145,7 @@ case class ColumnFamily[Key, Name, Value](
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] = {
     multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).map { rows =>
       val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
-      for (rowEntry <- rows.entrySet.asScala)
+      for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty)
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
       cols
@@ -181,9 +181,9 @@ case class ColumnFamily[Key, Name, Value](
     }.map { result =>
       // decode result
       val rows: Map[K, Map[N, Column[N, V]]] = new HashMap(result.size)
-      for (rowEntry <- result.entrySet.asScala) {
+      for (rowEntry <- asScalaIterable(result.entrySet)) {
         val cols: Map[N, Column[N, V]] = new HashMap(rowEntry.getValue.size)
-        for (cosc <- rowEntry.getValue.asScala) {
+        for (cosc <- asScalaIterable(rowEntry.getValue)) {
           val col = Column.convert(nameCodec, valueCodec, cosc)
           cols.put(col.name, col)
         }
@@ -370,7 +370,7 @@ case class ColumnFamily[Key, Name, Value](
   
   def encodeSet[V](values: Set[V])(implicit codec: Codec[V]): List[ByteBuffer] = {
     val output = new ArrayList[ByteBuffer](values.size)
-    for (value <- values.iterator.asScala)
+    for (value <- asScalaIterable(values))
       output.add(codec.encode(value))
     output
   }

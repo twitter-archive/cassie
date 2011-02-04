@@ -6,10 +6,10 @@ import java.util.Collections.{singleton => singletonSet}
 
 import codecs.{Codec, Utf8Codec}
 import clocks.Clock
-import scalaj.collection.Imports._
-import collection.mutable.{ArrayBuffer, HashMap}
+import java.util.{ArrayList, HashMap}
 import org.apache.cassandra.thrift.{SlicePredicate, Deletion, Mutation, Column => TColumn, ColumnOrSuperColumn}
 import scala.collection.mutable.ListBuffer
+import scala.collection.JavaConversions._
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
@@ -45,7 +45,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
 
   private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = synchronized {
     val timestamp = cf.clock.timestamp
-    val mutations = new HashMap[ByteBuffer, HashMap[String, ArrayBuffer[Mutation]]]()
+    val mutations = new HashMap[ByteBuffer, Map[String, List[Mutation]]]()
 
     ops.map { op =>
       op match {
@@ -60,8 +60,12 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
           )
           val mutation = new Mutation
           mutation.setColumn_or_supercolumn(cosc)
-          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(insert.key), new HashMap).
-                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+
+          val encodedKey = cf.defaultKeyCodec.encode(insert.key)
+
+          val h = Option(mutations.get(encodedKey)).getOrElse{val x = new HashMap[String, List[Mutation]]; mutations.put(encodedKey, x); x}
+          val l = Option(h.get(cf.name)).getOrElse{ val y = new ArrayList[Mutation]; h.put(cf.name, y); y}
+          l.add(mutation)
         }
         case Right(deletions) => {
           val pred = new SlicePredicate
@@ -73,15 +77,14 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
           val mutation = new Mutation
           mutation.setDeletion(deletion)
 
-          mutations.getOrElseUpdate(cf.defaultKeyCodec.encode(deletions.key), new HashMap).
-                  getOrElseUpdate(cf.name, new ArrayBuffer) += mutation
+          val encodedKey = cf.defaultKeyCodec.encode(deletions.key)
+
+          val h = Option(mutations.get(encodedKey)).getOrElse{val x = new HashMap[String, List[Mutation]]; mutations.put(encodedKey, x); x}
+          val l = Option(h.get(cf.name)).getOrElse{ val y = new ArrayList[Mutation]; h.put(cf.name, y); y}
+          l.add(mutation)
         }
       }
     }
-    mutations.map { case (key, cfMap) =>
-      key -> cfMap.map { case (cf, m) =>
-        cf -> m.asJava
-      }.asJava
-    }.asJava
+    return mutations
   }
 }
