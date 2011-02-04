@@ -3,7 +3,7 @@ package com.twitter.cassie
 import scala.util.parsing.json.JSON
 import java.io.IOException
 import java.net.InetSocketAddress
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.ClusterClientProvider
 
@@ -17,7 +17,8 @@ import com.twitter.cassie.connection.ClusterClientProvider
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
+private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) {
+  val log = Logger.get
   private val ccp = new ClusterClientProvider(
     Set(new InetSocketAddress(seedHost, seedPort)),
     keyspace,
