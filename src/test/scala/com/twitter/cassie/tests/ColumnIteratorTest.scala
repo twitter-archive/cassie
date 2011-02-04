@@ -3,7 +3,7 @@ package com.twitter.cassie.tests
 import java.nio.ByteBuffer
 import java.util.{ArrayList, Arrays}
 
-import scalaj.collection.Imports._
+
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
@@ -13,6 +13,7 @@ import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.thrift
 import com.twitter.cassie.codecs.{Utf8Codec}
+import scala.collection.JavaConversions._
 
 import com.twitter.cassie.MockCassandraClient.Fulfillment
 
@@ -29,7 +30,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
   describe("iterating through an empty column family") {
     val slice = new thrift.KeySlice()
     slice.setKey(b("start"))
-    slice.setColumns(List[thrift.ColumnOrSuperColumn]().asJava)
+    slice.setColumns(asJavaList(List[thrift.ColumnOrSuperColumn]()))
 
     val predicate = mock[thrift.SlicePredicate]
 
@@ -46,19 +47,19 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
   describe("iterating through the columns of a range of keys") {
     val slice = new thrift.KeySlice()
     slice.setKey(b("start"))
-    slice.setColumns(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2)).asJava)
+    slice.setColumns(asJavaList(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))))
 
     val slice1 = new thrift.KeySlice()
     slice1.setKey(b("start1"))
-    slice1.setColumns(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2)).asJava)
+    slice1.setColumns(asJavaList(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))))
 
     val slice2 = new thrift.KeySlice()
     slice2.setKey(b("start2"))
-    slice2.setColumns(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2)).asJava)
+    slice2.setColumns(asJavaList(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))))
 
     val slice3 = new thrift.KeySlice()
     slice3.setKey(b("start3"))
-    slice3.setColumns(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2)).asJava)
+    slice3.setColumns(asJavaList(List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))))
 
     val predicate = mock[thrift.SlicePredicate]
 

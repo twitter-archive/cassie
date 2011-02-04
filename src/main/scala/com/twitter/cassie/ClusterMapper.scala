@@ -4,7 +4,7 @@ import scala.util.parsing.json.JSON
 import java.io.IOException
 import java.net.InetSocketAddress
 import com.codahale.logula.Logging
-import scalaj.collection.Imports._
+import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.ClusterClientProvider
 
 /**
@@ -33,7 +33,7 @@ private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 
     val ring = ccp.map{ _.describe_ring(keyspace) }()
     ccp.close
     log.debug("Received: %s", ring)
-    val hosts = ring.asScala.flatMap{ _.endpoints.asScala.map{ host =>
+    val hosts = asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
       new InetSocketAddress(host, seedPort) } }.toSet
     hosts
   }

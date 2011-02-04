@@ -2,8 +2,8 @@ package com.twitter.cassie
 
 import connection._
 import java.net.InetSocketAddress
+import scala.collection.JavaConversions._
 
-import scalaj.collection.Imports._
 
 /**
  * A Cassandra cluster.
@@ -17,7 +17,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
    *        hosts for a particular keyspace can optionally be determined via mapping.
    */
   def this(seedHosts: String) = this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, 9160)
-  def this(seedHosts: java.util.Collection[String]) = this(seedHosts.asScala.toSet, 9160)
+  def this(seedHosts: java.util.Collection[String]) = this(asScalaIterable(seedHosts).toSet, 9160)
    
     /**
    * Returns a [[com.twitter.cassie.Keyspace]] instance with a

@@ -6,7 +6,7 @@ import com.codahale.logula.Logging
 import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
-import scala.collection.JavaConversions.{asIterator, asSet}
+import scala.collection.JavaConversions._
 
 object CassieRun extends Logging {
   def main(args: Array[String]) {
