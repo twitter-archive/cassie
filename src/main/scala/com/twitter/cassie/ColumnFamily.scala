@@ -214,10 +214,11 @@ case class ColumnFamily[Key, Name, Value](
   def insertAs[K, N, V](key: K, column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val cp = new thrift.ColumnParent(name)
+    val col = Column.convert(nameCodec, valueCodec, clock, column)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      column.timestamp.get, writeConsistency.level)
+      col.timestamp, writeConsistency.level)
     provider.map {
-      _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
+      _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
     }
   }
 
