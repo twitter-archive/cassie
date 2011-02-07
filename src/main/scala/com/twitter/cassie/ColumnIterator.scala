@@ -8,7 +8,7 @@ import com.twitter.util.Future
 import codecs.Codec
 
 import collection.mutable.ArrayBuffer
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 /**
@@ -30,7 +30,8 @@ class ColumnIterator[Key, Name, Value](val cf: ColumnFamily[_, _, _],
                                        val valueCodec: Codec[Value])
         extends java.util.Iterator[(Key, Column[Name, Value])]
         with Iterator[(Key, Column[Name, Value])]
-        with java.lang.Iterable[(Key, Column[Name, Value])] with Logging {
+        with java.lang.Iterable[(Key, Column[Name, Value])] {
+  val log = Logger.get
   private var lastKey: Option[ByteBuffer] = None
   private var cycled = false
   private var outstanding: Option[Future[List[KeySlice]]] = None

@@ -5,7 +5,7 @@ import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
 import org.apache.cassandra.thrift
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
  
@@ -32,7 +32,9 @@ case class ColumnFamily[Key, Name, Value](
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum) extends Logging {
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
+
+  val log = Logger.get
 
   import ColumnFamily._
 
