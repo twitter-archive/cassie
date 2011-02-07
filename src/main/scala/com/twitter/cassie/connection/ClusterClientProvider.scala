@@ -10,7 +10,7 @@ import com.twitter.finagle.Protocol
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
-import com.twitter.finagle.builder.SocketAddressCluster
+import com.twitter.finagle.builder.{Cluster => FCluster}
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -30,7 +30,7 @@ import com.twitter.finagle.builder.SocketAddressCluster
  * @param framed true if the server will only accept framed connections
  * @author coda
  */
-class ClusterClientProvider(val hosts: SocketAddressCluster,
+class ClusterClientProvider(val hosts: FCluster,
                             val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
