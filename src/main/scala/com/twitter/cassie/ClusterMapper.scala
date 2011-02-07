@@ -6,6 +6,7 @@ import java.net.InetSocketAddress
 import com.codahale.logula.Logging
 import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.ClusterClientProvider
+import com.twitter.finagle.builder.SocketAddressCluster
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
@@ -19,7 +20,7 @@ import com.twitter.cassie.connection.ClusterClientProvider
  */
 private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends Logging {
   private val ccp = new ClusterClientProvider(
-    Set(new InetSocketAddress(seedHost, seedPort)),
+    new SocketAddressCluster(Seq(new InetSocketAddress(seedHost, seedPort))),
     keyspace,
     readTimeoutInMS = timeoutMS,
     maxConnectionsPerHost = 1
@@ -28,13 +29,13 @@ private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 
   /**
    * @return The set of addresses of the nodes in the cluster, and close the mapper.
    */
-  def perform(): Set[InetSocketAddress] = {
+  def perform(): SocketAddressCluster = {
     log.info("Mapping cluster...")
     val ring = ccp.map{ _.describe_ring(keyspace) }()
     ccp.close
     log.debug("Received: %s", ring)
     val hosts = asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-      new InetSocketAddress(host, seedPort) } }.toSet
-    hosts
+      new InetSocketAddress(host, seedPort) } }
+    new SocketAddressCluster(hosts.toSeq)
   }
 }

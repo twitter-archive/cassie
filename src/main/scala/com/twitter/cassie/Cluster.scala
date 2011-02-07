@@ -3,7 +3,7 @@ package com.twitter.cassie
 import connection._
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
-
+import com.twitter.finagle.builder.SocketAddressCluster
 
 /**
  * A Cassandra cluster.
@@ -46,7 +46,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
         new ClusterMapper(_name, seedHosts.head).perform
       else
         // or connect directly to the hosts that were given as seeds
-        seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
+        new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
     
       // TODO: move to builder pattern as well
       val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _readTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS)
