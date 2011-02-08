@@ -37,9 +37,9 @@ class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll 
     it("returns the set of nodes in the cluster") {
       val mapper = new ClusterRemapper("keyspace", "127.0.0.1", server.port)
 
-      val mapped = mapper.mapHosts{h => h}.toSet
+      val mapped = mapper.fetchHosts
 
-      mapped must equal(Set(
+      mapped must equal(List(
         addr("c1.example.com", server.port), addr("c2.example.com", server.port)
       ))
     }

@@ -24,7 +24,7 @@ import com.twitter.conversions.time._
 private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
   val log = Logger.get
 
-  var hosts = fetchHosts
+  var hosts = Seq(new InetSocketAddress(seedHost, seedPort))
 
   val refetcher =  new PeriodicBackgroundProcess("ClusterRemapper", 1.minute) {
     def periodic() {
@@ -34,7 +34,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int 
 
   def fetchHosts = {
      val ccp = new ClusterClientProvider(
-      new SocketAddressCluster(Seq(new InetSocketAddress(seedHost, seedPort))),
+      new SocketAddressCluster(hosts),
       keyspace,
       readTimeoutInMS = timeoutMS,
       maxConnectionsPerHost = 1
@@ -44,11 +44,11 @@ private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int 
     ccp.close
     log.debug("Received: %s", ring)
     asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-      new InetSocketAddress(host, seedPort) } }
+      new InetSocketAddress(host, seedPort) } }.toSeq
   }
 
   def mapHosts[A](f: SocketAddress => A): Seq[A] = {
-    hosts.toSeq map f
+    hosts map f
   }
 
   def join(address: SocketAddress) = {}
