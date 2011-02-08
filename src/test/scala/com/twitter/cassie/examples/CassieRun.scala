@@ -2,16 +2,16 @@ package com.twitter.cassie.tests.examples
 
 import com.twitter.cassie._
 import clocks.MicrosecondEpochClock
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
 import scala.collection.JavaConversions._
 
-object CassieRun extends Logging {
-  def main(args: Array[String]) {
-    Logging.configure(_.level = Level.INFO)
+object CassieRun {
+  val log = Logger.get
 
+  def main(args: Array[String]) {
     // create a cluster with a single seed from which to map keyspaces
     val cluster = new Cluster("localhost")
 

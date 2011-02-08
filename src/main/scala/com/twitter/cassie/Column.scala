@@ -17,11 +17,11 @@ object Column {
     )
   }
 
-  private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], col: Column[A, B]): thrift.Column = {
+  private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], clock: Clock, col: Column[A, B]): thrift.Column = {
     new thrift.Column(
       nameCodec.encode(col.name),
       valueCodec.encode(col.value),
-      col.timestamp.getOrElse { throw new RuntimeException("Thrift requires a timestamp")}
+      col.timestamp.getOrElse(clock.timestamp)
     )
   }
 }

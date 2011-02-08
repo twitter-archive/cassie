@@ -5,7 +5,7 @@ import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
 import org.apache.cassandra.thrift
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
  
@@ -32,7 +32,9 @@ case class ColumnFamily[Key, Name, Value](
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum) extends Logging {
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
+
+  val log = Logger.get
 
   import ColumnFamily._
 
@@ -214,10 +216,11 @@ case class ColumnFamily[Key, Name, Value](
   def insertAs[K, N, V](key: K, column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val cp = new thrift.ColumnParent(name)
+    val col = Column.convert(nameCodec, valueCodec, clock, column)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      column.timestamp.get, writeConsistency.level)
+      col.timestamp, writeConsistency.level)
     provider.map {
-      _.insert(keyCodec.encode(key), cp, Column.convert(nameCodec, valueCodec, column), writeConsistency.level)
+      _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
     }
   }
 

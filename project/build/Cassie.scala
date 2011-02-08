@@ -14,12 +14,13 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
   val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
-  val logula = "com.codahale" %% "logula" % "2.0.0" withSources()
+
+  val ostrich = "com.twitter" % "ostrich" % "3.0.4"
 
   /**
    * Twitter specific deps
    */
-  val finagle = "com.twitter" % "finagle" % "1.1.14" 
+  val finagle = "com.twitter" % "finagle-core" % "1.1.14" 
   val finagleThrift = "com.twitter" % "finagle-thrift" % "1.1.14"
   val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.2" % "provided"
 

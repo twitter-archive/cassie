@@ -8,7 +8,7 @@ import java.net.{SocketAddress, InetSocketAddress}
 import org.apache.cassandra.thrift
 
 import com.twitter.cassie.ClusterMapper
-import com.codahale.logula.Logging
+import com.twitter.logging.Logger
 import org.apache.log4j.Level
 import scala.collection.JavaConversions._
 
@@ -34,7 +34,6 @@ class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   }
 
   describe("mapping a cluster") {
-    Logging.configure(_.level = Level.OFF)
     it("returns the set of nodes in the cluster") {
       val mapper = new ClusterMapper("keyspace", "127.0.0.1", server.port)
 
