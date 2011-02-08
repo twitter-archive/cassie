@@ -22,11 +22,12 @@ import com.twitter.conversions.time._
  * @author coda
  */
 private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
-  val log = Logger.get
+  private val log = Logger.get
 
-  var hosts = Seq(new InetSocketAddress(seedHost, seedPort))
+  @volatile
+  private[this] var hosts = Seq(new InetSocketAddress(seedHost, seedPort))
 
-  val refetcher =  new PeriodicBackgroundProcess("ClusterRemapper", 1.minute) {
+  private[this] val refetcher =  new PeriodicBackgroundProcess("ClusterRemapper", 1.minute) {
     def periodic() {
       hosts = fetchHosts
     }
@@ -41,7 +42,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int 
     )
     log.info("Mapping cluster...")
     val ring = ccp.map{ _.describe_ring(keyspace) }()
-    ccp.close
+    ccp.close()
     log.debug("Received: %s", ring)
     asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
       new InetSocketAddress(host, seedPort) } }.toSeq
