@@ -7,12 +7,12 @@ import com.twitter.cassie.tests.util.MockCassandraServer
 import java.net.{SocketAddress, InetSocketAddress}
 import org.apache.cassandra.thrift
 
-import com.twitter.cassie.ClusterMapper
+import com.twitter.cassie.ClusterRemapper
 import com.twitter.logging.Logger
 import org.apache.log4j.Level
 import scala.collection.JavaConversions._
 
-class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
+class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
   val ring = tr("start", "end", "c1.example.com") ::
     tr("start", "end", "c2.example.com") :: Nil
@@ -35,7 +35,7 @@ class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
 
   describe("mapping a cluster") {
     it("returns the set of nodes in the cluster") {
-      val mapper = new ClusterMapper("keyspace", "127.0.0.1", server.port)
+      val mapper = new ClusterRemapper("keyspace", "127.0.0.1", server.port)
 
       val mapped = mapper.mapHosts{h => h}.toSet
 

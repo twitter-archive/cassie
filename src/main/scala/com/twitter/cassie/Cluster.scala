@@ -43,7 +43,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     def connect(): Keyspace = {
       val hosts = if (_performMapping)
         // either map the cluster for this keyspace: TODO: use all seed hosts
-        new ClusterMapper(_name, seedHosts.head)
+        new ClusterRemapper(_name, seedHosts.head)
       else
         // or connect directly to the hosts that were given as seeds
         new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)

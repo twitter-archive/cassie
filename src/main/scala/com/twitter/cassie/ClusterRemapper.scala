@@ -21,12 +21,12 @@ import com.twitter.conversions.time._
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-private class ClusterMapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
+private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
   val log = Logger.get
 
   var hosts = fetchHosts
 
-  val refetcher =  new PeriodicBackgroundProcess("ClusterMapper", 1.minute) {
+  val refetcher =  new PeriodicBackgroundProcess("ClusterRemapper", 1.minute) {
     def periodic() {
       hosts = fetchHosts
     }
