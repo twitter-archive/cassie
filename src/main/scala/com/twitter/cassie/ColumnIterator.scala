@@ -16,7 +16,7 @@ import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicat
  * a consistency level, iterates through each matching column of each matching
  * key until a cycle is detected (e.g., Cassandra returns the last slice a
  * second time) or until an empty slice is returned (e.g., no more slices).
- * Provides a sequence of (row key, column). 
+ * Provides a sequence of (row key, column).
  *
  * @author coda
  */
