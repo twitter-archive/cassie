@@ -8,18 +8,28 @@ import java.io._
 
 class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
   val thriftProtocolFactory = new TBinaryProtocol.Factory()
-
+  val outputStream = new ByteArrayOutputStream()
+  val outputProtocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(outputStream))
+  val inputStream = new ByteArrayInputStream(Array.empty[Byte]) {
+    def refill(ary: Array[Byte]) {
+      buf = ary
+      pos = 0
+      mark = 0
+      count = buf.length
+    }
+  }
+  val inputProtocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(inputStream))
+  
   def encode(t: T) = {
-    val out = new ByteArrayOutputStream()
-    val protocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(out))
-    t.write(protocol)
-    b2b(out.toByteArray)
+    outputStream.reset
+    t.write(outputProtocol)
+    b2b(outputStream.toByteArray)
   }
 
   def decode(ary: ByteBuffer) = {
-    val protocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(new ByteArrayInputStream(b2b(ary))))
+    inputStream.refill(b2b(ary))
     val out = klass.newInstance
-    out.read(protocol)
+    out.read(inputProtocol)
     out
   }
 }

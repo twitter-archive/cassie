@@ -13,6 +13,11 @@ class ThriftCodecTest extends Spec with MustMatchers {
       val person = new Person("joe", "doe")
       val bytes = codec.encode(person)
       codec.decode(bytes) must equal(person)
+      
+      // We do this 2x to verify that we aren't introducing bugs with object reuse
+      val another = new Person("john", "doe")
+      val moreBytes = codec.encode(another)
+      codec.decode(moreBytes) must equal(another)
     }
   }
 }
