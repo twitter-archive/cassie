@@ -8,6 +8,7 @@ import com.twitter.cassie.Keyspace;
 import org.junit.Test;
 import org.junit.Before;
 import static junit.framework.Assert.assertEquals;
+import com.twitter.util.Duration;
 
 public class ClusterTest {
   public Cluster cluster;
@@ -19,7 +20,7 @@ public class ClusterTest {
 
   @Test
   public void test() {
-    Keyspace ks = cluster.keyspace("blah").performMapping(false).connect();
+    Keyspace ks = cluster.keyspace("blah").mapHostsEvery(new Duration(0)).connect();
     assertEquals(ks.name(), "blah");
   }
 }

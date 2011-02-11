@@ -8,9 +8,9 @@ import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.ClusterClientProvider
 import com.twitter.finagle.builder.SocketAddressCluster
 import com.twitter.finagle.builder.{Cluster => FCluster}
-import com.twitter.conversions.time._
 import com.twitter.finagle.util.Timer
 import com.twitter.util.Time
+import com.twitter.util.Duration
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
@@ -22,13 +22,13 @@ import com.twitter.util.Time
  * @param seedPort the Thrift port of the seed node
  * @author coda
  */
-private class ClusterRemapper(keyspace: String, seedHost: String, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
+private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: Duration, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
   private val log = Logger.get
 
   @volatile
   private[this] var hosts = Seq(new InetSocketAddress(seedHost, seedPort))
 
-  Timer.default.schedule(Time.now, 10.minutes) {
+  Timer.default.schedule(Time.now, remapPeriod) {
     hosts = fetchHosts
   }
 

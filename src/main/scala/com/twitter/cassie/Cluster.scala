@@ -4,6 +4,8 @@ import connection._
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
 import com.twitter.finagle.builder.SocketAddressCluster
+import com.twitter.util.Duration
+import com.twitter.conversions.time._
 
 /**
  * A Cassandra cluster.
@@ -24,15 +26,12 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
    * [[com.twitter.cassie.connection.ClusterClientProvider]] with the provided
    * options.
    * @param name the keyspace's name
-   * @param performMapping true to expand the cluster's list of seeds into a full
-   *        list of hosts; false if the seed list should be used directly
-   * @see com.twitter.cassie.connection.ClusterClientProvider
    */
   def keyspace(name: String): KeyspaceBuilder = KeyspaceBuilder(name)
 
   case class KeyspaceBuilder(
     _name: String,
-    _performMapping: Boolean = true,
+    _mapHostsEvery: Duration = 10.minutes,
     _retryAttempts: Int = 5,
     _readTimeoutInMS: Int = 10000,
     _partialFailureThreshold: Int = 3,
@@ -41,9 +40,9 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _removeAfterIdleForMS: Int = 60000) {
     
     def connect(): Keyspace = {
-      val hosts = if (_performMapping)
+      val hosts = if (_mapHostsEvery > 0)
         // either map the cluster for this keyspace: TODO: use all seed hosts
-        new ClusterRemapper(_name, seedHosts.head)
+        new ClusterRemapper(_name, seedHosts.head, _mapHostsEvery)
       else
         // or connect directly to the hosts that were given as seeds
         new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
@@ -53,7 +52,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       new Keyspace(_name, ccp)
     }
 
-    def performMapping(p: Boolean): KeyspaceBuilder = copy(_performMapping = p)
+    def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
     def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
     def readTimeoutInMS(r: Int): KeyspaceBuilder = copy(_readTimeoutInMS = r)
     def partialFailureThreshold(p: Int): KeyspaceBuilder =

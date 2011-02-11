@@ -11,6 +11,7 @@ import com.twitter.cassie.ClusterRemapper
 import com.twitter.logging.Logger
 import org.apache.log4j.Level
 import scala.collection.JavaConversions._
+import com.twitter.conversions.time._
 
 class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
@@ -35,7 +36,7 @@ class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll 
 
   describe("mapping a cluster") {
     it("returns the set of nodes in the cluster") {
-      val mapper = new ClusterRemapper("keyspace", "127.0.0.1", server.port)
+      val mapper = new ClusterRemapper("keyspace", "127.0.0.1", 10.minutes, server.port)
 
       val mapped = mapper.fetchHosts
 
