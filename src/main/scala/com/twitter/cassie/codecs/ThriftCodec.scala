@@ -11,7 +11,7 @@ class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
   class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] {
     override def initialValue: T = init
   }
-  implicit def getThreadLocal[T](tl: ThreadLocal[T]): T = tl.get
+  implicit def getThreadLocal[S](tl: ThreadLocal[S]): S = tl.get
 
   val thriftProtocolFactory = new ThreadLocal(new TBinaryProtocol.Factory())
   val outputStream = new ThreadLocal(new ByteArrayOutputStream())
