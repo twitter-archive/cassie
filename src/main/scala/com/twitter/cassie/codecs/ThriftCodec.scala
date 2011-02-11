@@ -7,18 +7,24 @@ import java.nio.ByteBuffer
 import java.io._
 
 class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
-  val thriftProtocolFactory = new TBinaryProtocol.Factory()
-  val outputStream = new ByteArrayOutputStream()
-  val outputProtocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(outputStream))
-  val inputStream = new ByteArrayInputStream(Array.empty[Byte]) {
+  
+  class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] {
+    override def initialValue: T = init
+  }  
+  implicit def getThreadLocal[T](tl: ThreadLocal[T]): T = tl.get
+  
+  val thriftProtocolFactory = new ThreadLocal(new TBinaryProtocol.Factory())
+  val outputStream = new ThreadLocal(new ByteArrayOutputStream())
+  val outputProtocol = new ThreadLocal(thriftProtocolFactory.getProtocol(new TIOStreamTransport(outputStream)))
+  val inputStream = new ThreadLocal(new ByteArrayInputStream(Array.empty[Byte]) {
     def refill(ary: Array[Byte]) {
       buf = ary
       pos = 0
       mark = 0
       count = buf.length
     }
-  }
-  val inputProtocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(inputStream))
+  })
+  val inputProtocol = new ThreadLocal(thriftProtocolFactory.getProtocol(new TIOStreamTransport(inputStream)))
 
   def encode(t: T) = {
     outputStream.reset
