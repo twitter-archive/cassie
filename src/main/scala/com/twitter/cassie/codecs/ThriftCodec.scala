@@ -19,7 +19,7 @@ class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
     }
   }
   val inputProtocol = thriftProtocolFactory.getProtocol(new TIOStreamTransport(inputStream))
-  
+
   def encode(t: T) = {
     outputStream.reset
     t.write(outputProtocol)
