@@ -7,12 +7,12 @@ import java.nio.ByteBuffer
 import java.io._
 
 class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
-  
+
   class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] {
     override def initialValue: T = init
-  }  
+  }
   implicit def getThreadLocal[T](tl: ThreadLocal[T]): T = tl.get
-  
+
   val thriftProtocolFactory = new ThreadLocal(new TBinaryProtocol.Factory())
   val outputStream = new ThreadLocal(new ByteArrayOutputStream())
   val outputProtocol = new ThreadLocal(thriftProtocolFactory.getProtocol(new TIOStreamTransport(outputStream)))
