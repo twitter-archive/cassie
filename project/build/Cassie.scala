@@ -37,4 +37,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
    * Build Options
    */
   override def compileOptions = Deprecation :: Unchecked :: super.compileOptions.toList
+
+  // include test-thrift definitions: see https://github.com/twitter/standard-project/issues#issue/13
+  override def thriftSources = super.thriftSources +++ (testSourcePath / "thrift" ##) ** "*.thrift"
 }
