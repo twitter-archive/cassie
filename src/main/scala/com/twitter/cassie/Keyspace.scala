@@ -19,7 +19,7 @@ class Keyspace(val name: String, val provider: ClientProvider) {
               defaultNameCodec: Codec[Name],
               defaultValueCodec: Codec[Value]) =
     new ColumnFamily(this.name, name, provider, clock, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  
+
   /**
    * Closes connections to the cluster for this keyspace.
    */

@@ -8,7 +8,7 @@ import org.apache.cassandra.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
- 
+
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import org.apache.cassandra.thrift.Mutation
 import scala.collection.JavaConversions._
@@ -268,7 +268,7 @@ case class ColumnFamily[Key, Name, Value](
 
   /**
    * @return A Builder that can be used to execute multiple actions in a single
-   * request. 
+   * request.
    */
   def batch() = new BatchMutationBuilder(this)
 
@@ -370,7 +370,7 @@ case class ColumnFamily[Key, Name, Value](
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
     provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
   }
-  
+
   def encodeSet[V](values: Set[V])(implicit codec: Codec[V]): List[ByteBuffer] = {
     val output = new ArrayList[ByteBuffer](values.size)
     for (value <- asScalaIterable(values))

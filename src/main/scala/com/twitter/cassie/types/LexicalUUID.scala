@@ -35,7 +35,7 @@ case class LexicalUUID(timestamp: Long, workerID: Long) extends Ordered[LexicalU
   /**
    * Given a worker ID and a clock, generates a new LexicalUUID. If each node
    * has unique worker ID and a clock which is guaranteed to never go backwards,
-   * then each generated UUID will be unique. 
+   * then each generated UUID will be unique.
    */
   def this(clock: Clock, workerID: Long) = this(clock.timestamp, workerID)
 

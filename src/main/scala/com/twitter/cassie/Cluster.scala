@@ -20,7 +20,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
    */
   def this(seedHosts: String) = this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, 9160)
   def this(seedHosts: java.util.Collection[String]) = this(asScalaIterable(seedHosts).toSet, 9160)
-   
+
     /**
    * Returns a [[com.twitter.cassie.Keyspace]] instance with a
    * [[com.twitter.cassie.connection.ClusterClientProvider]] with the provided
@@ -38,7 +38,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _minConnectionsPerHost: Int = 1,
     _maxConnectionsPerHost: Int = 5,
     _removeAfterIdleForMS: Int = 60000) {
-    
+
     def connect(): Keyspace = {
       val hosts = if (_mapHostsEvery > 0)
         // either map the cluster for this keyspace: TODO: use all seed hosts
@@ -46,7 +46,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       else
         // or connect directly to the hosts that were given as seeds
         new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
-    
+
       // TODO: move to builder pattern as well
       val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _readTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS)
       new Keyspace(_name, ccp)
