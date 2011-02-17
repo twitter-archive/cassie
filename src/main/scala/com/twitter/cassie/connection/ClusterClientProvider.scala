@@ -10,6 +10,8 @@ import com.twitter.finagle.Protocol
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
+import com.twitter.finagle.stats.OstrichStatsReceiver
+
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -44,6 +46,7 @@ class ClusterClientProvider(val hosts: Set[InetSocketAddress],
       .requestTimeout(Duration(readTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
+      .reportTo(new OstrichStatsReceiver)
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
       .build()
 
