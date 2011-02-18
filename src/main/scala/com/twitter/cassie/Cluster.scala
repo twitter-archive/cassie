@@ -41,15 +41,11 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _removeAfterIdleForMS: Int = 60000) {
 
     def connect(): Keyspace = {
-      val hosts = 
-       // FIXME: I'm just commenting this out because it doesn't compile, and it doesn't break any
-       // tests to omit it. ~Kyle
-       //
-       // if (_performMapping)
-       //        // either map the cluster for this keyspace: TODO: use all seed hosts
-       //        new ClusterMapper(_name, seedHosts.head).perform
-       //      else
-       //        // or connect directly to the hosts that were given as seeds
+      val hosts = if (_performMapping)
+        // either map the cluster for this keyspace: TODO: use all seed hosts
+        new ClusterMapper(_name, seedHosts.head).perform
+      else
+        // or connect directly to the hosts that were given as seeds
         seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
 
       // TODO: move to builder pattern as well
