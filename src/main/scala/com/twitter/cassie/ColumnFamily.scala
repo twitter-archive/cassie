@@ -284,19 +284,19 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a column iterator which iterates over all columns of all rows in
    * the column family with the given batch size as the given types.
    */
-  def rowIteratorAs[K, N, V](batchSize: Int)
-                         (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] = {
+  def rowIterateeAs[K, N, V](batchSize: Int)
+                         (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(EMPTY, EMPTY, false, Int.MaxValue))
-    new ColumnIterator(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
   /**
    * Returns a column iterator which iterates over all columns of all rows in
    * the column family with the given batch size as the default types.
    */
-  def rowIterator(batchSize: Int): ColumnIterator[Key, Name, Value] = {
-    rowIteratorAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
+    rowIterateeAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
 
@@ -304,37 +304,37 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a column iterator which iterates over the given column of all rows
    * in the column family with the given batch size as the given types.
    */
-  def columnIteratorAs[K, N, V](batchSize: Int, columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] =
-    columnsIteratorAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
+  def columnIterateeAs[K, N, V](batchSize: Int, columnName: N)
+                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] =
+    columnsIterateeAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
   /**
    * Returns a column iterator which iterates over the given column of all rows
    * in the column family with the given batch size as the default types.
    */
-  def columnIterator(batchSize: Int,
-                     columnName: Name): ColumnIterator[Key, Name, Value] =
-    columnIteratorAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  def columnIteratee(batchSize: Int,
+                     columnName: Name): ColumnIteratee[Key, Name, Value] =
+    columnIterateeAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   /**
    * Returns a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size as the given types.
    */
-  def columnsIteratorAs[K, N, V](batchSize: Int,
+  def columnsIterateeAs[K, N, V](batchSize: Int,
                                  columnNames: Set[N])
-                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIterator[K, N, V] = {
+                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     val pred = new thrift.SlicePredicate
     pred.setColumn_names(encodeSet(columnNames))
-    new ColumnIterator(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
   /**
    * Returns a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size as the default types.
    */
-  def columnsIterator(batchSize: Int,
-                      columnNames: Set[Name]): ColumnIterator[Key, Name, Value] = {
-    columnsIteratorAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  def columnsIteratee(batchSize: Int,
+                      columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {
+    columnsIterateeAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
   @throws(classOf[thrift.TimedOutException])

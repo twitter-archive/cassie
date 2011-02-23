@@ -168,8 +168,7 @@ Iterating Through Rows
 
 Cassie provides functionality for iterating through the rows of a column family.
 This works with both the random partitioner and the order-preserving
-partitioner, at the expense of a wee bit of performance (really, though,
-high-performance iteration is not going to be Cassandra's selling point).
+partitioner.
 
 It does this by requesting a certain number of rows, starting with the first
 possible row (`""`) and ending with the last row possible row (`""`). The last
@@ -181,7 +180,7 @@ first row of the next.)
 
 You can iterate over every column of every row:
     
-    for ((key, col) <- people.rowIterator(100) {
+    for ((key, col) <- people.rowIteratee(100) {
       println(" Found column %s in row %s", col, key)
     }
 
@@ -189,16 +188,21 @@ You can iterate over every column of every row:
 
 Or just one column from every row:
 
-    for ((key, col) <- people.columnIterator(100, "name") {
+    for ((key, col) <- people.columnIteratee(100, "name") {
       println(" Found column %s in row %s", col, key)
     }
 
 Or a set of columns from every row:
 
-    for ((key, col) <- people.columnsIterator(100, Set("name", "motto")) {
+    for ((key, col) <- people.columnsIteratee(100, Set("name", "motto")) {
       println(" Found column %s in row %s", col, key)
     }
 
+The 'ColumnIteratee' object returned by these methods implements Iterable for
+use in loops like those shown, but it also allows for async iteration. An
+Iteratee contains a batch of values, and has a hasNext() method indicating
+whether more batches are available. If more batches are available, continue()
+will request the next batch and return a Future[Iteratee].
 
 Writing Data To Cassandra
 -------------------------
