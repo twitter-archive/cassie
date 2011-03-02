@@ -33,19 +33,19 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
         extends java.lang.Iterable[(Key, Column[Name, Value])] {
   val log = Logger.get
   
-  /** Copy constructors for continue and end cases. */
+  /** Copy constructors for next() and end() cases. */
   private def end(buffer: List[(Key, Column[Name, Value])]) = copy(cycled = true, buffer = buffer)
-  private def iterate(buffer: List[(Key, Column[Name, Value])],
+  private def next(buffer: List[(Key, Column[Name, Value])],
                       startKey: ByteBuffer) =
     copy(startKey = startKey, skip = Some(startKey), buffer = buffer)
 
-  /** @return True if calling continue will request another batch of data. */
+  /** @return True if calling next() will request another batch of data. */
   def hasNext() = !cycled
   /**
    * If hasNext == true, requests the next batch of data, otherwise throws
    * UnsupportedOperationException.
    */
-  def continue(): Future[ColumnIteratee[Key, Name, Value]] = {
+  def next(): Future[ColumnIteratee[Key, Name, Value]] = {
     if (cycled)
       throw new UnsupportedOperationException("No more results.")
     
@@ -63,7 +63,7 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
         end(buffer)
       else
         // clone the iteratee with a new buffer and start key
-        iterate(buffer, lastFoundKey)
+        next(buffer, lastFoundKey)
     }
   }
 

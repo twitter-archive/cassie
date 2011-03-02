@@ -28,7 +28,7 @@ class ColumnIterator[Key, Name, Value](private var iteratee: ColumnIteratee[Key,
     if (!iteratee.hasNext())
       return false
     // request the next batch
-    iteratee = iteratee.continue()()
+    iteratee = iteratee.next()()
     iterator = iteratee.buffer.iterator
     return iterator.hasNext()
   }
