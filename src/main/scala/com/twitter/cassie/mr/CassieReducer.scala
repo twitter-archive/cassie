@@ -29,7 +29,6 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   var columnFamily: ColumnFamily[ByteBuffer, ByteBuffer, ByteBuffer] = null
   var page: Int = CassieReducer.DEFAULT_PAGE_SIZE
   var i = 0
-  var batch: BatchMutationBuilder[ByteBuffer, ByteBuffer, ByteBuffer] = null
 
   type ReducerContext = Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable]#Context
   
@@ -38,20 +37,13 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
     cluster = new Cluster(conf(HOSTS))
     keyspace = cluster.keyspace(conf(KEYSPACE)).performMapping(false).connect()
     columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), MicrosecondEpochClock)
-    // batch = columnFamily.batch
   }
 
   override def reduce(key: BytesWritable, values: java.lang.Iterable[ColumnWritable], context: ReducerContext) = try {
     for (value <- values) {
-      println("reducing" + key)
       val bufKey = ByteBuffer.wrap(key.getBytes, 0, key.getLength)
       columnFamily.insert(bufKey, new Column(value.name, value.value)).get()
     }
-    i += 1
-    // if (i % page == 0) {
-    //   batch.execute.get()
-    //   batch = columnFamily.batch 
-    // }
   } catch {
     case e: Throwable => 
       e.printStackTrace
@@ -59,8 +51,5 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   }
   
   override def cleanup(context: ReducerContext) = {
-    println("cleaning")
-    // batch.execute.get()
-    println("cleaned")
   }
 }
