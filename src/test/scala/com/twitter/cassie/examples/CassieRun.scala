@@ -2,8 +2,8 @@ package com.twitter.cassie.tests.examples
 
 import com.twitter.cassie._
 import clocks.MicrosecondEpochClock
+import com.twitter.cassie.Codecs._
 import com.twitter.logging.Logger
-import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
 import scala.collection.JavaConversions._

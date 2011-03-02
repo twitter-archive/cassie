@@ -15,6 +15,11 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
 
   val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
 
+  val hadoop    = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
+  val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
+  val jacksonMap  = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.6.1"
+  
+
   /**
    * Twitter specific deps
    */

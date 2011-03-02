@@ -7,7 +7,7 @@ import codecs._
  *
  * @author coda
  */
-package object codecs {
+object Codecs {
   implicit val utf8 = Utf8Codec
   implicit val ascii = AsciiStringCodec
   implicit val base64 = Base64ByteArrayCodec

@@ -9,7 +9,6 @@ import org.apache.cassandra.finagle.thrift
 
 import com.twitter.cassie.ClusterRemapper
 import com.twitter.logging.Logger
-import org.apache.log4j.Level
 import scala.collection.JavaConversions._
 import com.twitter.conversions.time._
 

@@ -4,6 +4,7 @@ import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie.codecs.Utf8Codec
+import com.twitter.cassie.Codecs._
 import com.twitter.cassie.{WriteConsistency, ReadConsistency, Keyspace}
 import com.twitter.cassie.clocks.MicrosecondEpochClock
 import com.twitter.cassie.connection.ClientProvider
