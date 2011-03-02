@@ -4,15 +4,16 @@ import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import com.twitter.cassie.tests.util.MockCassandraServer
-import java.net.InetSocketAddress
+import java.net.{SocketAddress, InetSocketAddress}
 import org.apache.cassandra.thrift
 
-import com.twitter.cassie.ClusterMapper
+import com.twitter.cassie.ClusterRemapper
 import com.twitter.logging.Logger
 import org.apache.log4j.Level
 import scala.collection.JavaConversions._
+import com.twitter.conversions.time._
 
-class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
+class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   val server = new MockCassandraServer(MockCassandraServer.choosePort())
   val ring = tr("start", "end", "c1.example.com") ::
     tr("start", "end", "c2.example.com") :: Nil
@@ -35,9 +36,11 @@ class ClusterMapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
 
   describe("mapping a cluster") {
     it("returns the set of nodes in the cluster") {
-      val mapper = new ClusterMapper("keyspace", "127.0.0.1", server.port)
+      val mapper = new ClusterRemapper("keyspace", "127.0.0.1", 10.minutes, server.port)
 
-      mapper.perform() must equal(Set(
+      val mapped = mapper.fetchHosts
+
+      mapped must equal(List(
         addr("c1.example.com", server.port), addr("c2.example.com", server.port)
       ))
     }
