@@ -23,7 +23,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
   val finagleOstrich = "com.twitter" % "finagle-ostrich3" % finagleVersion
 
-  val slf4jNop = "org.slf4j" %  "slf4j-nop" % "1.5.11" % "provided"
+  val slf4jNop = "org.slf4j" %  "slf4j-nop" % slf4jVersion % "provided"
 
   override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 

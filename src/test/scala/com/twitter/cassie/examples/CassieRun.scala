@@ -68,7 +68,7 @@ object CassieRun {
     cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300)).apply()
 
     log.info("Iterating!")
-    for ((key, col) <- cass.rowIterator(2): Iterator[(String, Column[String, String])]) {
+    for ((key, col) <- cass.rowIteratee(2)) {
       log.info("Found: %s", col)
     }
 
