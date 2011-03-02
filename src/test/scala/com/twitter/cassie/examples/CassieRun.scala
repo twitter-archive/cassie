@@ -3,7 +3,6 @@ package com.twitter.cassie.tests.examples
 import com.twitter.cassie._
 import clocks.MicrosecondEpochClock
 import com.twitter.logging.Logger
-import com.twitter.conversions.time._
 import org.apache.log4j.Level
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
@@ -40,8 +39,6 @@ object CassieRun {
 
     cass.insert("yay for everyone", Column("name", "Louie")).apply()
     cass.insert("yay for everyone", Column("motto", "Swish!")).apply()
-
-    cass.insert("HELLO", Column("name", "awww yeahhhh", 1.minute)).apply()
 
     log.info("getting a column: %s", cass.getColumn("yay for me", "name").apply())
     // Some(Column(name,Coda,1271789761374109))
