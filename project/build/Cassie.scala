@@ -13,7 +13,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardProject(info)
   val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
   val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
-  val codecs = "commons-codec" % "commons-codec" % "1.4" withSources()
+  val codecs = "commons-codec" % "commons-codec" % "1.4" //withSources()
 
   val hadoop    = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
   val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
