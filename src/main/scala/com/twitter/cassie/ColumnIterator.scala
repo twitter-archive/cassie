@@ -8,7 +8,6 @@ import com.twitter.util.Future
 import codecs.Codec
 
 import collection.mutable.ArrayBuffer
-import com.twitter.logging.Logger
 import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 class ColumnIterator[Key, Name, Value](private var iteratee: ColumnIteratee[Key, Name, Value])

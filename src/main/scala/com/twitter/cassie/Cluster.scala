@@ -33,7 +33,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
   case class KeyspaceBuilder(
     _name: String,
     _performMapping: Boolean = true,
-    _retryAttempts: Int = 5,
+    _retryAttempts: Int = 0,
     _readTimeoutInMS: Int = 10000,
     _partialFailureThreshold: Int = 3,
     _minConnectionsPerHost: Int = 1,
