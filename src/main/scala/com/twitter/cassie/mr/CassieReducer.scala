@@ -72,6 +72,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   private def bufCopy(old: ByteBuffer) = {
     val n = ByteBuffer.allocate(old.remaining)
     n.put(old.array, old.position, old.remaining)
+    n.rewind
     n
   }
   
