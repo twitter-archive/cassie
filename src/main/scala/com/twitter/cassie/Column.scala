@@ -8,27 +8,19 @@ import com.twitter.conversions.time._
 import org.apache.cassandra.thrift
 
 object Column {
-  def apply[A, B](name: A, value: B): Column[A, B] = apply(name, value, None)
-
-  def apply[A, B](name: A, value: B, timestamp: Long): Column[A, B] = apply(name, value, Some(timestamp))
-
-  def apply[A, B](name: A, value: B, timestamp: Long, ttl: Duration): Column[A, B] = Column(name, value, Some(timestamp), Some(ttl))
-
-  def apply[A, B](name: A, value: B, timestamp: Option[Long]): Column[A, B] = apply(name, value, timestamp, None)
+  def apply[A, B](name: A, value: B): Column[A, B] = new Column(name, value)
 
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], colOrSCol: thrift.ColumnOrSuperColumn): Column[A, B] = {
-
-    val ttl = if(colOrSCol.column.isSetTtl) {
-      Some(colOrSCol.column.getTtl.seconds)
-    } else {
-      None
-    }
-    Column(
+    val c = Column(
       nameCodec.decode(colOrSCol.column.name),
-      valueCodec.decode(colOrSCol.column.value),
-      Some(colOrSCol.column.timestamp),
-      ttl
-    )
+      valueCodec.decode(colOrSCol.column.value)
+    ).timestamp(colOrSCol.column.timestamp)
+
+    if(colOrSCol.column.isSetTtl) {
+      c.ttl(colOrSCol.column.getTtl.seconds)
+    } else {
+      c
+    }
   }
 
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], clock: Clock, col: Column[A, B]): thrift.Column = {
@@ -42,12 +34,21 @@ object Column {
   }
 }
 
-/**
- * A column in a Cassandra. Belongs to a row in a column family.
- *
- * @author coda
- */
+
 case class Column[A, B](name: A, value: B, timestamp: Option[Long], ttl: Option[Duration]) {
+
+  def this(name: A, value: B) = {
+    this(name, value, None, None)
+  }
+
+  def timestamp(ts: Long): Column[A, B] = {
+    copy(timestamp = Some(ts))
+  }
+
+  def ttl(t: Duration): Column[A, B] = {
+    copy(ttl = Some(t))
+  }
+
   def pair = name -> this
 }
 
