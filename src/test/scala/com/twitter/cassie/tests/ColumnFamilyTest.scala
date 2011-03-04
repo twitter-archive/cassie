@@ -62,7 +62,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      cf.getColumn("key", "name")() must equal(Some(Column("name", "Coda", 2292L)))
+      cf.getColumn("key", "name")() must equal(Some(Column("name", "Coda").timestamp(2292L)))
     }
   }
 
@@ -88,8 +88,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
       cf.getRow("key")() must equal(asJavaMap(Map(
-        "name" -> Column("name", "Coda", 2292L),
-        "age" -> Column("age", "old", 11919L)
+        "name" -> Column("name", "Coda").timestamp(2292L),
+        "age" -> Column("age", "old").timestamp(11919L)
       )))
     }
   }
@@ -134,8 +134,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
       cf.getColumns("key", Set("name", "age"))() must equal(asJavaMap(Map(
-        "name" -> Column("name", "Coda", 2292L),
-        "age" -> Column("age", "old", 11919L)
+        "name" -> Column("name", "Coda").timestamp(2292L),
+        "age" -> Column("age", "old").timestamp(11919L)
       )))
     }
   }
@@ -164,8 +164,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
       cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
-        "key1" -> Column("name", "Coda", 2292L),
-        "key2" -> Column("name", "Niki", 422L)
+        "key1" -> Column("name", "Coda").timestamp(2292L),
+        "key2" -> Column("name", "Niki").timestamp(422L)
       )))
     }
 
@@ -178,7 +178,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
       cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
-        "key1" -> Column("name", "Coda", 2292L)
+        "key1" -> Column("name", "Coda").timestamp(2292L)
       )))
     }
   }
@@ -210,12 +210,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
       cf.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(asJavaMap(Map(
         "key1" -> asJavaMap(Map(
-          "name" -> Column("name", "Coda", 2292L),
-          "age" -> Column("age", "old", 11919L)
+          "name" -> Column("name", "Coda").timestamp(2292L),
+          "age" -> Column("age", "old").timestamp(11919L)
         )),
         "key2" -> asJavaMap(Map(
-          "name" -> Column("name", "Niki", 422L),
-          "age" -> Column("age", "lithe", 129L)
+          "name" -> Column("name", "Niki").timestamp(422L),
+          "age" -> Column("age", "lithe").timestamp(129L)
         ))
       )))
     }
@@ -225,7 +225,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("performs an insert") {
-      cf.insert("key", Column("name", "Coda", 55))
+      cf.insert("key", Column("name", "Coda").timestamp(55))
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnParent])
       val col = newColumn("name", "Coda", 55).column
@@ -255,7 +255,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
     it("performs a batch_mutate") {
       cf.consistency(WriteConsistency.All).batch()
-        .insert("key", Column("name", "value", 201))
+        .insert("key", Column("name", "value").timestamp(201))
         .execute()
 
       val map = ArgumentCaptor.forClass(classOf[java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]])

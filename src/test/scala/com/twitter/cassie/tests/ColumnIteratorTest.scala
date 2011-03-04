@@ -75,14 +75,14 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
 
     it("does a buffered iteration over the columns in the rows in the range") {
       iterator.toList must equal(List(
-        ("start", Column("name", "value", 1)),
-        ("start", Column("name1", "value1", 2)),
-        ("start1", Column("name", "value", 1)),
-        ("start1", Column("name1", "value1", 2)),
-        ("start2", Column("name", "value", 1)),
-        ("start2", Column("name1", "value1", 2)),
-        ("start3", Column("name", "value", 1)),
-        ("start3", Column("name1", "value1", 2))
+        ("start", Column("name", "value").timestamp(1)),
+        ("start", Column("name1", "value1").timestamp(2)),
+        ("start1", Column("name", "value").timestamp(1)),
+        ("start1", Column("name1", "value1").timestamp(2)),
+        ("start2", Column("name", "value").timestamp(1)),
+        ("start2", Column("name1", "value1").timestamp(2)),
+        ("start3", Column("name", "value").timestamp(1)),
+        ("start3", Column("name1", "value1").timestamp(2))
       ))
     }
 

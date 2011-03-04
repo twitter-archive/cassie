@@ -17,7 +17,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("inserting a column") {
     val builder = setup()
-    builder.insert("key", Column("name", "value", 234))
+    builder.insert("key", Column("name", "value").timestamp(234))
     val mutations = Mutations(builder)
 
     it("adds an insertion mutation") {

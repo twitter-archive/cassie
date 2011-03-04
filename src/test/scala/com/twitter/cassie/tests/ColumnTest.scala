@@ -8,7 +8,7 @@ import com.twitter.conversions.time._
 
 class ColumnTest extends Spec with MustMatchers {
   describe("a column with an explicit ttl") {
-    val col = Column("id", 300, 400L, 1.minute)
+    val col = Column("id", 300).timestamp(400L).ttl(1.minute)
 
     it("has a name") {
       col.name must equal("id")
