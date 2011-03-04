@@ -1,4 +1,4 @@
-# 0.3.0
+# 0.3.0 [2011-03-04]
 
 * ttl support. Column now takes a ttl as a Duration
 * retries now defaults to 0. this is both less surprising and works around a bug in fingagle where retries >= maxConnectionsPerHost (with 1 host)
