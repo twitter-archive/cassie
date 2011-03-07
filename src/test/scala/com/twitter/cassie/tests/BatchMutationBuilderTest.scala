@@ -3,6 +3,7 @@ package com.twitter.cassie.tests
 import scala.collection.JavaConversions._
 
 import com.twitter.cassie.codecs.Utf8Codec
+import com.twitter.cassie.util.ColumnFamilyTestHelper
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
@@ -11,8 +12,8 @@ import com.twitter.cassie.clocks.Clock
 
 import com.twitter.cassie.MockCassandraClient
 
-class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar {
-  def setup() = new BatchMutationBuilder(new MockCassandraClient("ks", "People").cf)
+class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+  def setup() = new BatchMutationBuilder(columnFamily)
   def enc(string: String) = Utf8Codec.encode(string)
 
   describe("inserting a column") {
@@ -21,6 +22,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds an insertion mutation") {
+      println(mutations.get(enc("key")))
       val mutation = mutations.get(enc("key")).get("People").get(0)
       val col = mutation.getColumn_or_supercolumn.getColumn
       Utf8Codec.decode(col.name) must equal("name")

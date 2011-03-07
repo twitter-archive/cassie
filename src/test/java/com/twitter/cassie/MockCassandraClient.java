@@ -44,12 +44,8 @@ public final class MockCassandraClient {
   }
 
   public final ServiceToClient client;
-  public final ColumnFamily<String,String,String> cf;
 
   public MockCassandraClient() {
-      this("ks", "cf");
-  }
-  public MockCassandraClient(String ks, String cf) {
     this.client = mock(ServiceToClient.class);
     // stub out some standard cases
     when(client.batch_mutate(anyMap(), anyConsistencyLevel()))
@@ -64,9 +60,6 @@ public final class MockCassandraClient {
     when(client.multiget_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
         anySlicePredicate(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
-    this.cf = new ColumnFamily(ks, cf, new SimpleProvider(client),
-        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
-        ReadConsistency.Quorum(), WriteConsistency.Quorum());
   }
 
   public static final class SimpleProvider implements ClientProvider {
@@ -76,7 +69,7 @@ public final class MockCassandraClient {
       this.client = client;
     }
     @Override
-    public <A> Future<A> map(scala.Function1<ServiceToClient, Future<A>> func) {
+    public <A>Future<A> map(scala.Function1<ServiceToClient, Future<A>> func) {
       assert !closed;
       return func.apply(client);
     }

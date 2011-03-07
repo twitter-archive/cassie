@@ -22,17 +22,21 @@ import com.twitter.cassie.util.ColumnFamilyTestHelper
  * Note that almost all calls on a ColumnFamily would normally be asynchronous.
  * But in this case, MockCassandraClient takes asynchronicity out of the equation.
  */
-class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
-
-  type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
+class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+  val counterColumnFamily = new CounterColumnFamily("ks", "cf", new SimpleProvider(mockCassandraClient.client),
+        Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum)
+  
+  type ColumnList = java.util.List[thrift.Counter]
   type KeyColumnMap = java.util.Map[java.nio.ByteBuffer,ColumnList]
 
-  def newColumn(name: String, value: String, timestamp: Long) = {
-    val cosc = new thrift.ColumnOrSuperColumn
-    cosc.setColumn(new thrift.Column(Utf8Codec.encode(name), Utf8Codec.encode(value), timestamp))
-    cosc
+  def newColumn(name: String, value: Long) = {
+    val counter = new thrift.Counter
+    counter.setColumn(new thrift.CounterColumn(Utf8Codec.encode(name), value))
+    counter
   }
   def b(keyString: String) = ByteBuffer.wrap(keyString.getBytes)
+
 
   describe("getting a columns for a key") {
     val client = mockCassandraClient.client
@@ -50,18 +54,18 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
 
     it("returns none if the column doesn't exist") {
-      columnFamily.getColumn("key", "name")() must equal(None)
+      columnFamily.getColumn("key", "cats")() must equal(None)
     }
 
     it("returns a option of a column if it exists") {
-      val columns = Seq(newColumn("name", "Coda", 2292L))
+      val columns = Seq(newColumn("cats", 2L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
+      when(client.get_counter_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      columnFamily.getColumn("key", "name")() must equal(Some(Column("name", "Coda", 2292L)))
+      columnFamily.getColumn("key", "cats")() must equal(Some(CounterColumn("cats", 2L)))
     }
   }
-
+/*
   describe("getting a row") {
     val client = mockCassandraClient.client
 
@@ -311,4 +315,5 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }
   }
+  */
 }
