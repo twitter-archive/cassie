@@ -35,6 +35,7 @@ private[cassie] class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
+                            val connectionTimeoutInMS: Int = 10000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
@@ -44,6 +45,7 @@ private[cassie] class ClusterClientProvider(val hosts: Set[InetSocketAddress],
       .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
       .requestTimeout(Duration(readTimeoutInMS, TimeUnit.MILLISECONDS))
+      .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
       .reportTo(new OstrichStatsReceiver)

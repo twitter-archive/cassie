@@ -35,6 +35,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _performMapping: Boolean = true,
     _retryAttempts: Int = 0,
     _readTimeoutInMS: Int = 10000,
+    _connectionTimeoutInMS: Int = 10000,
     _partialFailureThreshold: Int = 3,
     _minConnectionsPerHost: Int = 1,
     _maxConnectionsPerHost: Int = 5,
@@ -49,13 +50,14 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
         seedHosts.map{ host => new InetSocketAddress(host, seedPort) }
 
       // TODO: move to builder pattern as well
-      val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _readTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS)
+      val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _readTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS)
       new Keyspace(_name, ccp)
     }
 
     def performMapping(p: Boolean): KeyspaceBuilder = copy(_performMapping = p)
     def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
     def readTimeoutInMS(r: Int): KeyspaceBuilder = copy(_readTimeoutInMS = r)
+    def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectionTimeoutInMS = r)
     def partialFailureThreshold(p: Int): KeyspaceBuilder =
       copy(_partialFailureThreshold = p)
     def minConnectionsPerHost(m: Int): KeyspaceBuilder =
