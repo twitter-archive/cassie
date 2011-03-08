@@ -43,7 +43,7 @@ queries up to 5 times, and which will not send queries to a node for 10 seconds
 after 3 queries have failed:
 
     val keyspace = cluster.keyspace("MyCassieApp")
-      .performMapping(true)
+      .mapHostsEvery(10.minutes)
       .retryAttempts(5)
       .readTimeoutInMS(5000)
       .minConnectionsPerHost(1)
@@ -53,7 +53,7 @@ after 3 queries have failed:
 
 (If you have some nodes with dramatically different latency—e.g., in another
 data center–or if you have a huge cluster, you can disable keyspace mapping via
-"performMapping(false)" in which case clients will connect directly to the seed
+"mapHostsEvery(0.minutes)" in which case clients will connect directly to the seed
 hosts passed to "new Cluster".)
 
 This `Keyspace` will balance requests across the nodes in a round-robin way,
