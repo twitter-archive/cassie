@@ -4,6 +4,9 @@ import java.nio.ByteBuffer;
 
 import com.twitter.cassie.ColumnFamily;
 import com.twitter.cassie.MockCassandraClient;
+import com.twitter.cassie.ReadConsistency;
+import com.twitter.cassie.WriteConsistency;
+import com.twitter.cassie.clocks.MicrosecondEpochClock;
 import com.twitter.cassie.codecs.Codec;
 import com.twitter.cassie.codecs.Utf8Codec;
 
@@ -30,7 +33,10 @@ public class ColumnFamilyTest {
 
   @Test
   public void test() {
-    mock.cf.getColumn("key", "name");
+    ColumnFamily cf = new ColumnFamily("ks", "cf", new MockCassandraClient.SimpleProvider(mock.client),
+        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum(), WriteConsistency.Quorum());
+    cf.getColumn("key", "name");
     ColumnParent cp = new ColumnParent("cf");
     ArgumentCaptor<SlicePredicate> pred = ArgumentCaptor.forClass(SlicePredicate.class);
     verify(mock.client).get_slice(eq(codec.encode("key")), eq(cp),

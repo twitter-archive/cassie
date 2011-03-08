@@ -11,10 +11,10 @@ import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
-import com.twitter.cassie.clocks.Clock
 import thrift.Mutation
 import com.twitter.cassie._
 
+import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
 import MockCassandraClient._
 
 /**
@@ -35,7 +35,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
   def setup = {
     val mcc = new MockCassandraClient
-    (mcc.client, mcc.cf)
+    val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
+        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum, WriteConsistency.Quorum)
+    (mcc.client, cf)
   }
 
   describe("getting a columns for a key") {

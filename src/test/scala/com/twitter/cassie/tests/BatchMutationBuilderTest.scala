@@ -6,13 +6,17 @@ import com.twitter.cassie.codecs.Utf8Codec
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import com.twitter.cassie.{Mutations, Column, BatchMutationBuilder}
-import com.twitter.cassie.clocks.Clock
-
-import com.twitter.cassie.MockCassandraClient
+import com.twitter.cassie._
+import clocks.{MicrosecondEpochClock, Clock}
+import com.twitter.cassie.MockCassandraClient.SimpleProvider
 
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar {
-  def setup() = new BatchMutationBuilder(new MockCassandraClient("ks", "People").cf)
+  val mcc = new MockCassandraClient
+  val cf = new ColumnFamily("ks", "People", new SimpleProvider(mcc.client),
+        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum, WriteConsistency.Quorum)
+
+  def setup() = new BatchMutationBuilder(cf)
   def enc(string: String) = Utf8Codec.encode(string)
 
   describe("inserting a column") {

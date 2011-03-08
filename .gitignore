@@ -1,7 +1,8 @@
 .idea
+*.iml
+out/
 lib_managed
 project/boot
 target
 project/plugins/project/
 project/plugins/src_managed/
-*.iml
