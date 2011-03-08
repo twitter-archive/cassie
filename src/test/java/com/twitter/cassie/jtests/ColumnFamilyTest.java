@@ -10,9 +10,9 @@ import com.twitter.cassie.clocks.MicrosecondEpochClock;
 import com.twitter.cassie.codecs.Codec;
 import com.twitter.cassie.codecs.Utf8Codec;
 
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.ColumnParent;
-import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.finagle.thrift.SlicePredicate;
+import org.apache.cassandra.finagle.thrift.ColumnParent;
+import org.apache.cassandra.finagle.thrift.ConsistencyLevel;
 
 import org.junit.Test;
 import org.junit.Before;

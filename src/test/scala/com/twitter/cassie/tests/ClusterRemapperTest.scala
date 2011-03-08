@@ -5,7 +5,7 @@ import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, Spec}
 import com.twitter.cassie.tests.util.MockCassandraServer
 import java.net.{SocketAddress, InetSocketAddress}
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 
 import com.twitter.cassie.ClusterRemapper
 import com.twitter.logging.Logger

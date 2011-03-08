@@ -1,7 +1,7 @@
 package com.twitter.cassie.connection
 
 import com.twitter.util.Future
-import org.apache.cassandra.thrift.Cassandra.ServiceToClient
+import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 
 /**
  * A utility interface for classes which pass a Cassandra `Client` instance to

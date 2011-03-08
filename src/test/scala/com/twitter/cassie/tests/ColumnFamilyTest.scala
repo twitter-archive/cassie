@@ -4,11 +4,11 @@ import scala.collection.JavaConversions._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.apache.cassandra.thrift.Cassandra.ServiceToClient
+import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import com.twitter.cassie.codecs.Utf8Codec
 import org.mockito.Mockito.{when, verify}
 import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
 import thrift.Mutation

@@ -4,13 +4,13 @@ import clocks.Clock
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import org.apache.cassandra.thrift.Mutation
+import org.apache.cassandra.finagle.thrift.Mutation
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future

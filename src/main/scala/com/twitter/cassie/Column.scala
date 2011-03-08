@@ -5,7 +5,7 @@ import clocks.Clock
 import codecs.Codec
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 
 object Column {
   def apply[A, B](name: A, value: B): Column[A, B] = new Column(name, value)

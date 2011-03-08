@@ -4,7 +4,7 @@ package com.twitter.cassie.tests.util
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.Mockito.mock
-import org.apache.cassandra.thrift.Cassandra
+import org.apache.cassandra.finagle.thrift.Cassandra
 import org.apache.thrift.transport.{TServerSocket, TFramedTransport}
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.TThreadPoolServer
