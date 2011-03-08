@@ -31,7 +31,7 @@ import com.twitter.finagle.stats.OstrichStatsReceiver
  * @param framed true if the server will only accept framed connections
  * @author coda
  */
-class ClusterClientProvider(val hosts: Set[InetSocketAddress],
+private[cassie] class ClusterClientProvider(val hosts: Set[InetSocketAddress],
                             val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
