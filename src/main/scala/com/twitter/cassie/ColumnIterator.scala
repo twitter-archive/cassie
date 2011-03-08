@@ -8,7 +8,7 @@ import com.twitter.util.Future
 import codecs.Codec
 
 import collection.mutable.ArrayBuffer
-import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
+import org.apache.cassandra.finagle.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 class ColumnIterator[Key, Name, Value](private var iteratee: ColumnIteratee[Key, Name, Value])
         extends java.util.Iterator[(Key, Column[Name, Value])]

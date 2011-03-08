@@ -8,7 +8,7 @@ import com.twitter.util.Future
 import codecs.Codec
 
 import com.twitter.logging.Logger
-import org.apache.cassandra.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
+import org.apache.cassandra.finagle.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 /**
  * Given a column family, a key range, a batch size, a slice predicate, and

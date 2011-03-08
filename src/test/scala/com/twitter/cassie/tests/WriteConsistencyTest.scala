@@ -3,7 +3,7 @@ package com.twitter.cassie.tests
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import com.twitter.cassie.WriteConsistency
-import org.apache.cassandra.thrift.ConsistencyLevel
+import org.apache.cassandra.finagle.thrift.ConsistencyLevel
 
 class WriteConsistencyTest extends Spec with MustMatchers {
   describe("a write consistency of Any") {

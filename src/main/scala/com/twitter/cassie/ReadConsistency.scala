@@ -1,6 +1,6 @@
 package com.twitter.cassie
 
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 
 /**
  * The level of consistency required for a read operation.

@@ -2,7 +2,7 @@ package com.twitter.cassie.connection
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
-import org.apache.cassandra.thrift.Cassandra.ServiceToClient
+import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.apache.thrift.protocol.TBinaryProtocol
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.ClientBuilder

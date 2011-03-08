@@ -10,7 +10,7 @@ import org.scalatest.{OneInstancePerTest, Spec}
 import com.twitter.cassie.{Column, ColumnFamily, ColumnIteratee}
 import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 import com.twitter.cassie.codecs.{Utf8Codec}
 import scala.collection.JavaConversions._
 

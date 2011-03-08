@@ -3,7 +3,7 @@ package com.twitter.cassie.tests
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import com.twitter.cassie.ReadConsistency
-import org.apache.cassandra.thrift.ConsistencyLevel
+import org.apache.cassandra.finagle.thrift.ConsistencyLevel
 
 class ReadConsistencyTest extends Spec with MustMatchers {
   describe("a read consistency of One") {

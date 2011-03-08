@@ -20,8 +20,8 @@ import org.junit.Before;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-import org.apache.cassandra.thrift.Cassandra.ServiceToClient;
-import org.apache.cassandra.thrift.*;
+import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient;
+import org.apache.cassandra.finagle.thrift.*;
 
 public final class MockCassandraClient {
   public static ByteBuffer anyByteBuffer() {
@@ -36,8 +36,8 @@ public final class MockCassandraClient {
   public static SlicePredicate anySlicePredicate() {
     return any(SlicePredicate.class);
   }
-  public static org.apache.cassandra.thrift.Column anyColumn() {
-    return any(org.apache.cassandra.thrift.Column.class);
+  public static org.apache.cassandra.finagle.thrift.Column anyColumn() {
+    return any(org.apache.cassandra.finagle.thrift.Column.class);
   }
   public static ConsistencyLevel anyConsistencyLevel() {
     return any(ConsistencyLevel.class);

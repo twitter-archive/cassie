@@ -7,7 +7,7 @@ import java.util.Collections.{singleton => singletonSet}
 import codecs.{Codec, Utf8Codec}
 import clocks.Clock
 import java.util.{ArrayList, HashMap}
-import org.apache.cassandra.thrift.{SlicePredicate, Deletion, Mutation, Column => TColumn, ColumnOrSuperColumn}
+import org.apache.cassandra.finagle.thrift.{SlicePredicate, Deletion, Mutation, Column => TColumn, ColumnOrSuperColumn}
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 
