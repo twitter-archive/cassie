@@ -15,7 +15,7 @@ import com.twitter.cassie.codecs.Utf8Codec;
 import com.twitter.cassie.ReadConsistency;
 import com.twitter.cassie.WriteConsistency;
 
-import org.apache.cassandra.thrift.CounterColumn;
+import org.apache.cassandra.finagle.thrift.CounterColumn;
 import org.junit.Test;
 import org.junit.Before;
 import static junit.framework.Assert.assertEquals;

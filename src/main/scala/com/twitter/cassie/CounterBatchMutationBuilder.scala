@@ -8,7 +8,7 @@ import codecs.{Codec, Utf8Codec}
 import java.util.{ArrayList, HashMap}
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
-import org.apache.cassandra.thrift.{CounterDeletion, Counter, CounterMutation, SlicePredicate, CounterColumn => TCounterColumn}
+import org.apache.cassandra.finagle.thrift.{CounterDeletion, Counter, CounterMutation, SlicePredicate, CounterColumn => TCounterColumn}
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call for counters.

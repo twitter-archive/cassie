@@ -4,7 +4,7 @@ import clocks.Clock
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
-import org.apache.cassandra.thrift
+import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
