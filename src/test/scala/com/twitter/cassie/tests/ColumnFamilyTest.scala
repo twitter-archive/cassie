@@ -11,18 +11,17 @@ import org.mockito.Matchers.{anyString, any, eq => matchEq, anyListOf}
 import org.apache.cassandra.thrift
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
-import com.twitter.cassie.clocks.Clock
 import thrift.Mutation
 import com.twitter.cassie._
 
+import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
 import MockCassandraClient._
-import com.twitter.cassie.util.ColumnFamilyTestHelper
 
 /**
  * Note that almost all calls on a ColumnFamily would normally be asynchronous.
  * But in this case, MockCassandraClient takes asynchronicity out of the equation.
  */
-class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
   type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
   type KeyColumnMap = java.util.Map[java.nio.ByteBuffer,ColumnList]
@@ -34,11 +33,19 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
   def b(keyString: String) = ByteBuffer.wrap(keyString.getBytes)
 
+  def setup = {
+    val mcc = new MockCassandraClient
+    val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
+        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum, WriteConsistency.Quorum)
+    (mcc.client, cf)
+  }
+
   describe("getting a columns for a key") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a get_slice with a set of column names") {
-      columnFamily.getColumn("key", "name")
+      cf.getColumn("key", "name")
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -50,7 +57,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
 
     it("returns none if the column doesn't exist") {
-      columnFamily.getColumn("key", "name")() must equal(None)
+      cf.getColumn("key", "name")() must equal(None)
     }
 
     it("returns a option of a column if it exists") {
@@ -58,15 +65,15 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      columnFamily.getColumn("key", "name")() must equal(Some(Column("name", "Coda", 2292L)))
+      cf.getColumn("key", "name")() must equal(Some(Column("name", "Coda", 2292L)))
     }
   }
 
   describe("getting a row") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a get_slice with a maxed-out count") {
-      columnFamily.getRow("key")
+      cf.getRow("key")
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -83,7 +90,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      columnFamily.getRow("key")() must equal(asJavaMap(Map(
+      cf.getRow("key")() must equal(asJavaMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       )))
@@ -91,12 +98,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("getting a row slice") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a get_slice with the specified count, reversedness, start column name and end column name") {
       val startColumnName = "somewhere"
       val endColumnName   = "overTheRainbow"
-      columnFamily.getRowSlice("key", Some(startColumnName), Some(endColumnName), 100, Order.Reversed)
+      cf.getRowSlice("key", Some(startColumnName), Some(endColumnName), 100, Order.Reversed)
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -109,10 +116,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("getting a set of columns for a key") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a get_slice with a set of column names") {
-      columnFamily.getColumns("key", Set("name", "age"))
+      cf.getColumns("key", Set("name", "age"))
 
       val cp = new thrift.ColumnParent("cf")
 
@@ -129,7 +136,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
 
-      columnFamily.getColumns("key", Set("name", "age"))() must equal(asJavaMap(Map(
+      cf.getColumns("key", Set("name", "age"))() must equal(asJavaMap(Map(
         "name" -> Column("name", "Coda", 2292L),
         "age" -> Column("age", "old", 11919L)
       )))
@@ -137,10 +144,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("getting a column for a set of keys") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a multiget_slice with a column name") {
-      columnFamily.consistency(ReadConsistency.One).multigetColumn(Set("key1", "key2"), "name")
+      cf.consistency(ReadConsistency.One).multigetColumn(Set("key1", "key2"), "name")
 
       val keys = List("key1", "key2").map{Utf8Codec.encode(_)}
       val cp = new thrift.ColumnParent("cf")
@@ -159,7 +166,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      columnFamily.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
         "key1" -> Column("name", "Coda", 2292L),
         "key2" -> Column("name", "Niki", 422L)
       )))
@@ -173,17 +180,17 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      columnFamily.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
         "key1" -> Column("name", "Coda", 2292L)
       )))
     }
   }
 
   describe("getting a set of columns for a set of keys") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a multiget_slice with a set of column names") {
-      columnFamily.consistency(ReadConsistency.One).multigetColumns(Set("key1", "key2"), Set("name", "age"))
+      cf.consistency(ReadConsistency.One).multigetColumns(Set("key1", "key2"), Set("name", "age"))
 
       val keys = List("key1", "key2").map{ b(_) }
       val cp = new thrift.ColumnParent("cf")
@@ -204,7 +211,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
 
-      columnFamily.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(asJavaMap(Map(
+      cf.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(asJavaMap(Map(
         "key1" -> asJavaMap(Map(
           "name" -> Column("name", "Coda", 2292L),
           "age" -> Column("age", "old", 11919L)
@@ -218,10 +225,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("inserting a column") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs an insert") {
-      columnFamily.insert("key", Column("name", "Coda", 55))
+      cf.insert("key", Column("name", "Coda", 55))
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnParent])
       val col = newColumn("name", "Coda", 55).column
@@ -233,10 +240,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("removing a row with a specific timestamp") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a remove") {
-      columnFamily.removeRowWithTimestamp("key", 55)
+      cf.removeRowWithTimestamp("key", 55)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
       verify(client).remove(matchEq(b("key")), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
@@ -247,10 +254,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("performing a batch mutation") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("performs a batch_mutate") {
-      columnFamily.consistency(WriteConsistency.All).batch()
+      cf.consistency(WriteConsistency.All).batch()
         .insert("key", Column("name", "value", 201))
         .execute()
 
@@ -268,12 +275,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("iterating through all columns of all rows") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("returns a ColumnIterator with an all-column predicate") {
-      val iterator = columnFamily.rowIteratee(16)
+      val iterator = cf.rowIteratee(16)
 
-      iterator.cf must equal(columnFamily)
+      iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
       iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
@@ -285,12 +292,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("iterating through one column of all rows") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("returns a ColumnIterator with a single-column predicate") {
-      val iterator = columnFamily.columnIteratee(16, "name")
+      val iterator = cf.columnIteratee(16, "name")
 
-      iterator.cf must equal(columnFamily)
+      iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
       iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)
@@ -299,12 +306,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
   }
 
   describe("iterating through a set of columns of all rows") {
-    val client = mockCassandraClient.client
+    val (client, cf) = setup
 
     it("returns a ColumnIterator with a column-list predicate") {
-      val iterator = columnFamily.columnsIteratee(16, Set("name", "motto"))
+      val iterator = cf.columnsIteratee(16, Set("name", "motto"))
 
-      iterator.cf must equal(columnFamily)
+      iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
       iterator.endKey must equal(b(""))
       iterator.batchSize must equal(16)

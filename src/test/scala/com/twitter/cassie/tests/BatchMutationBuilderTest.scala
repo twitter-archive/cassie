@@ -3,17 +3,20 @@ package com.twitter.cassie.tests
 import scala.collection.JavaConversions._
 
 import com.twitter.cassie.codecs.Utf8Codec
-import com.twitter.cassie.util.ColumnFamilyTestHelper
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import com.twitter.cassie.{Mutations, Column, BatchMutationBuilder}
-import com.twitter.cassie.clocks.Clock
+import com.twitter.cassie._
+import clocks.{MicrosecondEpochClock, Clock}
+import com.twitter.cassie.MockCassandraClient.SimpleProvider
 
-import com.twitter.cassie.MockCassandraClient
+class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar {
+  val mcc = new MockCassandraClient
+  val cf = new ColumnFamily("ks", "People", new SimpleProvider(mcc.client),
+        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        ReadConsistency.Quorum, WriteConsistency.Quorum)
 
-class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
-  def setup() = new BatchMutationBuilder(columnFamily)
+  def setup() = new BatchMutationBuilder(cf)
   def enc(string: String) = Utf8Codec.encode(string)
 
   describe("inserting a column") {
@@ -22,7 +25,6 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
     val mutations = Mutations(builder)
 
     it("adds an insertion mutation") {
-      println(mutations.get(enc("key")))
       val mutation = mutations.get(enc("key")).get("People").get(0)
       val col = mutation.getColumn_or_supercolumn.getColumn
       Utf8Codec.decode(col.name) must equal("name")

@@ -1,5 +1,6 @@
 .idea
 *.iml
+out/
 lib_managed
 project/boot
 target

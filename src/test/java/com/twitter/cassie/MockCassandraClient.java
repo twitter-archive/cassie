@@ -15,6 +15,7 @@ import com.twitter.cassie.codecs.Utf8Codec;
 import com.twitter.cassie.ReadConsistency;
 import com.twitter.cassie.WriteConsistency;
 
+import org.apache.cassandra.thrift.CounterColumn;
 import org.junit.Test;
 import org.junit.Before;
 import static junit.framework.Assert.assertEquals;
@@ -43,6 +44,10 @@ public final class MockCassandraClient {
     return any(ConsistencyLevel.class);
   }
 
+  public static CounterColumn anyCounterColumn() {
+    return any(CounterColumn.class);
+  }
+
   public final ServiceToClient client;
 
   public MockCassandraClient() {
@@ -60,6 +65,13 @@ public final class MockCassandraClient {
     when(client.multiget_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
         anySlicePredicate(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
+    when(client.get_counter_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(new ArrayList<Counter>()));
+    when(client.multiget_counter_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
+        anySlicePredicate(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(new HashMap<ByteBuffer, List<Counter>>()));
+    when(client.add(anyByteBuffer(), anyColumnParent(), anyCounterColumn(), anyConsistencyLevel()))
+        .thenReturn(new Fulfillment(null));
   }
 
   public static final class SimpleProvider implements ClientProvider {

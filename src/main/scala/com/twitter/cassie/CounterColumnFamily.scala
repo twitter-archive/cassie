@@ -33,7 +33,7 @@ case class CounterColumnFamily[Key, Name](
 
   val log = Logger.get
 
-  import ColumnFamily._
+  import CounterColumnFamily._
 
   val writeConsistency = WriteConsistency.One
 
@@ -145,6 +145,7 @@ case class CounterColumnFamily[Key, Name](
       for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty)
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
+
       cols
     }
   }
@@ -209,15 +210,15 @@ case class CounterColumnFamily[Key, Name](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def insert(key: Key, column: CounterColumn[Name]) = {
-    insertAs(key, column)(defaultKeyCodec, defaultNameCodec)
+  def add(key: Key, column: CounterColumn[Name]) = {
+    addAs(key, column)(defaultKeyCodec, defaultNameCodec)
   }
 
-  def insertAs[K, N](key: K, column: CounterColumn[N])
+  def addAs[K, N](key: K, column: CounterColumn[N])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N]) = {
     val cp = new thrift.ColumnParent(name)
     val col = CounterColumn.convert(nameCodec, column)
-    log.debug("insert(%s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
+    log.debug("add(%s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
       writeConsistency.level)
     provider.map {
       _.add(keyCodec.encode(key), cp, col, writeConsistency.level)
@@ -237,30 +238,30 @@ case class CounterColumnFamily[Key, Name](
     provider.map { _.remove_counter(defaultKeyCodec.encode(key), cp, writeConsistency.level) }
   }
 
-  /**
+  /*TODO: IMPLETEMENT
    * Removes a set of columns from a key.
    *
   def removeColumns(key: Key, columnNames: Set[Name]) = {
-    batchTODO: IMPLETEMENT
+    batch
       .removeColumns(key, columnNames)
       .execute()
   }   */
 
 
 
-  /**
+  /* TODO:Impletement this
    * @return A Builder that can be used to execute multiple actions in a single
    * request.
-   TODO:Impletement this≈
+
   def batch() = new BatchMutationBuilder(this)
-*/
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
   private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
-  }
+  }*/
+
 
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
