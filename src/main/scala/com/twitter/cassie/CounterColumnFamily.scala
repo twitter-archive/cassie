@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import org.apache.cassandra.thrift.Mutation
+import thrift.CounterMutation
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future
@@ -234,34 +234,31 @@ case class CounterColumnFamily[Key, Name](
   def removeColumn(key: Key, columnName: Name) = {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(defaultNameCodec.encode(columnName))
-    log.debug("remove(%s, %s, %s, %s)", keyspace, key, cp, writeConsistency.level)
+    log.debug("remove_counter(%s, %s, %s, %s)", keyspace, key, cp, writeConsistency.level)
     provider.map { _.remove_counter(defaultKeyCodec.encode(key), cp, writeConsistency.level) }
   }
 
-  /*TODO: IMPLETEMENT
+  /**
    * Removes a set of columns from a key.
-   *
+   */
   def removeColumns(key: Key, columnNames: Set[Name]) = {
     batch
       .removeColumns(key, columnNames)
       .execute()
-  }   */
+  }
 
-
-
-  /* TODO:Impletement this
+  /**
    * @return A Builder that can be used to execute multiple actions in a single
    * request.
-
-  def batch() = new BatchMutationBuilder(this)
+   */
+  def batch() = new CounterBatchMutationBuilder(this)
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) = {
-    log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
-  }*/
-
+  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[CounterMutation]]]) = {
+    log.debug("batch_add(%s, %s, %s", keyspace, mutations, writeConsistency.level)
+    provider.map { _.batch_add(mutations, writeConsistency.level) }
+  }
 
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
@@ -270,7 +267,7 @@ case class CounterColumnFamily[Key, Name](
                                 pred: thrift.SlicePredicate,
                                 keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N,CounterColumn[N]]] = {
     val cp = new thrift.ColumnParent(name)
-    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
+    log.debug("get_counter_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     provider.map { _.get_counter_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
       .map { result =>
         val cols: Map[N,CounterColumn[N]] = new HashMap(result.size)
