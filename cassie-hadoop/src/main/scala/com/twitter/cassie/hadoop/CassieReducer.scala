@@ -1,4 +1,4 @@
-package com.twitter.cassie.mr
+package com.twitter.cassie.hadoop
 
 import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.io._
