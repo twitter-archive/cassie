@@ -32,7 +32,8 @@ case class ColumnFamily[Key, Name, Value](
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum) 
+    extends ColumnFamilyLike{
 
   val log = Logger.get
 
