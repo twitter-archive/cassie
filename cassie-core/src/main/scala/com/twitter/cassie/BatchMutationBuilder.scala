@@ -19,7 +19,7 @@ import scala.collection.JavaConversions._
 private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,Name,Value]) {
 
   case class Insert(key: Key, column: Column[Name, Value])
-  case class Deletions(key: Key, columnNames: Set[Name])
+  case class Deletions(key: Key, columnNames: Set[Name], timestamp: Long)
 
   private val ops = new ListBuffer[Either[Insert, Deletions]]
 
@@ -31,11 +31,17 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
   def removeColumn(key: Key, columnName: Name) =
     removeColumns(key, singletonSet(columnName))
 
-  def removeColumns(key: Key, columnNames: Set[Name]) = synchronized {
-    ops.append(Right(Deletions(key, columnNames)))
+  def removeColumn(key: Key, columnName: Name, timestamp: Long) =
+    removeColumns(key, singletonSet(columnName), timestamp)
+    
+  def removeColumns(key: Key, columns: Set[Name]): BatchMutationBuilder[Key,Name,Value] = 
+    removeColumns(key, columns, cf.clock.timestamp)
+  
+  def removeColumns(key: Key, columns: Set[Name], timestamp: Long): BatchMutationBuilder[Key,Name,Value] = synchronized {
+    ops.append(Right(Deletions(key, columns, timestamp)))
     this
   }
-
+    
   /**
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
@@ -44,12 +50,12 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
   }
 
   private[cassie] def mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]] = synchronized {
-    val timestamp = cf.clock.timestamp
     val mutations = new HashMap[ByteBuffer, Map[String, List[Mutation]]]()
 
     ops.map { op =>
       op match {
         case Left(insert) => {
+          val timestamp = cf.clock.timestamp
           val cosc = new ColumnOrSuperColumn
           cosc.setColumn(
             new TColumn(
@@ -68,6 +74,7 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
           l.add(mutation)
         }
         case Right(deletions) => {
+          val timestamp = deletions.timestamp
           val pred = new SlicePredicate
           pred.setColumn_names(cf.encodeSet(deletions.columnNames)(cf.defaultNameCodec))
 

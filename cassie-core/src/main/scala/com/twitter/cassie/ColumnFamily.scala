@@ -241,11 +241,21 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Removes a set of columns from a key.
    */
-  def removeColumns(key: Key, columnNames: Set[Name]) = {
+  def removeColumns(key: Key, columnNames: Set[Name]): Future[Void] = {
     batch()
       .removeColumns(key, columnNames)
       .execute()
   }
+
+  /**
+   * Removes a set of columns from a key.
+   */
+  def removeColumns(key: Key, columnNames: Set[Name], timestamp: Long): Future[Void] = {
+    batch()
+      .removeColumns(key, columnNames, timestamp)
+      .execute()
+  }
+
 
   /**
    * Removes a key.
