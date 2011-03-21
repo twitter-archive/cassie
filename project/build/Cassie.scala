@@ -18,8 +18,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
   val hadoopProject = project(
     "cassie-hadoop", "cassie-hadoop",
     new HadoopProject(_), coreProject)
-    
-  class CoreProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines with CompileFinagleThrift {
+
+  class CoreProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines with CompileThriftFinagle {
     
     val slf4jVersion = "1.5.11"
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
@@ -33,7 +33,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     /**
      * Twitter specific deps
      */
-    val finagleVersion = "1.1.31"
+    val finagleVersion = "1.2.2"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val finagleOstrich = "com.twitter" % "finagle-ostrich4" % finagleVersion
@@ -53,6 +53,9 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     
     // include test-thrift definitions: see https://github.com/twitter/standard-project/issues#issue/13
     override def thriftSources = super.thriftSources +++ (testSourcePath / "thrift" ##) ** "*.thrift"
+
+    def runExamplesAction = task { args => runTask(Some("com.twitter.cassie.jtests.examples.CassieRun"), testClasspath, args) dependsOn(test) }
+    lazy val runExample = runExamplesAction
   }
   
   class HadoopProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines {

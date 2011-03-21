@@ -11,5 +11,8 @@ import org.apache.thrift.bootleg.Utf8Helper
  */
 object Utf8Codec extends Codec[String] {
   def encode(s: String) = b2b(Utf8Helper.encode(s))
-  def decode(ary: ByteBuffer) = Utf8Helper.decode(b2b(ary))
+  def decode(ary: ByteBuffer) = {
+    println(b2b(ary).length)
+    Utf8Helper.decode(b2b(ary))
+  }
 }

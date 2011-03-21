@@ -35,7 +35,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   var maxFutures: Int = CassieReducer.DEFAULT_MAX_FUTURES
   var i = 0
   var batch: BatchMutationBuilder[ByteBuffer, ByteBuffer, ByteBuffer] = null
-  var futures = new ListBuffer[Future[_]]
+  var futures = new ListBuffer[Future[Void]]
 
   type ReducerContext = Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable]#Context
   
@@ -60,7 +60,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
       }
       if(futures.size == maxFutures) {
         Future.join(futures)
-        futures = new ListBuffer[Future[_]]
+        futures = new ListBuffer[Future[Void]]
       }
     }
   } catch {

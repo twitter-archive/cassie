@@ -39,7 +39,7 @@ namespace rb CassandraThrift
 # string with major, minor, and patch level components.
 #
 #  - Major: Incremented for backward incompatible changes. An example would
-#           be changes to the number or disposition of method arguments.
+#           be changes to the 3number or disposition of method arguments.
 #  - Minor: Incremented for backward compatible changes. An example would
 #           be the addition of a new (optional) method.
 #  - Patch: Incremented for bug fixes. The patch level should be increased
