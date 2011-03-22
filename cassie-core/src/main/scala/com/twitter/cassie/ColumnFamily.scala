@@ -224,6 +224,8 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
+  def truncate() = provider.map(_.truncate(name))
+
   /**
    * Removes a column from a key.
    */
