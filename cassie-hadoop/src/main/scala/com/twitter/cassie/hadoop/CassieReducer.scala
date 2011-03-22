@@ -22,12 +22,12 @@ object CassieReducer {
 }
 
 class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable] {
-  
+
   val defaultReadConsistency = ReadConsistency.One
   val defaultWriteConsistency = WriteConsistency.One
-  
+
   implicit val byteCodec = ByteArrayCodec
-  
+
   var cluster: Cluster = null
   var keyspace: Keyspace = null
   var columnFamily: ColumnFamily[ByteBuffer, ByteBuffer, ByteBuffer] = null
@@ -35,16 +35,16 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   var maxFutures: Int = CassieReducer.DEFAULT_MAX_FUTURES
   var i = 0
   var batch: BatchMutationBuilder[ByteBuffer, ByteBuffer, ByteBuffer] = null
-  var futures = new ListBuffer[Future[_]]
+  var futures = new ListBuffer[Future[Void]]
 
   type ReducerContext = Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable]#Context
-  
+
   override def setup(context: ReducerContext) = {
     def conf(key: String) = context.getConfiguration.get(key)
     cluster = new Cluster(conf(HOSTS))
     if(conf(PAGE_SIZE) != null ) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
     if(conf(MAX_FUTURES) != null ) maxFutures = Integer.valueOf(conf(MAX_FUTURES)).intValue
-    keyspace = cluster.keyspace(conf(KEYSPACE)).connect()
+    keyspace = cluster.keyspace(conf(KEYSPACE)).retryAttempts(2).connect()
     columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), MicrosecondEpochClock)
     batch = columnFamily.batch
   }
@@ -60,22 +60,22 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
       }
       if(futures.size == maxFutures) {
         Future.join(futures)
-        futures = new ListBuffer[Future[_]]
+        futures = new ListBuffer[Future[Void]]
       }
     }
   } catch {
-    case e: Throwable => 
+    case e: Throwable =>
       e.printStackTrace
       throw(e)
   }
-  
+
   private def bufCopy(old: ByteBuffer) = {
     val n = ByteBuffer.allocate(old.remaining)
     n.put(old.array, old.position, old.remaining)
     n.rewind
     n
   }
-  
+
   override def cleanup(context: ReducerContext) = {
     futures += batch.execute
     Future.join(futures)
