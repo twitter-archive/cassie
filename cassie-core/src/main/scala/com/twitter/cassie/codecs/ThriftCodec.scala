@@ -6,6 +6,7 @@ import org.apache.thrift.transport._
 import java.nio.ByteBuffer
 import java.io._
 
+// TODO move to util-thrift
 class ThriftCodec[T <: TBase[_, _]](klass: Class[T]) extends Codec[T] {
 
   class ThreadLocal[T](init: => T) extends java.lang.ThreadLocal[T] {

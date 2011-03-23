@@ -24,15 +24,15 @@ class VarIntTest extends Spec with MustMatchers {
 
   describe("encoding a large int") {
     it("should not throw an exception") {
-      val b = VarIntCodec.encode(VarInt(java.lang.Integer.MAX_VALUE))
-      VarIntCodec.decode(b).value must equal(java.lang.Integer.MAX_VALUE)
+      val b = VarIntCodec.encode(VarInt(Int.MaxValue))
+      VarIntCodec.decode(b).value must equal(Int.MaxValue)
     }
   }
 
   describe("encoding a min int") {
     it("should not throw an exception") {
-      val b = VarIntCodec.encode(VarInt(java.lang.Integer.MIN_VALUE))
-      VarIntCodec.decode(b).value must equal(java.lang.Integer.MIN_VALUE)
+      val b = VarIntCodec.encode(VarInt(Int.MinValue))
+      VarIntCodec.decode(b).value must equal(Int.MinValue)
     }
   }
 
