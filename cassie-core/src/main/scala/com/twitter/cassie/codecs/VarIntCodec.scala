@@ -32,7 +32,7 @@ object VarIntCodec extends Codec[VarInt] {
   def decode(bytebuf: ByteBuffer) = {
     // TODO: operate directly on the bb
     val buf = b2b(bytebuf)
-    require(buf.length < maxLength)
+    require(buf.length <= maxLength)
     val pos = 0
     var len = 1
     var b: Int = buf(pos) & 0xff
