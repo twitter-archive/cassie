@@ -16,7 +16,7 @@ import java.net.{SocketAddress, InetSocketAddress}
 import org.jboss.netty.util.HashedWheelTimer
 import scala.collection.JavaConversions._
 import scala.util.parsing.json.JSON
-
+import com.twitter.finagle.WriteException
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
@@ -45,7 +45,13 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       private[this] var timer = new Timer(new HashedWheelTimer())
 
       timer.schedule(Time.now, remapPeriod) {
-        performChange(fetchHosts(underlyingMap.keys.toSeq))
+        fetchHosts(underlyingMap.keys.toSeq)onSuccess { ring =>
+          log.debug("Received: %s", ring)
+          asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
+            new InetSocketAddress(host, seedPort) } }.toSeq
+        } onFailure { error =>
+          log.error("error mapping ring")
+        }
       }
 
       private[this] def performChange(ring: Seq[SocketAddress]) {
@@ -73,19 +79,17 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
     }
   }
 
-  private[this] def fetchHosts(hosts: Seq[SocketAddress]): Seq[SocketAddress] = {
-     val ccp = new ClusterClientProvider(
+  private[this] def fetchHosts(hosts: Seq[SocketAddress]) = {
+    val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
       readTimeoutInMS = timeoutMS,
       maxConnectionsPerHost = 1
     )
     log.info("Mapping cluster...")
-    val ring = ccp.map{ _.describe_ring(keyspace) }()
-    ccp.close()
-    log.debug("Received: %s", ring)
-    asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-      new InetSocketAddress(host, seedPort) } }.toSeq
+    ccp.map{ _.describe_ring(keyspace) } ensure {
+      ccp.close()
+    }
   }
   
 
