@@ -26,13 +26,14 @@ import scala.util.parsing.json.JSON
  * @param keyspace the keyspace to map
  * @param seedHost the hostname of the seed node
  * @param seedPort the Thrift port of the seed node
- * @author coda
  */
 private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: Duration, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
   private val log = Logger.get
 
+  // For servers, not clients.
   def join(address: SocketAddress) {}
 
+  // Called once to get a Seq-like of ServiceFactories.
   def mkFactories[Req, Rep](mkBroker: (SocketAddress) => ServiceFactory[Req, Rep]) = {
     new SeqProxy[ServiceFactory[Req, Rep]] {
 
@@ -71,8 +72,8 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       }
     }
   }
-  
-  def fetchHosts(hosts: Seq[SocketAddress]): Seq[SocketAddress] = {
+
+  private[this] def fetchHosts(hosts: Seq[SocketAddress]): Seq[SocketAddress] = {
      val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,

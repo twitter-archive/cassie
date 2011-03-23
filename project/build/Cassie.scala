@@ -37,6 +37,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val finagleOstrich = "com.twitter" % "finagle-ostrich4" % finagleVersion
+    val util = "com.twitter" % "util" % "1.8.3"
 
     val slf4jNop = "org.slf4j" %  "slf4j-nop" % slf4jVersion % "provided"
 
@@ -48,7 +49,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val junitInterface = "com.novocode" % "junit-interface" % "0.5" % "test->default"
 
     override def compileOptions = Deprecation :: Unchecked :: super.compileOptions.toList
-    
+
     // include test-thrift definitions: see https://github.com/twitter/standard-project/issues#issue/13
     override def thriftSources = super.thriftSources +++ (testSourcePath / "thrift" ##) ** "*.thrift"
 
