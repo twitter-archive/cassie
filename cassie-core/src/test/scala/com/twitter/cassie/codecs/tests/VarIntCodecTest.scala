@@ -13,6 +13,12 @@ class VarIntCodecTest extends Spec with MustMatchers {
     }
   }
 
+  describe("encoding a largeish int") {
+    it("should not throw an exception") {
+      VarIntCodec.decode(VarIntCodec.encode(VarInt(java.lang.Integer.MAX_VALUE))).value must equal(java.lang.Integer.MAX_VALUE)
+    }
+  }
+
   describe("decoding an array of bytes") {
     it("produces an int") {
       VarIntCodec.decode(bb(-102, -88, 24)) must equal(VarInt(199181))
