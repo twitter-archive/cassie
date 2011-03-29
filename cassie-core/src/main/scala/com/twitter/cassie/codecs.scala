@@ -4,8 +4,6 @@ import codecs._
 
 /**
  * Implicit parameters for codecs for all the types supported by Cassie.
- *
- * @author coda
  */
 object Codecs {
   implicit val utf8 = Utf8Codec

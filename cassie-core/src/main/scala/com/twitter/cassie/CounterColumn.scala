@@ -31,8 +31,6 @@ object CounterColumn {
 
 /**
  * A column in a Cassandra. Belongs to a row in a column family.
- *
- * @author coda
  */
 case class CounterColumn[A](name: A, value: Long) {
   def pair = name -> this

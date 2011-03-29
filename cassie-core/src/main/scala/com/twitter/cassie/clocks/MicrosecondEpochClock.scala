@@ -9,8 +9,6 @@ package com.twitter.cassie.clocks
  * increasing, so that even if your calls to MicrosecondEpochClock#timestamp
  * occur within a single millisecond, the timestamps will be ordered
  * appropriately.
- *
- * @author coda
  */
 object MicrosecondEpochClock extends StrictlyIncreasingClock {
   protected def tick = System.currentTimeMillis * 1000

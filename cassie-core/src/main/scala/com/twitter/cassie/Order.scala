@@ -2,8 +2,6 @@ package com.twitter.cassie
 
 /**
  * An ordering of columns.
- *
- * @author coda
  */
 sealed case class Order(normal: Boolean) {
   val reversed = !normal

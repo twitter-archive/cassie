@@ -27,8 +27,6 @@ object LexicalUUID {
 
 /**
  * A 128-bit UUID, composed of a 64-bit timestamp and a 64-bit worker ID.
- *
- * @author coda
  */
 case class LexicalUUID(timestamp: Long, workerID: Long) extends Ordered[LexicalUUID] {
 

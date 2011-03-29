@@ -6,8 +6,6 @@ import com.twitter.cassie.types.AsciiString
 
 /**
  * Encodes and decodes values as US-ASCII strings.
- *
- * @author coda
  */
 object AsciiStringCodec extends Codec[AsciiString] {
   // TODO: should this be threadlocal to prevent contention?

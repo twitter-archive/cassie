@@ -8,7 +8,6 @@ import connection.ClientProvider
  * A Cassandra keyspace, which maintains a connection pool.
  *
  * @param provider a [[com.twitter.cassie.connection.ClientProvider]] instance
- * @author coda
  */
 class Keyspace(val name: String, val provider: ClientProvider) {
   /**

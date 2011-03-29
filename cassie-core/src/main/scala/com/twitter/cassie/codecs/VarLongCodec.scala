@@ -7,8 +7,6 @@ import java.nio.ByteBuffer
 /**
  * Encodes and decodes 64-bit integers using Avro's zig-zag variable-length
  * encoding.
- *
- * @author coda
  */
 object VarLongCodec extends Codec[VarLong] {
   private val maxLength = 10

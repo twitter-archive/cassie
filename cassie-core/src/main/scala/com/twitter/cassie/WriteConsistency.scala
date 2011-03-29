@@ -4,8 +4,6 @@ import org.apache.cassandra.finagle.thrift
 
 /**
  * The level of consistency required for a write operation.
- *
- * @author coda
  */
 sealed case class WriteConsistency(level: thrift.ConsistencyLevel) {
     override def toString = "WriteConsistency." +

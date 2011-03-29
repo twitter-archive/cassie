@@ -5,8 +5,6 @@ import java.nio.ByteBuffer
 
 /**
  * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays.
- *
- * @author coda
  */
 object FixedLongCodec extends Codec[FixedLong] {
   private val length = 8
