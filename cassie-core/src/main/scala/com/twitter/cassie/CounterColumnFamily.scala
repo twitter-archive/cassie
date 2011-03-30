@@ -1,6 +1,5 @@
 package com.twitter.cassie
 
-import clocks.Clock
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 

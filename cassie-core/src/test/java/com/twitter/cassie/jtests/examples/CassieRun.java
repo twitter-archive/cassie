@@ -33,7 +33,7 @@ public final class CassieRun {
       .connect();
 
     // create a column family
-    ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
+    ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
 
     info("inserting some columns asynchronously");
     cass.insert("yay for me", cass.newColumn("name", "Coda")).apply();

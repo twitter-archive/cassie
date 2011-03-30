@@ -45,7 +45,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
     if(conf(PAGE_SIZE) != null ) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
     if(conf(MAX_FUTURES) != null ) maxFutures = Integer.valueOf(conf(MAX_FUTURES)).intValue
     keyspace = cluster.keyspace(conf(KEYSPACE)).retryAttempts(2).connect()
-    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), MicrosecondEpochClock)
+    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY))
     batch = columnFamily.batch
   }
 

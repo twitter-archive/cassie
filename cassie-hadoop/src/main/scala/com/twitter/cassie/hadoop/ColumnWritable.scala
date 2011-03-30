@@ -4,7 +4,6 @@ import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.io._
 import java.nio.ByteBuffer
 import com.twitter.cassie.codecs._
-import com.twitter.cassie.clocks._
 import scala.collection.JavaConversions._
 
 class ColumnWritable extends ArrayWritable(classOf[BytesWritable]) {

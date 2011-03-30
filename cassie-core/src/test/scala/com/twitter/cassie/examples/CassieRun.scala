@@ -1,7 +1,6 @@
 package com.twitter.cassie.tests.examples
 
 import com.twitter.cassie._
-import clocks.MicrosecondEpochClock
 import com.twitter.cassie.Codecs._
 import com.twitter.logging.Logger
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
@@ -25,7 +24,7 @@ object CassieRun {
       .connect()
 
     // create a column family
-    val cass = keyspace.columnFamily[String, String, String]("Standard1", MicrosecondEpochClock)
+    val cass = keyspace.columnFamily[String, String, String]("Standard1")
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda")).apply()

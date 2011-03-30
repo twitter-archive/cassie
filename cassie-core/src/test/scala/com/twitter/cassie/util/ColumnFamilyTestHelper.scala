@@ -8,6 +8,6 @@ import com.twitter.cassie.{MockCassandraClient, ReadConsistency, WriteConsistenc
 trait ColumnFamilyTestHelper {
   val mockCassandraClient = new MockCassandraClient
   var columnFamily = new ColumnFamily("ks", "cf", new SimpleProvider(mockCassandraClient.client),
-        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum, WriteConsistency.Quorum)
 }

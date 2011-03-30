@@ -6,7 +6,6 @@ import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie.codecs.Utf8Codec
 import com.twitter.cassie.Codecs._
 import com.twitter.cassie.{WriteConsistency, ReadConsistency, Keyspace}
-import com.twitter.cassie.clocks.MicrosecondEpochClock
 import com.twitter.cassie.connection.ClientProvider
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
@@ -15,7 +14,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar {
     val keyspace = new Keyspace("MyApp", provider)
 
     it("builds a column family with the same ClientProvider") {
-      val cf = keyspace.columnFamily[String, String, String]("People", MicrosecondEpochClock)
+      val cf = keyspace.columnFamily[String, String, String]("People")
       cf.keyspace must equal("MyApp")
       cf.name must equal("People")
       cf.readConsistency must equal(ReadConsistency.Quorum)

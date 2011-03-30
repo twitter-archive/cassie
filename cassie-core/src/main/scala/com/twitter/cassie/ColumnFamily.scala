@@ -1,6 +1,6 @@
 package com.twitter.cassie
 
-import clocks.Clock
+import clocks.MicrosecondEpochClock
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
@@ -25,7 +25,6 @@ case class ColumnFamily[Key, Name, Value](
     keyspace: String,
     name: String,
     provider: ClientProvider,
-    clock: Clock,
     defaultKeyCodec: Codec[Key],
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
@@ -33,10 +32,10 @@ case class ColumnFamily[Key, Name, Value](
     writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
 
   val log = Logger.get
+  val clock = MicrosecondEpochClock
 
   import ColumnFamily._
 
-  def clock(clock: Clock) = copy(clock = clock)
   def keysAs[K](codec: Codec[K]): ColumnFamily[K, Name, Value] = copy(defaultKeyCodec = codec)
   def namesAs[N](codec: Codec[N]): ColumnFamily[Key, N, Value] = copy(defaultNameCodec = codec)
   def valuesAs[V](codec: Codec[V]): ColumnFamily[Key, Name, V] = copy(defaultValueCodec = codec)

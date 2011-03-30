@@ -7,13 +7,12 @@ import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie._
-import clocks.{MicrosecondEpochClock, Clock}
 import com.twitter.cassie.MockCassandraClient.SimpleProvider
 
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar {
   val mcc = new MockCassandraClient
   val cf = new ColumnFamily("ks", "People", new SimpleProvider(mcc.client),
-        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum, WriteConsistency.Quorum)
 
   def setup() = new BatchMutationBuilder(cf)
