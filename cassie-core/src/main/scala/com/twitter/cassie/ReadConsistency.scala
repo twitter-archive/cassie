@@ -4,8 +4,6 @@ import org.apache.cassandra.finagle.thrift
 
 /**
  * The level of consistency required for a read operation.
- *
- * @author coda
  */
 sealed case class ReadConsistency(level: thrift.ConsistencyLevel) {
   override def toString = "ReadConsistency." +

@@ -6,8 +6,6 @@ import org.apache.commons.codec.binary.Hex
 
 /**
  * Encodes and decodes values as hexadecimal strings.
- *
- * @author coda
  */
 object HexByteArrayCodec extends Codec[HexByteArray] {
   private val hex = new Hex

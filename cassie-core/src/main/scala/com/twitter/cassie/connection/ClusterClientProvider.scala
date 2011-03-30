@@ -29,7 +29,6 @@ import com.twitter.finagle.builder.{Cluster => FCluster}
  *                             idle connections should be closed and removed
  *                             from the pool
  * @param framed true if the server will only accept framed connections
- * @author coda
  */
 
 private[cassie] class ClusterClientProvider(val hosts: FCluster,

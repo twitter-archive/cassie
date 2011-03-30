@@ -6,8 +6,6 @@ import com.twitter.cassie.types.VarInt
 /**
  * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length
  * encoding.
- *
- * @author coda
  */
 object VarIntCodec extends Codec[VarInt] {
   private val maxLength = 5

@@ -20,8 +20,6 @@ import com.twitter.util.Future
  * lightweight object: it inherits a connection pool from the Keyspace.
  *
  * TODO: remove (insert/get)As methods in favor of copying the CF to allow for alternate types.
- *
- * @author Ian Ownbey
  */
 case class CounterColumnFamily[Key, Name](
     keyspace: String,

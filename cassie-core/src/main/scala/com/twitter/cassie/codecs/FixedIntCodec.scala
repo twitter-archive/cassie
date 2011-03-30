@@ -5,8 +5,6 @@ import java.nio.{IntBuffer, LongBuffer, ByteBuffer}
 
 /**
  * Encodes and decodes 32-bit integers as 4-byte, big-endian byte arrays.
- *
- * @author coda
  */
 object FixedIntCodec extends Codec[FixedInt] {
   private val length = 4

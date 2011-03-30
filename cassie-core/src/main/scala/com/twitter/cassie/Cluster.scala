@@ -9,8 +9,6 @@ import com.twitter.conversions.time._
 
 /**
  * A Cassandra cluster.
- *
- * @author coda
  */
 class Cluster(seedHosts: Set[String], seedPort: Int) {
 

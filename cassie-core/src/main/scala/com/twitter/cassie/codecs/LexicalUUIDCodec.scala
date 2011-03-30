@@ -5,8 +5,6 @@ import java.nio.ByteBuffer
 
 /**
  * Encodes and decodes UUIDs as 128-bit values.
- *
- * @author coda
  */
 object LexicalUUIDCodec extends Codec[LexicalUUID] {
   private val length = 16

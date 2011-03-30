@@ -4,8 +4,6 @@ import types._
 
 /**
  * Implicit conversions for all of Cassie's special types.
- *
- * @author coda
  */
 package object types {
   implicit def String2AsciiString(value: String): AsciiString = AsciiString(value)

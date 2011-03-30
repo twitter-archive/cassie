@@ -16,8 +16,6 @@ import org.apache.cassandra.finagle.thrift.{ColumnOrSuperColumn, KeySlice, Slice
  * key until a cycle is detected (e.g., Cassandra returns the last slice a
  * second time) or until an empty slice is returned (e.g., no more slices).
  * Provides a sequence of (row key, column).
- *
- * Original @author coda
  */
 case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
                                             startKey: ByteBuffer,
