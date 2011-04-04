@@ -9,7 +9,6 @@ import com.twitter.util.Future;
 import com.twitter.util.Promise;
 
 import com.twitter.cassie.ColumnFamily;
-import com.twitter.cassie.clocks.MicrosecondEpochClock;
 import com.twitter.cassie.connection.ClientProvider;
 import com.twitter.cassie.codecs.Utf8Codec;
 import com.twitter.cassie.ReadConsistency;

@@ -34,7 +34,7 @@ public class ColumnFamilyTest {
   @Test
   public void test() {
     ColumnFamily cf = new ColumnFamily("ks", "cf", new MockCassandraClient.SimpleProvider(mock.client),
-        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum(), WriteConsistency.Quorum());
     cf.getColumn("key", "name");
     ColumnParent cp = new ColumnParent("cf");

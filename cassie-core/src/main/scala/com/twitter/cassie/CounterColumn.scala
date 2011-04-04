@@ -1,7 +1,5 @@
 package com.twitter.cassie
 
-import clocks.Clock
-
 import codecs.Codec
 import org.apache.cassandra.finagle.thrift
 

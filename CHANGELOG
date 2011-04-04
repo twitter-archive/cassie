@@ -1,6 +1,7 @@
 # master
 * you can now set a connection timeout
 * support for counter column families
+* clocks are no longer configurable. everyone gets MicrosecondEpochClock
 
 # 0.3.0 [2011-03-04]
 

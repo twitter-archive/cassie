@@ -3,7 +3,6 @@ package com.twitter.cassie.tests
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import com.twitter.cassie.Column
-import com.twitter.cassie.clocks.Clock
 import com.twitter.conversions.time._
 
 class ColumnTest extends Spec with MustMatchers {

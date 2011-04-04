@@ -14,7 +14,6 @@ import java.nio.ByteBuffer
 import thrift.Mutation
 import com.twitter.cassie._
 
-import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
 import MockCassandraClient._
 
 /**
@@ -36,7 +35,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   def setup = {
     val mcc = new MockCassandraClient
     val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        MicrosecondEpochClock.get(), Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
+        Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum, WriteConsistency.Quorum)
     (mcc.client, cf)
   }
