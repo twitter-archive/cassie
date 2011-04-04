@@ -63,7 +63,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def insert(key: Key, column: Column[Name, Value]): Future[Void]
   def insertAs[K, N, V](key: K, column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Void]
-  def truncate()
+  def truncate(): Future[Void]
    @throws(classOf[thrift.TimedOutException])
    @throws(classOf[thrift.UnavailableException])
    @throws(classOf[thrift.InvalidRequestException])
