@@ -11,7 +11,6 @@ import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.finagle.stats.OstrichStatsReceiver
-import com.twitter.finagle.builder.{Cluster => FCluster}
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -31,7 +30,7 @@ import com.twitter.finagle.builder.{Cluster => FCluster}
  * @param framed true if the server will only accept framed connections
  */
 
-private[cassie] class ClusterClientProvider(val hosts: FCluster,
+private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
                             val retryAttempts: Int = 5,
                             val readTimeoutInMS: Int = 10000,
@@ -56,7 +55,11 @@ private[cassie] class ClusterClientProvider(val hosts: FCluster,
 
   def map[A](f: ServiceToClient => Future[A]) = f(client)
 
-  override def close() = service.release()
+  override def close(): Unit = { 
+    hosts.close
+    service.release()
+    ()
+  }
 
   case class CassandraProtocol(keyspace: String) extends Protocol[ThriftClientRequest, Array[Byte]]
   {

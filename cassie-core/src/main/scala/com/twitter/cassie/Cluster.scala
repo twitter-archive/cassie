@@ -3,7 +3,8 @@ package com.twitter.cassie
 import connection._
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
-import com.twitter.finagle.builder.SocketAddressCluster
+import com.twitter.cassie.connection.SocketAddressCluster
+import com.twitter.cassie.connection.CCluster
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
 

@@ -3,8 +3,8 @@ package com.twitter.cassie
 import collection.SeqProxy
 import com.google.common.collect.ImmutableSet
 import com.twitter.cassie.connection.ClusterClientProvider
-import com.twitter.finagle.builder.SocketAddressCluster
-import com.twitter.finagle.builder.{Cluster => FCluster}
+import com.twitter.cassie.connection.SocketAddressCluster
+import com.twitter.cassie.connection.CCluster
 import com.twitter.finagle.ServiceFactory
 import com.twitter.finagle.util.Timer
 import com.twitter.logging.Logger
@@ -27,8 +27,11 @@ import com.twitter.finagle.WriteException
  * @param seedHost the hostname of the seed node
  * @param seedPort the Thrift port of the seed node
  */
-private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: Duration, seedPort: Int = 9160, timeoutMS: Int = 10000) extends FCluster {
+private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: Duration, seedPort: Int = 9160, timeoutMS: Int = 10000) extends CCluster {
   private val log = Logger.get
+  private[cassie] var timer = new Timer(new HashedWheelTimer())
+
+  def close = timer.stop()
 
   // For servers, not clients.
   def join(address: SocketAddress) {}
@@ -41,8 +44,6 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
         new InetSocketAddress(address, seedPort) -> mkBroker(new InetSocketAddress(address, seedPort))
       }: _*)
       def self = underlyingMap.values.toSeq
-
-      private[this] var timer = new Timer(new HashedWheelTimer())
 
       timer.schedule(Time.now, remapPeriod) {
         fetchHosts(underlyingMap.keys.toSeq)onSuccess { ring =>
