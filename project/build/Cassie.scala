@@ -33,11 +33,11 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     /**
      * Twitter specific deps
      */
-    val finagleVersion = "1.2.3"
+    val finagleVersion = "1.3.0"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val finagleOstrich = "com.twitter" % "finagle-ostrich4" % finagleVersion
-    val util = "com.twitter" % "util" % "1.8.3"
+    val util = "com.twitter" % "util" % "1.8.6"
 
     val slf4jNop = "org.slf4j" %  "slf4j-nop" % slf4jVersion % "provided"
 
