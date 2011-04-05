@@ -1,7 +1,14 @@
-# master
+# 0.5.0
 * you can now set a connection timeout
 * support for counter column families
 * clocks are no longer configurable. everyone gets MicrosecondEpochClock
+* fix bug where timer thread wouldn't shut down
+* better error handling when re-mapping clusters
+* better testing around encoding ints and longs
+* ostrich4 support
+* an api for deletions at a given timestamp (good for backfilling)
+* moved to subprojects
+* basic hadoop output support
 
 # 0.3.0 [2011-03-04]
 
