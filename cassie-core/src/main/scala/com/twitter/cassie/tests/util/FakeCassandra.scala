@@ -7,7 +7,6 @@ import java.util.concurrent.CountDownLatch
 import org.apache.cassandra.finagle.thrift._
 import java.nio.ByteBuffer
 import java.util._
-import org.apache.cassandra.db.marshal.BytesType
 import scala.collection.JavaConversions._
 
 object FakeCassandra {
@@ -27,28 +26,56 @@ object FakeCassandra {
   }
 }
 
-/** 
- * This is a thrift-service that will do real operations on an in-memory data structure.  
- * You don't have to create keyspaces or column families; this happens implicitly.  We 
+/**
+ * This is a thrift-service that will do real operations on an in-memory data structure.
+ * You don't have to create keyspaces or column families; this happens implicitly.  We
  * support a limited and expanding subset of the cassandra api.
  */
 class FakeCassandra(val port: Int) extends Cassandra.Iface {
-  val comparator = BytesType.instance
+    // Taken from cassandra ByteBufferUtil#compareUnsigned
+    // Questionable style because it's as straight a port as possible
+    val comparator = new Comparator[ByteBuffer] {
+      def compare(o1: ByteBuffer, o2: ByteBuffer): Int = {
+        if(null == o1) {
+          if(null == o2) return 0
+          else return -1
+        }
+
+        val minLength = Math.min(o1.remaining(), o2.remaining())
+        var x = 0
+        var i = o1.position()
+        var j = o2.position()
+        while (x < minLength) {
+          if (o1.get(i) != o2.get(j)) {
+
+            // compare non-equal bytes as unsigned
+            return if ((o1.get(i) & 0xFF) < (o2.get(j) & 0xFF)) -1 else 1
+          }
+
+          x += 1
+          i += 1
+          j += 1
+        }
+
+        return if (o1.remaining() == o2.remaining()) 0 else (if (o1.remaining() < o2.remaining()) -1 else 1)
+      }
+  }
+
   val columnComparator = new Comparator[Column] {
     def compare(a: Column, b: Column) = comparator.compare(a.BufferForName, b.BufferForName)
   }
-  
+
   val thread = new FakeCassandra.ServerThread(this, port)
   var currentKeyspace = "default"
 
   //                     keyspace        CF              row         column
   val data = new TreeMap[String, TreeMap[String, TreeMap[ByteBuffer, SortedSet[Column]]]]
-  
+
   def start() = {
     thread.start()
     thread.latch.await()
   }
-  
+
   private def getColumnFamily(cp: ColumnParent): TreeMap[ByteBuffer, SortedSet[Column]] = getColumnFamily(cp.getColumn_family)
   private def getColumnFamily(name: String): TreeMap[ByteBuffer, SortedSet[Column]]  = synchronized {
     var keyspace = data.get(currentKeyspace)
@@ -63,9 +90,9 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
     cf
   }
-  
+
   def stop() = thread.server.stop()
-  
+
   def set_keyspace(keyspace: String) = currentKeyspace = keyspace
 
   def insert(key: ByteBuffer, column_parent: ColumnParent, column: Column, consistency_level: ConsistencyLevel) = {
@@ -77,7 +104,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
     row.add(column)
   }
-  
+
   def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
@@ -101,7 +128,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
         } else {
           row = row.tailSet(start)
         }
-        
+
         var limit = if (sr.isSetCount && sr.getCount > 0) sr.getCount else Int.MaxValue
         var i = 0
         for(entry <- row) {
@@ -113,12 +140,12 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
       } else {
         for(entry <- row) {
           add(entry)
-        }        
+        }
       }
     }
     list
   }
-  
+
 
   def login(auth_request: AuthenticationRequest ) = throw new UnsupportedOperationException
   def get(key: ByteBuffer, column_path: ColumnPath, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
