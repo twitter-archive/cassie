@@ -30,7 +30,6 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
     val jacksonMap  = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.6.1"
-    val cassandra   = "org.apache.cassandra" % "cassandra-all" % "0.7.5"
 
     /**
      * Twitter specific deps
