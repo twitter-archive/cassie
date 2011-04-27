@@ -1,7 +1,6 @@
 package com.twitter.cassie.tests.util
 
 
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.Mockito.mock
 import org.apache.cassandra.finagle.thrift.Cassandra
@@ -12,21 +11,6 @@ import org.apache.thrift.server.TThreadPoolServer
 object MockCassandraServer {
   protected val lastPort = new AtomicInteger(new util.Random().nextInt(10000) + 40000)
   def choosePort() = lastPort.incrementAndGet
-
-  class ServerThread(cassandra: Cassandra.Iface, port: Int) extends Thread {
-    setDaemon(true)
-    val serverTransport = new TServerSocket(port)
-    val protFactory = new TBinaryProtocol.Factory(true, true)
-    val transportFactory = new TFramedTransport.Factory()
-    val processor = new Cassandra.Processor(cassandra)
-    val server = new TThreadPoolServer(processor, serverTransport, transportFactory, protFactory)
-    val latch = new CountDownLatch(1)
-
-    override def run {
-      latch.countDown()
-      server.serve()
-    }
-  }
 }
 
 /**
@@ -35,7 +19,7 @@ object MockCassandraServer {
  */
 class MockCassandraServer(val port: Int) {
   val cassandra = mock(classOf[Cassandra.Iface])
-  val thread = new MockCassandraServer.ServerThread(cassandra, port)
+  val thread = new FakeCassandra.ServerThread(cassandra, port)
 
   def start() {
     thread.start()

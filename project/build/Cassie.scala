@@ -8,6 +8,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
    */
   val scalaToolsSnapshots = "scala-tools.org Snapshots" at "http://scala-tools.org/repo-snapshots"
   val codasRepo = "Coda's Repo" at "http://repo.codahale.com"
+  val publicMaven = "main" at "http://repo2.maven.org/maven2/"
 
   override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
@@ -29,6 +30,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
     val jacksonMap  = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.6.1"
+    val cassandra   = "org.apache.cassandra" % "cassandra-all" % "0.7.5"
 
     /**
      * Twitter specific deps
