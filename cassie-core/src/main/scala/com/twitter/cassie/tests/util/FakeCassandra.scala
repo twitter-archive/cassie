@@ -34,6 +34,7 @@ object FakeCassandra {
 class FakeCassandra(val port: Int) extends Cassandra.Iface {
     // Taken from cassandra ByteBufferUtil#compareUnsigned
     // Questionable style because it's as straight a port as possible
+    // replace this with a straight copy of the java or split the fake out into a subproject and depend on cassandra
     val comparator = new Comparator[ByteBuffer] {
       def compare(o1: ByteBuffer, o2: ByteBuffer): Int = {
         if(null == o1) {

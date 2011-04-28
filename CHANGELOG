@@ -1,3 +1,12 @@
+# 0.5.3
+* fake cassandra for testing
+
+# 0.5.2
+* fix remapping bug
+
+# 0.5.1
+* move dependency from util to util-core
+
 # 0.5.0
 * you can now set a connection timeout
 * support for counter column families
