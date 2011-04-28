@@ -61,5 +61,6 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
   class HadoopProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines {
     val hadoop    = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
+    override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
   }
 }
