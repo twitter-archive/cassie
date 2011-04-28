@@ -46,10 +46,10 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       def self = underlyingMap.values.toSeq
 
       timer.schedule(Time.now, remapPeriod) {
-        fetchHosts(underlyingMap.keys.toSeq)onSuccess { ring =>
-          log.debug("Received: %s", ring)
-          asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-            new InetSocketAddress(host, seedPort) } }.toSeq
+        fetchHosts(underlyingMap.keys.toSeq) onSuccess { ring =>
+          log.error("Received: %s", ring)
+          performChange(asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
+            new InetSocketAddress(host, seedPort) } }.toSeq)
         } onFailure { error =>
           log.error("error mapping ring")
         }
@@ -58,7 +58,6 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       private[this] def performChange(ring: Seq[SocketAddress]) {
         val oldMap = underlyingMap
         val (removed, same, added) = diff(oldMap.keys.toSet, ring.toSet)
-
         val addedBrokers = Map(added.toSeq map { address =>
           address -> mkBroker(address)
         }: _*)
@@ -88,7 +87,9 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       maxConnectionsPerHost = 1
     )
     log.info("Mapping cluster...")
-    ccp.map{ _.describe_ring(keyspace) } ensure {
+    ccp map {
+       _.describe_ring(keyspace)
+    } ensure {
       ccp.close()
     }
   }
