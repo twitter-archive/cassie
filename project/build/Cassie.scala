@@ -21,6 +21,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
   class CoreProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines with CompileThriftFinagle {
 
+    override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
+
     val slf4jVersion = "1.5.11"
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
     val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
