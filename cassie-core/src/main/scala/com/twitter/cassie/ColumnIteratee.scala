@@ -30,7 +30,7 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
                                             skip: Option[ByteBuffer] = None)
         extends java.lang.Iterable[(Key, Column[Name, Value])] {
   val log = Logger.get
-  
+
   /** Copy constructors for next() and end() cases. */
   private def end(buffer: List[(Key, Column[Name, Value])]) = copy(cycled = true, buffer = buffer)
   private def next(buffer: List[(Key, Column[Name, Value])],
@@ -46,7 +46,7 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
   def next(): Future[ColumnIteratee[Key, Name, Value]] = {
     if (cycled)
       throw new UnsupportedOperationException("No more results.")
-    
+
     requestNextSlice().map { slice =>
       val skipped = if (!slice.isEmpty && slice.head.key == skip.orNull) slice.tail else slice.toSeq
       val buffer = skipped.flatMap { ks =>

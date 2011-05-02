@@ -47,7 +47,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
                  columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]]
   def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] 
+                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]]
   def multigetColumn(keys: Set[Key],
                      columnName: Name): Future[Map[Key, Column[Name, Value]]]
   @throws(classOf[thrift.TimedOutException])

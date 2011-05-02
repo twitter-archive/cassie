@@ -93,6 +93,6 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       ccp.close()
     }
   }
-  
+
 
 }

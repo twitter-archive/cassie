@@ -1,6 +1,6 @@
 package com.twitter.cassie
 
-import clocks.MicrosecondEpochClock
+import clocks.{MicrosecondEpochClock, Clock}
 import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
@@ -29,11 +29,12 @@ case class ColumnFamily[Key, Name, Value](
     defaultNameCodec: Codec[Name],
     defaultValueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum)
+    writeConsistency: WriteConsistency = WriteConsistency.Quorum
+    )
     extends ColumnFamilyLike[Key, Name, Value] {
 
-  val log = Logger.get
-  val clock = MicrosecondEpochClock
+  private[cassie] var clock: Clock = MicrosecondEpochClock
+  val log: Logger = Logger.get
 
   import ColumnFamily._
 
