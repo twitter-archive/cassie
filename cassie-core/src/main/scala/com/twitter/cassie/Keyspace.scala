@@ -5,6 +5,9 @@ import codecs.Codec
 import connection.ClientProvider
 import com.twitter.util.Future
 import scala.collection.JavaConversions._
+import java.util.{HashMap, Map, List, ArrayList}
+import org.apache.cassandra.finagle.thrift.Mutation
+import java.nio.ByteBuffer
 
 /**
  * A Cassandra keyspace, which maintains a connection pool.
@@ -22,32 +25,28 @@ class Keyspace(val name: String, val provider: ClientProvider) {
     new ColumnFamily(this.name, name, provider, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   def execute[Key, Name, Value](batches: Seq[BatchMutationBuilder[Key, Name, Value]]): Future[Void] = {
-    if(batches.size == 0) return Future(null.asInstanceOf[Void])
+    if(batches.size == 0) return Future.void
 
-    val mutations = batches.map(_.mutations).head
+    val mutations = new HashMap[ByteBuffer, Map[String, List[Mutation]]]
 
-    if (batches.size > 1) {
-      // java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]
-      batches.map(_.mutations).tail.foreach { ms =>
-        for ((row, inner) <- ms) {
-          if (mutations.containsKey(row)) {
-            val oldRowMap = mutations.get(row)
-            for ((cf, mutationList) <- inner) {
-              if (oldRowMap.containsKey(cf)) {
-                val oldList = oldRowMap.get(cf)
-                oldList.addAll(mutationList)
-              } else {
-                oldRowMap.put(cf, mutationList)
-              }
-            }
-          } else {
-            mutations.put(row, inner)
+    // java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]
+    batches.map(_.mutations).foreach { ms =>
+      for ((row, inner) <- ms) {
+        if (!mutations.containsKey(row)) {
+          mutations.put(row, new HashMap[String, List[Mutation]])
+        }
+        val oldRowMap = mutations.get(row)
+        for ((cf, mutationList) <- inner) {
+          if (!oldRowMap.containsKey(cf)) {
+            oldRowMap.put(cf, new ArrayList[Mutation])
           }
+          val oldList = oldRowMap.get(cf)
+          oldList.addAll(mutationList)
         }
       }
     }
 
-    val writeConsistency = batches.map(_.cf.writeConsistency).head
+    val writeConsistency = batches.head.cf.writeConsistency
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
