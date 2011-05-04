@@ -18,7 +18,7 @@ import com.twitter.finagle.Codec
  *
  * @param retryAttempts the number of times a query should be attempted before
  *                      throwing an exception
- * @param readTimeoutInMS the amount of time, in milliseconds, the client will
+ * @param requestTimeoutInMS the amount of time, in milliseconds, the client will
  *                        wait for a response from the server before considering
  *                        the query to have failed
  * @param minConnectionsPerHost the minimum number of connections to maintain to
@@ -34,7 +34,7 @@ import com.twitter.finagle.Codec
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
                             val retryAttempts: Int = 5,
-                            val readTimeoutInMS: Int = 10000,
+                            val requestTimeoutInMS: Int = 10000,
                             val connectionTimeoutInMS: Int = 10000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
@@ -44,11 +44,11 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .cluster(hosts)
       .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
-      .requestTimeout(Duration(readTimeoutInMS, TimeUnit.MILLISECONDS))
+      .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
       .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
-      .reportTo(new OstrichStatsReceiver)
+      .reportTo(new OstrichStatsReceiver) //TODO make this configurable
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
       .build()
 

@@ -45,7 +45,7 @@ after 3 queries have failed:
     val keyspace = cluster.keyspace("MyCassieApp")
       .mapHostsEvery(10.minutes)
       .retryAttempts(5)
-      .readTimeoutInMS(5000)
+      .requestTimeoutInMS(5000)
       .minConnectionsPerHost(1)
       .maxConnectionsPerHost(10)
       .removeAfterIdleForMS(60000)

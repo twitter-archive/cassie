@@ -83,7 +83,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
     val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
-      readTimeoutInMS = timeoutMS,
+      requestTimeoutInMS = timeoutMS,
       maxConnectionsPerHost = 1
     )
     log.info("Mapping cluster...")
