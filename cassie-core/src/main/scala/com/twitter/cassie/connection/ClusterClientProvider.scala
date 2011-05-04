@@ -56,7 +56,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
 
   def map[A](f: ServiceToClient => Future[A]) = f(client)
 
-  override def close(): Unit = { 
+  override def close(): Unit = {
     hosts.close
     service.release()
     ()

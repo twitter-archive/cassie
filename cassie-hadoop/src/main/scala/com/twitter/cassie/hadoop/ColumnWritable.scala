@@ -11,23 +11,23 @@ class ColumnWritable extends ArrayWritable(classOf[BytesWritable]) {
     this()
     set(name, value, System.currentTimeMillis)
   }
-  
+
   def set(name: ByteBuffer, value: ByteBuffer, timestamp: Long) {
     val a = writable(name)
     val b = writable(value)
     val c = writable(FixedLongCodec.encode(timestamp))
     set(Array(a, b, c))
   }
-  
+
   def name = getBuf(0)
   def value = getBuf(1)
   def timestamp = FixedLongCodec.decode(getBuf(2)).value
-  
+
   def getBuf(i: Int) = {
     val bw = get()(i).asInstanceOf[BytesWritable]
     ByteBuffer.wrap(bw.getBytes(), 0, bw.getLength())
   }
-  
+
   private def writable(buf: ByteBuffer) = {
     val out = new BytesWritable
     out.set(buf.array, buf.position, buf.limit - buf.position)

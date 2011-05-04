@@ -21,7 +21,7 @@ class VarLongTest extends Spec with MustMatchers {
       i.value must equal(12311L)
     }
   }
-  
+
   describe("encoding MaxValue") {
     it("shouldn't throw an exception") {
       val b = VarLongCodec.encode(VarLong(Long.MaxValue))
