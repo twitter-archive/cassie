@@ -14,6 +14,7 @@ import scala.collection.JavaConversions._
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
  * TODO: Port to Java collections.
+ * TODO: make into a CFLike
  */
 class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[Key,Name,Value]) {
 
