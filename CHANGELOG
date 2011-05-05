@@ -1,3 +1,6 @@
+# 0.6.0
+* add EachQuorum and LocalQuorum consistency levels
+
 # 0.5.3
 * assorted fixes to build/publishing
 
