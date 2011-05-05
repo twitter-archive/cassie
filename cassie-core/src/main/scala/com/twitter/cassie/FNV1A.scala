@@ -1,8 +1,7 @@
 package com.twitter.cassie
 
 /**
- * The FNV1-A 64-bit hashing algorithm.
- */
+  * The FNV1-A 64-bit hashing algorithm. */
 object FNV1A extends (Array[Byte] => Long) {
   private val offsetBasis = 0xcbf29ce484222325L
   private val prime = 0x100000001b3L
