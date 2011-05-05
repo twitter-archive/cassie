@@ -5,6 +5,8 @@ import org.apache.cassandra.finagle.thrift
 
 object CounterColumn {
 
+  /**
+    * Convert from a thrift.Counter (like CoSC to a cassie CounterColumn) */
   private[cassie] def convert[A](nameCodec: Codec[A], counter: thrift.Counter): CounterColumn[A] = {
     CounterColumn(
       nameCodec.decode(counter.column.name),
@@ -12,6 +14,8 @@ object CounterColumn {
     )
   }
 
+  /**
+    * Convert from a thrift.CounterColumn to a cassie CounterColumn */
   private[cassie] def convert[A](nameCodec: Codec[A], counter: thrift.CounterColumn): CounterColumn[A] = {
     CounterColumn(
       nameCodec.decode(counter.name),
@@ -19,6 +23,8 @@ object CounterColumn {
     )
   }
 
+  /**
+    * Convert from a cassie CounterColumn to a thrift CounterColumn */
   private[cassie] def convert[A](nameCodec: Codec[A], col: CounterColumn[A]): thrift.CounterColumn = {
     new thrift.CounterColumn(
       nameCodec.encode(col.name),
@@ -28,8 +34,7 @@ object CounterColumn {
 }
 
 /**
- * A column in a Cassandra. Belongs to a row in a column family.
- */
+  * A counter column in a Cassandra. Belongs to a row in a column family. */
 case class CounterColumn[A](name: A, value: Long) {
   def pair = name -> this
 }
