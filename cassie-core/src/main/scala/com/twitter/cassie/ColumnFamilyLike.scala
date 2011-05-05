@@ -47,9 +47,6 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * @param v the column value */
   def newColumn[N, V](n: N, v: V): Column[N, V]
 
-  //TODO get rid of these. prefer copying the CF
-  def getColumnAs[K, N, V](key: K, columnName: N)(implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Option[Column[N, V]]]
-
   /**
     * Get an individual column from a single row. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
