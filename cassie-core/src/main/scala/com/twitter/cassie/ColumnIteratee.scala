@@ -16,8 +16,9 @@ import org.apache.cassandra.finagle.thrift.{ColumnOrSuperColumn, KeySlice, Slice
  * key until a cycle is detected (e.g., Cassandra returns the last slice a
  * second time) or until an empty slice is returned (e.g., no more slices).
  * Provides a sequence of (row key, column).
+ * TODO an example
  */
-case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
+case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
                                             startKey: ByteBuffer,
                                             endKey: ByteBuffer,
                                             batchSize: Int,
@@ -42,6 +43,8 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _],
   /**
    * If hasNext == true, requests the next batch of data, otherwise throws
    * UnsupportedOperationException.
+   * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+   *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
   def next(): Future[ColumnIteratee[Key, Name, Value]] = {
     if (cycled)
