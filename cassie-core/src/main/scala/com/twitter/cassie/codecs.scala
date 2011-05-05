@@ -3,8 +3,9 @@ package com.twitter.cassie
 import codecs._
 
 /**
- * Implicit parameters for codecs for all the types supported by Cassie.
- */
+  * Implicit parameters for codecs for all the types supported by Cassie.
+  * 
+  * TODO figure out if we can get rid of implicits */
 object Codecs {
   implicit val utf8 = Utf8Codec
   implicit val ascii = AsciiStringCodec
