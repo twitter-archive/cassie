@@ -44,16 +44,8 @@ case class ColumnFamily[Key, Name, Value](
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
 
-  /**
-   * @Java
-   * Creates a new Column with.
-   */
   def newColumn[N, V](n: N, v: V) = Column(n, v)
 
-  /**
-   * Returns the optional value of a given column for a given key as the given
-   * types.
-   */
   private[cassie] def getColumnAs[K, N, V](key: K,
                            columnName: N)
                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Option[Column[N, V]]] = {
@@ -61,37 +53,20 @@ case class ColumnFamily[Key, Name, Value](
       .map { resmap => Option(resmap.get(columnName)) }
   }
 
-  /**
-   * Returns the optional value of a given column for a given key as the default
-   * types.
-   */
   def getColumn(key: Key,
                 columnName: Name): Future[Option[Column[Name, Value]]] = {
     getColumnAs[Key, Name, Value](key, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  /**
-   * Returns a map of all column names to the columns for a given key as the
-   * given types. If your rows contain a huge number of columns, this will be
-   * slow and horrible.
-   */
   private[cassie] def getRowAs[K, N, V](key: K)
                     (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
     getRowSliceAs[K, N, V](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec, valueCodec)
   }
 
-  /**
-   * Returns a map of all column names to the columns for a given key as the
-   * default types. If your rows contain a huge number of columns, this will be
-   * slow and horrible.
-   */
   def getRow(key: Key): Future[Map[Name, Column[Name, Value]]] = {
     getRowAs[Key, Name, Value](key)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  /**
-   * Returns a slice of all columns of a row as the given types.
-   */
   private[cassie] def getRowSliceAs[K, N, V](key: K,
                              startColumnName: Option[N],
                              endColumnName: Option[N],
@@ -105,9 +80,6 @@ case class ColumnFamily[Key, Name, Value](
     getSlice(key, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  /**
-   * Returns a slice of all columns of a row as the default types.
-   */
   def getRowSlice(key: Key,
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
@@ -116,10 +88,6 @@ case class ColumnFamily[Key, Name, Value](
     getRowSliceAs[Key, Name, Value](key, startColumnName, endColumnName, count, order)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  /**
-   * Returns a map of the given column names to the columns for a given key as
-   * the given types.
-   */
   private[cassie] def getColumnsAs[K, N, V](key: K,
                             columnNames: Set[N])
                            (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
@@ -128,19 +96,12 @@ case class ColumnFamily[Key, Name, Value](
     getSlice(key, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  /**
-   * Returns a map of the given column names to the columns for a given key as
-   * the default types.
-   */
   def getColumns(key: Key,
                  columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]] = {
     getColumnsAs[Key, Name, Value](key, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
 
-  /**
-   * Returns a map of keys to given column for a set of keys as the given types.
-   */
   private[cassie] def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] = {
@@ -153,22 +114,11 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  /**
-   * Returns a map of keys to given column for a set of keys as the default
-   * types.
-   */
   def multigetColumn(keys: Set[Key],
                      columnName: Name): Future[Map[Key, Column[Name, Value]]] = {
     multigetColumnAs[Key, Name, Value](keys, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  /**
-   * Returns a map of keys to a map of column names to the columns for a given
-   * set of keys and columns as the given types.
-   */
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   private[cassie] def multigetColumnsAs[K, N, V](keys: Set[K],
                               columnNames: Set[N])
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Map[N, Column[N, V]]]] = {
@@ -194,20 +144,10 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  /**
-   * Returns a map of keys to a map of column names to the columns for a given
-   * set of keys and columns as the default types.
-   */
   def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
     multigetColumnsAs[Key, Name, Value](keys, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  /**
-   * Inserts a column.
-   */
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   def insert(key: Key, column: Column[Name, Value]) = {
     insertAs(key, column)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
@@ -225,12 +165,6 @@ case class ColumnFamily[Key, Name, Value](
 
   def truncate() = provider.map(_.truncate(name))
 
-  /**
-   * Removes a column from a key.
-   */
-   @throws(classOf[thrift.TimedOutException])
-   @throws(classOf[thrift.UnavailableException])
-   @throws(classOf[thrift.InvalidRequestException])
   def removeColumn(key: Key, columnName: Name) = {
     val cp = new thrift.ColumnPath(name)
     val timestamp = clock.timestamp
@@ -239,53 +173,30 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
-  /**
-   * Removes a set of columns from a key.
-   */
   def removeColumns(key: Key, columnNames: Set[Name]): Future[Void] = {
     batch()
       .removeColumns(key, columnNames)
       .execute()
   }
 
-  /**
-   * Removes a set of columns from a key.
-   */
   def removeColumns(key: Key, columnNames: Set[Name], timestamp: Long): Future[Void] = {
     batch()
       .removeColumns(key, columnNames, timestamp)
       .execute()
   }
 
-
-  /**
-   * Removes a key.
-   */
   def removeRow(key: Key) = {
     removeRowWithTimestamp(key, clock.timestamp)
   }
 
-  /**
-   * Removes a key with a specific timestamp.
-   */
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   def removeRowWithTimestamp(key: Key, timestamp: Long) = {
     val cp = new thrift.ColumnPath(name)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
     provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
-  /**
-   * @return A Builder that can be used to execute multiple actions in a single
-   * request.
-   */
   def batch() = new BatchMutationBuilder(this)
 
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
@@ -302,11 +213,6 @@ case class ColumnFamily[Key, Name, Value](
     rowIterateeAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-
-  /**
-   * Returns a column iterator which iterates over the given column of all rows
-   * in the column family with the given batch size as the given types.
-   */
   private[cassie] def columnIterateeAs[K, N, V](batchSize: Int, columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] =
     columnsIterateeAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
@@ -315,10 +221,6 @@ case class ColumnFamily[Key, Name, Value](
                      columnName: Name): ColumnIteratee[Key, Name, Value] =
     columnIterateeAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
-  /**
-   * Returns a column iterator which iterates over the given columns of all rows
-   * in the column family with the given batch size as the given types.
-   */
   private[cassie] def columnsIterateeAs[K, N, V](batchSize: Int,
                                  columnNames: Set[N])
                                 (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
@@ -332,9 +234,6 @@ case class ColumnFamily[Key, Name, Value](
     columnsIterateeAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
                                 keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N,Column[N,V]]] = {
@@ -351,9 +250,6 @@ case class ColumnFamily[Key, Name, Value](
       }
   }
 
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   private[cassie] def getRangeSlice(startKey: ByteBuffer,
                                     endKey: ByteBuffer,
                                     count: Int,

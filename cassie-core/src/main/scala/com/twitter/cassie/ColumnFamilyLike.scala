@@ -17,27 +17,27 @@ import com.twitter.util.Future
 trait ColumnFamilyLike[Key, Name, Value] {
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different key codec
+    * @return a copy of this [[ColumnFamilyLike]] with a different key codec
     * @param codec new key codec */
   def keysAs[K](codec: Codec[K]): ColumnFamilyLike[K, Name, Value]
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different name codec
+    * @return a copy of this [[ColumnFamilyLike]] with a different name codec
     * @param codec new name codec */
   def namesAs[N](codec: Codec[N]): ColumnFamilyLike[Key, N, Value]
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different value codec
+    * @return a copy of this [[ColumnFamilyLike]] with a different value codec
     * @param codec the new value codec */
   def valuesAs[V](codec: Codec[V]): ColumnFamilyLike[Key, Name, V]
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different read consistency
+    * @return a copy of this [[ColumnFamilyLike]] with a different read consistency
     * @param rc the new read consistency level */
   def consistency(rc: ReadConsistency): ColumnFamilyLike[Key, Name, Value]
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different write consistency level
+    * @return a copy of this [[ColumnFamilyLike]] with a different write consistency level
     * @param wc the new write consistency level */
   def consistency(wc: WriteConsistency): ColumnFamilyLike[Key, Name, Value]
 
@@ -48,21 +48,25 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def newColumn[N, V](n: N, v: V): Column[N, V]
 
   /**
-    * Get an individual column from a single row. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Get an individual column from a single row.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key
     * @param the name of the column */
   def getColumn(key: Key, columnName: Name): Future[Option[Column[Name, Value]]]
 
   /**
-    * Get an entire row. Maps to a slice over the whole row. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Results in a map of all column names to the columns for a given key by slicing over a whole row.
+    *   If your rows contain a huge number of columns, this will be slow and horrible and you will hate your ife.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key */
   def getRow(key: Key): Future[Map[Name, Column[Name, Value]]]
 
   /**
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
-    *   ordering is determined by the server. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   ordering is determined by the server. 
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key
     * @param startColumnName an optional start. if None it starts at the first column
@@ -76,55 +80,63 @@ trait ColumnFamilyLike[Key, Name, Value] {
                   order: Order): Future[Map[Name, Column[Name, Value]]]
 
   /**
-    * Get a selection of columns from a single row. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
-    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * Get a selection of columns from a single row.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param the column names you want */
   def getColumns(key: Key,
                  columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]]
   /**
-    * Get a single column from multiple rows. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
-    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
+    * Get a single column from multiple rows.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
     * @param keys the row keys
     * @param the column name */
   def multigetColumn(keys: Set[Key],
                      columnName: Name): Future[Map[Key, Column[Name, Value]]]
 
   /**
-    * Get multiple columns from multiple rows. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Get multiple columns from multiple rows.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param keys the row keys
     * @param columnNames the column names */
   def multigetColumns(keys: Set[Key], columnNames: Set[Name]): Future[Map[Key, Map[Name, Column[Name, Value]]]]
 
   /**
-    * Insert a single column. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Insert a single column.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param column the column */
   def insert(key: Key, column: Column[Name, Value]): Future[Void]
 
   /**
-    * Truncates this column family. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.UnavailableException]]
+    * Truncates this column family.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.UnavailableException]]
     *   or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]] */
   def truncate(): Future[Void]
 
   /**
-    * Remove a single column. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Remove a single column.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param columnName the column's name */
   def removeColumn(key: Key, columnName: Name): Future[Void]
 
   /**
-    * Remove a set of columns from a single row via a batch mutation. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Remove a set of columns from a single row via a batch mutation.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param columnNames the names of the columns to be deleted */
   def removeColumns(key: Key, columnNames: Set[Name]): Future[Void]
 
   /**
-    * Remove a set of columns from a single row at a specific timestamp. Useful for replaying data. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Remove a set of columns from a single row at a specific timestamp. Useful for replaying data.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param columnNames the columns to be deleted
@@ -132,13 +144,15 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def removeColumns(key: Key, columnNames: Set[Name], timestamp: Long): Future[Void]
 
   /**
-    * Remove an entire row. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Remove an entire row.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key to be deleted */
   def removeRow(key: Key): Future[Void]
 
   /**
-    * Remove an entire row at the given timestamp. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    * Remove an entire row at the given timestamp. 
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key to be deleted
     * @param timestamp the time at which the row was deleted*/
@@ -149,20 +163,20 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def batch(): BatchMutationBuilder[Key, Name, Value]
 
   /**
-    * Returns a column iterator which iterates over all columns of all rows in
+    * @return a column iterator which iterates over all columns of all rows in
     * the column family with the given batch size.
     * @param batchSize the number of rows to load at a time */
   def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value]
 
   /**
-    * Returns a column iterator which iterates over the given column of all rows
+    * @return a column iterator which iterates over the given column of all rows
     * in the column family with the given batch size as the default types.
     * @param batchSize the number of columns/rows to load at a time (its only 1 column per row)
     * @param columnName the column to load */
   def columnIteratee(batchSize: Int, columnName: Name): ColumnIteratee[Key, Name, Value]
 
  /**
-   * Returns a column iterator which iterates over the given columns of all rows
+   * @return a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size as the default types.
    * @param batchSize the number of rows to load at a time.
    * @param columnNames the columns to load from each row */
