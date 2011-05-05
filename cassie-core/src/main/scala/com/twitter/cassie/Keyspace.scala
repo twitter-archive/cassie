@@ -24,6 +24,13 @@ class Keyspace(val name: String, val provider: ClientProvider) {
               defaultValueCodec: Codec[Value]) =
     new ColumnFamily(this.name, name, provider, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
+  /**
+    * Execute batch mutations across column families. To use this, build a separate BatchMutationBuilder
+    *   for each CF, then send them all to this method.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param batches a Seq of BatchMutationBuilders, each for a different CF. Their mutations will be merged and
+    *   sent as one operation */
   def execute[Key, Name, Value](batches: Seq[BatchMutationBuilder[Key, Name, Value]]): Future[Void] = {
     if(batches.size == 0) return Future.void
 
