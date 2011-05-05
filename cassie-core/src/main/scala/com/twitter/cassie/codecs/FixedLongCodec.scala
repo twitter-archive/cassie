@@ -4,8 +4,7 @@ import com.twitter.cassie.types.FixedLong
 import java.nio.ByteBuffer
 
 /**
- * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays.
- */
+  * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays. */
 object FixedLongCodec extends Codec[FixedLong] {
   private val length = 8
 

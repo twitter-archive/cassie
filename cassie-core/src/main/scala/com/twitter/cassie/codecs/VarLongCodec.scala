@@ -5,9 +5,8 @@ import com.twitter.cassie.types.VarLong
 import java.nio.ByteBuffer
 
 /**
- * Encodes and decodes 64-bit integers using Avro's zig-zag variable-length
- * encoding.
- */
+  * Encodes and decodes 64-bit integers using Avro's zig-zag variable-length
+  * encoding. */
 object VarLongCodec extends Codec[VarLong] {
   private val maxLength = 10
 
