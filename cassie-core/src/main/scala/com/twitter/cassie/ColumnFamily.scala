@@ -54,7 +54,7 @@ case class ColumnFamily[Key, Name, Value](
    * Returns the optional value of a given column for a given key as the given
    * types.
    */
-  def getColumnAs[K, N, V](key: K,
+  private[cassie] def getColumnAs[K, N, V](key: K,
                            columnName: N)
                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Option[Column[N, V]]] = {
     getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
@@ -75,7 +75,7 @@ case class ColumnFamily[Key, Name, Value](
    * given types. If your rows contain a huge number of columns, this will be
    * slow and horrible.
    */
-  def getRowAs[K, N, V](key: K)
+  private[cassie] def getRowAs[K, N, V](key: K)
                     (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
     getRowSliceAs[K, N, V](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec, valueCodec)
   }
@@ -92,7 +92,7 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Returns a slice of all columns of a row as the given types.
    */
-  def getRowSliceAs[K, N, V](key: K,
+  private[cassie] def getRowSliceAs[K, N, V](key: K,
                              startColumnName: Option[N],
                              endColumnName: Option[N],
                              count: Int,
@@ -120,7 +120,7 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a map of the given column names to the columns for a given key as
    * the given types.
    */
-  def getColumnsAs[K, N, V](key: K,
+  private[cassie] def getColumnsAs[K, N, V](key: K,
                             columnNames: Set[N])
                            (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
     val pred = new thrift.SlicePredicate()
@@ -141,7 +141,7 @@ case class ColumnFamily[Key, Name, Value](
   /**
    * Returns a map of keys to given column for a set of keys as the given types.
    */
-  def multigetColumnAs[K, N, V](keys: Set[K],
+  private[cassie] def multigetColumnAs[K, N, V](keys: Set[K],
                                 columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] = {
     multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).map { rows =>
@@ -169,7 +169,7 @@ case class ColumnFamily[Key, Name, Value](
   @throws(classOf[thrift.TimedOutException])
   @throws(classOf[thrift.UnavailableException])
   @throws(classOf[thrift.InvalidRequestException])
-  def multigetColumnsAs[K, N, V](keys: Set[K],
+  private[cassie] def multigetColumnsAs[K, N, V](keys: Set[K],
                               columnNames: Set[N])
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Map[N, Column[N, V]]]] = {
     val cp = new thrift.ColumnParent(name)
@@ -212,7 +212,7 @@ case class ColumnFamily[Key, Name, Value](
     insertAs(key, column)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  def insertAs[K, N, V](key: K, column: Column[N, V])
+  private[cassie] def insertAs[K, N, V](key: K, column: Column[N, V])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val cp = new thrift.ColumnParent(name)
     val col = Column.convert(nameCodec, valueCodec, clock, column)
@@ -291,7 +291,7 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
-  def rowIterateeAs[K, N, V](batchSize: Int)
+  private[cassie] def rowIterateeAs[K, N, V](batchSize: Int)
                          (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(EMPTY, EMPTY, false, Int.MaxValue))
@@ -307,7 +307,7 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a column iterator which iterates over the given column of all rows
    * in the column family with the given batch size as the given types.
    */
-  def columnIterateeAs[K, N, V](batchSize: Int, columnName: N)
+  private[cassie] def columnIterateeAs[K, N, V](batchSize: Int, columnName: N)
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] =
     columnsIterateeAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
@@ -319,7 +319,7 @@ case class ColumnFamily[Key, Name, Value](
    * Returns a column iterator which iterates over the given columns of all rows
    * in the column family with the given batch size as the given types.
    */
-  def columnsIterateeAs[K, N, V](batchSize: Int,
+  private[cassie] def columnsIterateeAs[K, N, V](batchSize: Int,
                                  columnNames: Set[N])
                                 (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     val pred = new thrift.SlicePredicate
