@@ -27,7 +27,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def namesAs[N](codec: Codec[N]): ColumnFamilyLike[Key, N, Value]
 
   /**
-    * Return a copy of this [[ColumnFamilyLike]] with a different value codec 
+    * Return a copy of this [[ColumnFamilyLike]] with a different value codec
     * @param codec the new value codec */
   def valuesAs[V](codec: Codec[V]): ColumnFamilyLike[Key, Name, V]
 
@@ -41,7 +41,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * @param wc the new write consistency level */
   def consistency(wc: WriteConsistency): ColumnFamilyLike[Key, Name, Value]
 
-  /** 
+  /**
     * Create a new column for this column family. Useful for java-based users.
     * @param n the column name
     * @param v the column value */
@@ -114,7 +114,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
 
   /**
     * Remove a single column. Returns a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
-    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]] 
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param columnName the column's name */
   def removeColumn(key: Key, columnName: Name): Future[Void]
@@ -151,9 +151,23 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * Start a batch operation by returning a new BatchMutationBuilder */
   def batch(): BatchMutationBuilder[Key, Name, Value]
 
+  /**
+    * Returns a column iterator which iterates over all columns of all rows in
+    * the column family with the given batch size.
+    * @param batchSize the number of rows to load at a time */
   def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value]
-  def columnIteratee(batchSize: Int,
-                     columnName: Name): ColumnIteratee[Key, Name, Value]
-  def columnsIteratee(batchSize: Int,
-                      columnNames: Set[Name]): ColumnIteratee[Key, Name, Value]
+
+  /**
+    * Returns a column iterator which iterates over the given column of all rows
+    * in the column family with the given batch size as the default types.
+    * @param batchSize the number of columns/rows to load at a time (its only 1 column per row)
+    * @param columnName the column to load */
+  def columnIteratee(batchSize: Int, columnName: Name): ColumnIteratee[Key, Name, Value]
+
+ /**
+   * Returns a column iterator which iterates over the given columns of all rows
+   * in the column family with the given batch size as the default types.
+   * @param batchSize the number of rows to load at a time.
+   * @param columnNames the columns to load from each row */
+  def columnsIteratee(batchSize: Int, columnNames: Set[Name]): ColumnIteratee[Key, Name, Value]
 }

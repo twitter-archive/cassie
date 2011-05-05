@@ -291,10 +291,6 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
-  /**
-   * Returns a column iterator which iterates over all columns of all rows in
-   * the column family with the given batch size as the given types.
-   */
   def rowIterateeAs[K, N, V](batchSize: Int)
                          (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     val pred = new thrift.SlicePredicate
@@ -302,10 +298,6 @@ case class ColumnFamily[Key, Name, Value](
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  /**
-   * Returns a column iterator which iterates over all columns of all rows in
-   * the column family with the given batch size as the default types.
-   */
   def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
     rowIterateeAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
@@ -319,10 +311,6 @@ case class ColumnFamily[Key, Name, Value](
                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] =
     columnsIterateeAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
-  /**
-   * Returns a column iterator which iterates over the given column of all rows
-   * in the column family with the given batch size as the default types.
-   */
   def columnIteratee(batchSize: Int,
                      columnName: Name): ColumnIteratee[Key, Name, Value] =
     columnIterateeAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
@@ -339,10 +327,6 @@ case class ColumnFamily[Key, Name, Value](
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  /**
-   * Returns a column iterator which iterates over the given columns of all rows
-   * in the column family with the given batch size as the default types.
-   */
   def columnsIteratee(batchSize: Int,
                       columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {
     columnsIterateeAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
