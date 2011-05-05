@@ -1,4 +1,6 @@
 # 0.6.0
+* lots of scaladoc
+* some minor interface changes (caused by documenting the code)
 * add EachQuorum and LocalQuorum consistency levels
 
 # 0.5.3
