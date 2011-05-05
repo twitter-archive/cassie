@@ -10,6 +10,8 @@ import org.apache.cassandra.finagle.thrift
 object Column {
   def apply[A, B](name: A, value: B): Column[A, B] = new Column(name, value)
 
+  /**
+    * Convert from a thrift CoSC to a Cassie column. */
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], colOrSCol: thrift.ColumnOrSuperColumn): Column[A, B] = {
     val c = Column(
       nameCodec.decode(colOrSCol.column.name),
@@ -23,6 +25,8 @@ object Column {
     }
   }
 
+  /**
+    * Convert from a cassie Column to a thrift.Column */
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], clock: Clock, col: Column[A, B]): thrift.Column = {
     val tColumn = new thrift.Column(
       nameCodec.encode(col.name),
@@ -34,31 +38,23 @@ object Column {
   }
 }
 
-
 case class Column[A, B](name: A, value: B, timestamp: Option[Long], ttl: Option[Duration]) {
 
   def this(name: A, value: B) = {
     this(name, value, None, None)
   }
 
+  /**
+    * Create a copy of this column with a timestamp set. Builder-style. */
   def timestamp(ts: Long): Column[A, B] = {
     copy(timestamp = Some(ts))
   }
 
+  /**
+    * Create a copy of this Column with a ttl set. Builder-style. */
   def ttl(t: Duration): Column[A, B] = {
     copy(ttl = Some(t))
   }
 
   def pair = name -> this
 }
-
-/*
-
-Or does it make more sense to define a series of implicit codecs?
-
-Encoding, say, Long instances would suck ass. But one potential way of getting
-around this would be to just create a wrapper class to go with the codec:
-
-chunks.insert(chunk.id, Column("gc-marker", VarLong(clock.timestamp)))
-
-*/
