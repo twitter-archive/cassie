@@ -9,16 +9,13 @@ trait CCluster extends FCluster {
 }
 
 
-class SocketAddressCluster(underlying: Seq[SocketAddress])
-  extends CCluster
-{
-  private[this] var self = underlying
+/**
+  * A cassandra cluster specified by socket addresses. No remapping. */
+class SocketAddressCluster(private[this] val underlying: Seq[SocketAddress]) extends CCluster {
 
-  def mkFactories[Req, Rep](f: SocketAddress => ServiceFactory[Req, Rep]) = self map f
+  def mkFactories[Req, Rep](f: SocketAddress => ServiceFactory[Req, Rep]) = underlying map f
 
-  def join(address: SocketAddress) {
-    self = underlying ++ Seq(address)
-  }
+  def join(address: SocketAddress) {}
 
   def close() = ()
 }

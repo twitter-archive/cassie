@@ -28,7 +28,6 @@ import com.twitter.finagle.Codec
  * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
  *                             idle connections should be closed and removed
  *                             from the pool
- * @param framed true if the server will only accept framed connections
  */
 
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
