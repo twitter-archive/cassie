@@ -1,31 +1,28 @@
 Cassie
 ======
 
-*Because life's too short to deal with Thrift.*
-
-Cassie is a small, lightweight Cassandra client with connection pooling, cluster
-discovery, and column name/value encoding and decoding. It tries to do what the
-Thrift API *actually* does, not what it *says* it does.
-
+Cassie is a small, lightweight Cassandra client built on
+[Finagle](http://github.com/twitter/finagle) with with all that provides plus
+column name/value encoding and decoding.
 
 Requirements
 ------------
 
 * Java SE 6
 * Scala 2.8
-* Cassandra 0.7.0
+* Cassandra 0.8
 
+Note that Cassie *is* usable from Java. Its not super easy, but we're working
+to make it easier.
 
 Let's Get This Party Started
 ----------------------------
 
-**TODO: This version (refreshed for Cassandra 0.7.0) is not yet hosted!**
-
 In your [simple-build-tool](http://code.google.com/p/simple-build-tool/) project
 file, add Cassie as a dependency:
-    
-    val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
-    val cassie = "com.codahale" %% "cassie" % "0.1" withSources()
+
+    val twttr = "Twitter's Repository" at "http://maven.twttr.com/"
+    val cassie = "com.twitter" % "cassie" % "0.6.0"
 
 
 Connecting To Your Cassandra Cluster
@@ -37,51 +34,39 @@ list of nodes in the cluster.
 
     val cluster = new Cluster("host1,host2")
 
-Then create a `Keyspace` instance which will maintain per-node connection pools
-of 1 to 5 connections (removing idle connections after 60 seconds), retry failed
-queries up to 5 times, and which will not send queries to a node for 10 seconds
-after 3 queries have failed:
+Then create a `Keyspace` instance which will use Finagle to maintain per-node
+connection pools and do retries:
 
-    val keyspace = cluster.keyspace("MyCassieApp")
-      .mapHostsEvery(10.minutes)
-      .retryAttempts(5)
-      .requestTimeoutInMS(5000)
-      .minConnectionsPerHost(1)
-      .maxConnectionsPerHost(10)
-      .removeAfterIdleForMS(60000)
-      .connect()
+    val keyspace = cluster.keyspace("MyCassieApp").connect()
+    // see KeyspaceBuilder for more options here. Try the defaults first.
 
 (If you have some nodes with dramatically different latency—e.g., in another
-data center–or if you have a huge cluster, you can disable keyspace mapping via
-"mapHostsEvery(0.minutes)" in which case clients will connect directly to the seed
-hosts passed to "new Cluster".)
-
-This `Keyspace` will balance requests across the nodes in a round-robin way,
-which should distribute load effectively.
+data center–or if you have a huge cluster, you can disable keyspace mapping
+via "mapHostsEvery(0.minutes)" in which case clients will connect directly to
+the seed hosts passed to "new Cluster".) Alternative host discovery methods,
+like
+[ServerSets](https://github.com/twitter/commons/blob/master/src/java/com/twitter/common/zookeeper/ServerSetImpl.java),
+are TODO.
 
 
 A Quick Note On Timestamps
 --------------------------
 
 Cassandra uses client-generated timestamps to determine the order in which
-writes and deletes should be processed. Cassie comes with a few different clock
-implementations, but you'll probably want to use `MicrosecondEpochClock`, which
-is a strictly-increasing clock of microseconds since January 1st, 1970.
-
-(For each operation which requires a timestamp, you always have the option of
-passing in a specific timestamp. In general, though, you should stick with the
-default.)
+writes and deletes should be processed. Cassie previously came with several
+different clock implementations. Now all Cassie users use the
+MicrosecondEpochClock and timestamps should be mostly hidden from users.
 
 
 A Longer Note, This Time On Column Names And Values
 ---------------------------------------------------
 
-Cassandra stores the name and value of a column as a simple array of bytes. To
+Cassandra stores the name and value of a column as an array of bytes. To
 convert these bytes to and from useful Scala types, Cassie uses implicit `Codec`
 parameters for the given type.
 
 For example, take adding a column to a column family of UTF-8 strings:
-    
+
     strings.insert("newstring", Column("colname", "colvalue"))
 
 The `insert` method looks for implicit parameters of type `Codec[String]` to
@@ -107,7 +92,7 @@ Accessing Column Families
 
 Once you've got a `Keyspace` instance, you can load your column families:
 
-    val people = keyspace.columnFamily[String, String, String]("People", MicrosecondEpochClock)
+    val people  = keyspace.columnFamily[String, String, String]("People", MicrosecondEpochClock)
     val numbers = keyspace.columnFamily[String, String, VarInt]("People", MicrosecondEpochClock,
                     defaultReadConsistency = ReadConsistency.One,
                     defaultWriteConsistency = WriteConsistency.Any)
@@ -119,48 +104,37 @@ can change this default or simply pass a different consistency level to specific
 read and write operations.
 
 
+TODO: write or link to docs on Futures
+
 Reading Data From Cassandra
 ---------------------------
 
 Now that you've got your `ColumnFamily`, you can read some data from Cassandra:
-    
+
     people.getColumn("codahale", "name")
-    
-`getColumn` returns an `Option[Column[Name, Value]]` where `Name` and `Value`
+
+`getColumn` returns an `Future[Option[Column[Name, Value]]]` where `Name` and `Value`
 are the type parameters of the `ColumnFamily`. If the row or column doesn't
 exist, `None` is returned.
-
-If you need a column with a name or value of a different type than the
-`ColumnFamily`, you can use `getColumnAs`:
-    
-    people.getColumnAs[String, String, VarLong]("codahale", "name")
-
-This will return an `Option[Column[String, VarLong]]`.
 
 You can also get a set of columns:
 
     people.getColumns("codahale", Set("name", "motto"))
 
-This returns a `Map[Name, Column[Name, Value]]`, where each column is mapped by
-its name. Again, `getColumnsAs` provides a way for reading column names and
-values of different types:
-    
-    people.getColumnsAs[String, FixedLong, Array[Byte]]("things", Set(1, 2, 3))
+This returns a `Future[Map[Name, Column[Name, Value]]]`, where each column is mapped by
+its name.
 
 If you want to get all columns of a row, that's cool too:
-    
+
     people.getRow("codahale")
 
-(And hey, `getRowAs` works, too.)
-
 Cassie also supports multiget for columns and sets of columns:
-    
+
     people.multigetColumn(Set("codahale", "darlingnikles"), "name")
     people.multigetColumns(Set("codahale", "darlingnikles"), Set("name", "motto"))
 
-`multigetColumn` returns a `Map[Key, Map[Name, Column[Name, Value]]]` which
-maps row keys to column names to columns. `multigetColumnAs` and
-`multigetColumnsAs` do the usual for specifying column name and value types.
+`multigetColumn` returns a `Future[Map[Key, Map[Name, Column[Name, Value]]]]` which
+maps row keys to column names to columns.
 
 
 Iterating Through Rows
@@ -179,7 +153,7 @@ until either no rows are returned or the last row is returned twice.
 first row of the next.)
 
 You can iterate over every column of every row:
-    
+
     for ((key, col) <- people.rowIteratee(100) {
       println(" Found column %s in row %s", col, key)
     }
@@ -213,9 +187,9 @@ Inserting columns is pretty easy:
     people.insert("codahale", Column("motto", "Moar lean."))
 
 You can insert a value with a specific timestamp:
-    
-    people.insert("darlingnikles", Column("name", "Niki", 200L))
-    people.insert("darlingnikles", Column("motto", "Told ya.", 201L))
+
+    people.insert("darlingnikles", Column("name", "Niki").timestamp(200L))
+    people.insert("darlingnikles", Column("motto", "Told ya.").timestamp(201L))
 
 Or even insert column names and values of a different type than those of the
 `ColumnFamily`:
@@ -223,19 +197,14 @@ Or even insert column names and values of a different type than those of the
     people.insert("biscuitfoof", Column[AsciiString, AsciiString]("name", "Biscuit"))
     people.insert("biscuitfoof", Column[AsciiString, AsciiString]("motto", "Mlalm."))
 
-Or insert values with a specific write consistency level:
-
-    people.insert("louiefoof", Column("name", "Louie"), WriteConsistency.All)
-    people.insert("louiefoof", Column("motto", "Swish!"), WriteConsistency.Any)
-
 Batch operations are also possible:
-    
+
     people.batch() { cf =>
       cf.insert("puddle", Column("name", "Puddle"))
       cf.insert("puddle", Column("motto", "Food!"))
     }
 
-(See `BatchMutationBuilder` for a better idea of which operations are 
+(See `BatchMutationBuilder` for a better idea of which operations are
 available.)
 
 
@@ -251,11 +220,11 @@ Once you've read that, then feel free to remove a column:
     people.removeColumn("puddle", "name")
 
 Or a set of columns:
-    
+
     people.removeColumns("puddle", Set("name", "motto"))
 
 Or even a row:
-    
+
     people.removeRow("puddle")
 
 Generating Unique IDs
@@ -293,12 +262,14 @@ and global states of distributed systems. Parallel and Distributed Algorithms
 they're stored as traditional, hex-encoded strings. Cassie provides implicit
 conversions between `LexicalUUID` and `String`:
 
-    val uuid = LexicalUUID() // uses the implicit `Clock` and the machine's hostname
-    
+    val uuid = LexicalUUID(people.clock)
+
     people.insert(uuid, Column("one", "two")) // converted to hex automatically
-    
+
     people.insert("key", Column(uuid, "what")) // converted to a byte array
 
+
+TODO counter column families
 
 Things What Ain't Done Yet
 ==========================
@@ -326,5 +297,6 @@ License
 -------
 
 Copyright (c) 2010 Coda Hale
+Copyright (c) 2011 Twitter, Inc.
 
 Published under The MIT License, see LICENSE
