@@ -3,8 +3,7 @@ package com.twitter.cassie.codecs
 import java.nio.ByteBuffer
 
 /**
- * A bidirection encoding for column names or values.
- */
+  * A bidirection encoding for column names or values. */
 trait Codec[A] {
   def encode(obj: A): ByteBuffer
   def decode(ary: ByteBuffer): A

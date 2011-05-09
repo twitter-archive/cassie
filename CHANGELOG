@@ -1,11 +1,19 @@
+# 0.6.0
+* lots of scaladoc
+* some minor interface changes (caused by documenting the code)
+* add EachQuorum and LocalQuorum consistency levels
+* README update
+* made the methods for overriding typing on CF private. if you want to use a different type, copy the CF instance
+* added ability for batch mutations across column families
+
 # 0.5.3
-* fake cassandra for testing
+* assorted fixes to build/publishing
 
 # 0.5.2
-* fix remapping bug
+* fix bug in remapping clusters
 
 # 0.5.1
-* move dependency from util to util-core
+* replace dependency on util with util-core (robey)
 
 # 0.5.0
 * you can now set a connection timeout

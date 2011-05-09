@@ -5,8 +5,7 @@ import com.twitter.cassie.types.Base64ByteArray
 import org.apache.commons.codec.binary.Base64
 
 /**
- * Encodes and decodes values as Base64-encoded strings.
- */
+  * Encodes and decodes values as Base64-encoded strings. */
 object Base64ByteArrayCodec extends Codec[Base64ByteArray] {
   private val b64 = new Base64(0, Array())
 

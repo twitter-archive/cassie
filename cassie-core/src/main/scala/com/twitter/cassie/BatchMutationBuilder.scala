@@ -14,11 +14,12 @@ import scala.collection.JavaConversions._
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
  * TODO: Port to Java collections.
+ * TODO: make into a CFLike
  */
-private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,Name,Value]) {
+class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[Key,Name,Value]) {
 
-  case class Insert(key: Key, column: Column[Name, Value])
-  case class Deletions(key: Key, columnNames: Set[Name], timestamp: Long)
+  private[cassie] case class Insert(key: Key, column: Column[Name, Value])
+  private[cassie] case class Deletions(key: Key, columnNames: Set[Name], timestamp: Long)
 
   private val ops = new ListBuffer[Either[Insert, Deletions]]
 
@@ -32,15 +33,15 @@ private[cassie] class BatchMutationBuilder[Key,Name,Value](cf: ColumnFamily[Key,
 
   def removeColumn(key: Key, columnName: Name, timestamp: Long) =
     removeColumns(key, singletonSet(columnName), timestamp)
-    
-  def removeColumns(key: Key, columns: Set[Name]): BatchMutationBuilder[Key,Name,Value] = 
+
+  def removeColumns(key: Key, columns: Set[Name]): BatchMutationBuilder[Key,Name,Value] =
     removeColumns(key, columns, cf.clock.timestamp)
-  
+
   def removeColumns(key: Key, columns: Set[Name], timestamp: Long): BatchMutationBuilder[Key,Name,Value] = synchronized {
     ops.append(Right(Deletions(key, columns, timestamp)))
     this
   }
-    
+
   /**
    * Submits the batch of operations, returning a future to allow blocking for success.
    */

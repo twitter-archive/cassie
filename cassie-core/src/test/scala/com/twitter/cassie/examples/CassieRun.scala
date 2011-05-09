@@ -17,7 +17,7 @@ object CassieRun {
     // create a keyspace
     val keyspace = cluster.keyspace("Keyspace1")
       .retryAttempts(5)
-      .readTimeoutInMS(5000)
+      .requestTimeoutInMS(5000)
       .minConnectionsPerHost(1)
       .maxConnectionsPerHost(10)
       .removeAfterIdleForMS(60000)

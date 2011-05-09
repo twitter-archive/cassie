@@ -4,8 +4,7 @@ import com.twitter.cassie.types.LexicalUUID
 import java.nio.ByteBuffer
 
 /**
- * Encodes and decodes UUIDs as 128-bit values.
- */
+  * Encodes and decodes UUIDs as 128-bit values. */
 object LexicalUUIDCodec extends Codec[LexicalUUID] {
   private val length = 16
 

@@ -57,7 +57,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
       deletion.getPredicate.getColumn_names.map { Utf8Codec.decode(_) }.sortWith { _ < _ } must equal(List("one", "two"))
     }
   }
-  
+
   describe("removing a set of columns with an explicit timestamp") {
     val builder = setup()
     builder.removeColumns("key", Set("one", "two"), 17)

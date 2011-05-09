@@ -19,6 +19,7 @@ import com.twitter.util.Future
  * lightweight object: it inherits a connection pool from the Keyspace.
  *
  * TODO: remove (insert/get)As methods in favor of copying the CF to allow for alternate types.
+ * TODO: figure out how to get rid of code duplication vs non counter columns
  */
 case class CounterColumnFamily[Key, Name](
     keyspace: String,
@@ -37,17 +38,14 @@ case class CounterColumnFamily[Key, Name](
   def keysAs[K](codec: Codec[K]): CounterColumnFamily[K, Name] = copy(defaultKeyCodec = codec)
   def namesAs[N](codec: Codec[N]): CounterColumnFamily[Key, N] = copy(defaultNameCodec = codec)
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
+
   /**
    * @Java
-   * Creates a new Column with.
+   * Creates a new Column.
    */
   def newColumn[N](n: N, v: Long) = CounterColumn(n, v)
 
-  /**
-   * Returns the optional value of a given column for a given key as the given
-   * types.
-   */
-  def getColumnAs[K, N](key: K,
+  private[cassie] def getColumnAs[K, N](key: K,
                            columnName: N)
                           (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Option[CounterColumn[N]]] = {
     getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec)
@@ -55,29 +53,27 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Returns the optional value of a given column for a given key as the default
-   * types.
-   */
+    * Get an individual column from a single row.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row's key
+    * @param the name of the column */
   def getColumn(key: Key,
                 columnName: Name): Future[Option[CounterColumn[Name]]] = {
     getColumnAs[Key, Name](key, columnName)(defaultKeyCodec, defaultNameCodec)
   }
 
-  /**
-   * Returns a map of all column names to the columns for a given key as the
-   * given types. If your rows contain a huge number of columns, this will be
-   * slow and horrible.
-   */
-  def getRowAs[K, N](key: K)
+  private[cassie] def getRowAs[K, N](key: K)
                     (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N, CounterColumn[N]]] = {
     getRowSliceAs[K, N](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec)
   }
 
   /**
-   * Returns a map of all column names to the columns for a given key as the
-   * default types. If your rows contain a huge number of columns, this will be
-   * slow and horrible.
-   */
+    * Results in a map of all column names to the columns for a given key by slicing over a whole row.
+    *   If your rows contain a huge number of columns, this will be slow and horrible and you will hate your ife.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row's key */
   def getRow(key: Key): Future[Map[Name, CounterColumn[Name]]] = {
     getRowAs[Key, Name](key)(defaultKeyCodec, defaultNameCodec)
   }
@@ -85,7 +81,7 @@ case class CounterColumnFamily[Key, Name](
   /**
    * Returns a slice of all columns of a row as the given types.
    */
-  def getRowSliceAs[K, N](key: K,
+  private[cassie] def getRowSliceAs[K, N](key: K,
                           startColumnName: Option[N],
                           endColumnName: Option[N],
                           count: Int,
@@ -99,8 +95,15 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Returns a slice of all columns of a row as the default types.
-   */
+    * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
+    *   ordering is determined by the server. 
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row's key
+    * @param startColumnName an optional start. if None it starts at the first column
+    * @param endColumnName an optional end. if None it ends at the last column
+    * @param count like LIMIT in SQL. note that all of start..end will be loaded into memory
+    * @param order sort forward or reverse (by column name) */
   def getRowSlice(key: Key,
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
@@ -109,11 +112,7 @@ case class CounterColumnFamily[Key, Name](
     getRowSliceAs[Key, Name](key, startColumnName, endColumnName, count, order)(defaultKeyCodec, defaultNameCodec)
   }
 
-  /**
-   * Returns a map of the given column names to the columns for a given key as
-   * the given types.
-   */
-  def getColumnsAs[K, N](key: K,
+  private[cassie] def getColumnsAs[K, N](key: K,
                          columnNames: Set[N])
                          (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N, CounterColumn[N]]] = {
     val pred = new thrift.SlicePredicate()
@@ -122,53 +121,41 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Returns a map of the given column names to the columns for a given key as
-   * the default types.
-   */
+    * Get a selection of columns from a single row.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row key
+    * @param the column names you want */
   def getColumns(key: Key,
                  columnNames: Set[Name]): Future[Map[Name, CounterColumn[Name]]] = {
     getColumnsAs[Key, Name](key, columnNames)(defaultKeyCodec, defaultNameCodec)
   }
 
-
-  /**
-   * Returns a map of keys to given column for a set of keys as the given types.
-   */
-  def multigetColumnAs[K, N](keys: Set[K],
+  private[cassie] def multigetColumnAs[K, N](keys: Set[K],
                              columnName: N)
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[K, CounterColumn[N]]] = {
     multigetColumnsAs[K, N](keys, singletonSet(columnName))(keyCodec, nameCodec).map { rows =>
       val cols: Map[K, CounterColumn[N]] = new HashMap(rows.size)
       for (rowEntry <- asScalaIterable(rows.entrySet))
-        if (!rowEntry.getValue.isEmpty)
+        if (!rowEntry.getValue.isEmpty) {
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
-
+        }
       cols
     }
   }
 
   /**
-   * Returns a map of keys to given column for a set of keys as the default
-   * types.
-   */
+    * Get a single column from multiple rows.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
+    * @param keys the row keys
+    * @param the column name */
   def multigetColumn(keys: Set[Key],
                      columnName: Name): Future[Map[Key, CounterColumn[Name]]] = {
     multigetColumnAs[Key, Name](keys, columnName)(defaultKeyCodec, defaultNameCodec)
   }
 
-  /**
-   * Returns a map of keys to a map of column names to the columns for a given
-   * set of keys and columns as the given types.
-   *   map<binary,list<Counter>> multiget_counter_slice(1:required list<binary> keys,
-                                                   2:required ColumnParent column_parent,
-                                                   3:required SlicePredicate predicate,
-                                                   4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-      throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
-   */
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
-  def multigetColumnsAs[K, N](keys: Set[K],
+  private[cassie] def multigetColumnsAs[K, N](keys: Set[K],
                               columnNames: Set[N])
                              (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[K, Map[N, CounterColumn[N]]]] = {
     val cp = new thrift.ColumnParent(name)
@@ -194,24 +181,22 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Returns a map of keys to a map of column names to the columns for a given
-   * set of keys and columns as the default types.
-   */
+    * Get multiple columns from multiple rows.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param keys the row keys
+    * @param columnNames the column names */
   def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
     multigetColumnsAs[Key, Name](keys, columnNames)(defaultKeyCodec, defaultNameCodec)
   }
 
   /**
-   * Inserts a column.
-   */
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
+   * Increments a column. */
   def add(key: Key, column: CounterColumn[Name]) = {
     addAs(key, column)(defaultKeyCodec, defaultNameCodec)
   }
 
-  def addAs[K, N](key: K, column: CounterColumn[N])
+  private[cassie] def addAs[K, N](key: K, column: CounterColumn[N])
                   (implicit keyCodec: Codec[K], nameCodec: Codec[N]) = {
     val cp = new thrift.ColumnParent(name)
     val col = CounterColumn.convert(nameCodec, column)
@@ -223,11 +208,11 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Removes a column from a key.
-   */
-   @throws(classOf[thrift.TimedOutException])
-   @throws(classOf[thrift.UnavailableException])
-   @throws(classOf[thrift.InvalidRequestException])
+    * Remove a single column.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row key
+    * @param columnName the column's name */
   def removeColumn(key: Key, columnName: Name) = {
     val cp = new thrift.ColumnPath(name)
     cp.setColumn(defaultNameCodec.encode(columnName))
@@ -236,10 +221,13 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * Removes a set of columns from a key.
-   */
+    * Remove a set of columns from a single row via a batch mutation.
+    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    * @param key the row key
+    * @param columnNames the names of the columns to be deleted */
   def removeColumns(key: Key, columnNames: Set[Name]) = {
-    batch
+    batch()
       .removeColumns(key, columnNames)
       .execute()
   }
@@ -249,17 +237,12 @@ case class CounterColumnFamily[Key, Name](
    * request.
    */
   def batch() = new CounterBatchMutationBuilder(this)
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
+
   private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[CounterMutation]]]) = {
     log.debug("batch_add(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_add(mutations, writeConsistency.level) }
   }
 
-  @throws(classOf[thrift.TimedOutException])
-  @throws(classOf[thrift.UnavailableException])
-  @throws(classOf[thrift.InvalidRequestException])
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
                                 keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N,CounterColumn[N]]] = {

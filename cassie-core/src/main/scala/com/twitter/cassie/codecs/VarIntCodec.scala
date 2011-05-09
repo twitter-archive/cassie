@@ -4,9 +4,8 @@ import java.nio.ByteBuffer
 import com.twitter.cassie.types.VarInt
 
 /**
- * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length
- * encoding.
- */
+  * Encodes and decodes 32-bit integers using Avro's zig-zag variable-length
+  * encoding. */
 object VarIntCodec extends Codec[VarInt] {
   private val maxLength = 5
 
