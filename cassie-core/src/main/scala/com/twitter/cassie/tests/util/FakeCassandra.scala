@@ -67,7 +67,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     def compare(a: Column, b: Column) = comparator.compare(a.BufferForName, b.BufferForName)
   }
 
-  var thread: FakeCassandra.ServerThread = null 
+  var thread: FakeCassandra.ServerThread = null
   var currentKeyspace = "default"
 
   //                     keyspace        CF              row         column
@@ -98,7 +98,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     thread.server.stop()
     reset()
   }
-  
+
   def reset() = data.clear()
 
   def set_keyspace(keyspace: String) = currentKeyspace = keyspace
@@ -114,7 +114,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   }
 
   def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel): List[ColumnOrSuperColumn] = get_slice(key, column_parent, predicate, consistency_level, System.currentTimeMillis, false)
-  
+
   def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): List[ColumnOrSuperColumn] = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
@@ -131,7 +131,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
         val finish = new Column
         val sr = predicate.getSlice_range
         start.setName(if(sr.isSetStart) sr.getStart else Array.empty[Byte])
-        
+
         if (sr.isSetCount && sr.getCount > 0) limit = sr.getCount
         if(sr.isSetFinish && sr.getFinish.length > 0) {
           finish.setName(sr.getFinish)
@@ -142,12 +142,12 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
       } else {
         row
       }
-      
+
       val names = new HashSet[String]
       if (predicate.isSetColumn_names) {
         for(name <- predicate.getColumn_names) names.add(Utf8Codec.decode(name))
       }
-      
+
       var i = 0
       val toRemove = new ArrayList[Column]
       for(entry <- rowView) {
