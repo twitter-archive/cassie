@@ -19,7 +19,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     "cassie-hadoop", "cassie-hadoop",
     new HadoopProject(_), coreProject)
 
-  class CoreProject(info: ProjectInfo) extends StandardProject(info) with SubversionPublisher with AdhocInlines with CompileThriftFinagle {
+  class CoreProject(info: ProjectInfo) extends StandardProject(info)
+    with SubversionPublisher with AdhocInlines with CompileThriftFinagle with PublishSite{
 
     override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
