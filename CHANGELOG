@@ -2,6 +2,9 @@
 * lots of scaladoc
 * some minor interface changes (caused by documenting the code)
 * add EachQuorum and LocalQuorum consistency levels
+* README update
+* made the methods for overriding typing on CF private. if you want to use a different type, copy the CF instance
+* added ability for batch mutations across column families
 
 # 0.5.3
 * assorted fixes to build/publishing
