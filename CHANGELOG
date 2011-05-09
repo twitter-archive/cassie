@@ -1,4 +1,7 @@
-# 0.6.0
+# 0.7.0
+* Add FakeCassandra for testing cassie-based apps
+
+# 0.6.2
 * lots of scaladoc
 * some minor interface changes (caused by documenting the code)
 * add EachQuorum and LocalQuorum consistency levels
