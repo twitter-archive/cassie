@@ -31,7 +31,7 @@ class Keyspace(val name: String, val provider: ClientProvider) {
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param batches a Seq of BatchMutationBuilders, each for a different CF. Their mutations will be merged and
     *   sent as one operation */
-  def execute[Key, Name, Value](batches: Seq[BatchMutationBuilder[Key, Name, Value]]): Future[Void] = {
+  def execute(batches: Seq[BatchMutationBuilder[_, _, _]]): Future[Void] = {
     if(batches.size == 0) return Future.void
 
     val mutations = new HashMap[ByteBuffer, Map[String, List[Mutation]]]
