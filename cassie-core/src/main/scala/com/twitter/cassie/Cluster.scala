@@ -7,6 +7,7 @@ import com.twitter.cassie.connection.SocketAddressCluster
 import com.twitter.cassie.connection.CCluster
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
+import com.twitter.finagle.stats.StatsReceiver
 
 /**
  * A Cassandra cluster.
@@ -38,7 +39,8 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _connectionTimeoutInMS: Int = 10000,
     _minConnectionsPerHost: Int = 1,
     _maxConnectionsPerHost: Int = 5,
-    _removeAfterIdleForMS: Int = 60000) {
+    _removeAfterIdleForMS: Int = 60000,
+    _statsReceiver: Option[StatsReceiver] = None) {
 
     /**
       * connect to the cluster with the specified parameters */
@@ -51,7 +53,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
         new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
 
       // TODO: move to builder pattern as well
-      val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS)
+      val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver)
       new Keyspace(_name, ccp)
     }
 
@@ -72,5 +74,8 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       copy(_maxConnectionsPerHost = m)
     def removeAfterIdleForMS(r: Int): KeyspaceBuilder =
       copy(_removeAfterIdleForMS = r)
+    /**
+      * A finagle stats receiver for reporting. */
+    def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = Some(r))
   }
 }
