@@ -1,3 +1,6 @@
+# 0.7.2
+* update util to 1.8.12
+
 # 0.7.1
 * make the finagle stats receiver configurable
 * fix heterogenous batches [kyle]
