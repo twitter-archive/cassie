@@ -10,7 +10,7 @@ import com.twitter.finagle.Protocol
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
-import com.twitter.finagle.stats.OstrichStatsReceiver
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.finagle.Codec
 
 /**
@@ -37,9 +37,10 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val connectionTimeoutInMS: Int = 10000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
-                            val removeAfterIdleForMS: Int = 60000) extends ClientProvider {
+                            val removeAfterIdleForMS: Int = 60000,
+                            val statsReceiver: Option[StatsReceiver] = None ) extends ClientProvider {
 
-  private val service = ClientBuilder()
+  private val builder = ClientBuilder()
       .cluster(hosts)
       .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
@@ -47,9 +48,14 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
-      .reportTo(new OstrichStatsReceiver) //TODO make this configurable
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
-      .build()
+
+  statsReceiver match {
+    case Some(receiver) => builder.reportTo(receiver)
+    case None => {}
+  }
+
+  private val service = builder.build()
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 
