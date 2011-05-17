@@ -1,3 +1,7 @@
+# 0.7.1
+* make the finagle stats receiver configurable
+* fix heterogenous batches [kyle]
+
 # 0.7.0
 * Add FakeCassandra for testing cassie-based apps
 
