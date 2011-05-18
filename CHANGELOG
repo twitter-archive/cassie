@@ -1,3 +1,6 @@
+# 0.7.3
+* fix bug in StatsReceiver implementation
+
 # 0.7.2
 * update util to 1.8.12
 

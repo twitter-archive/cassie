@@ -40,7 +40,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val removeAfterIdleForMS: Int = 60000,
                             val statsReceiver: Option[StatsReceiver] = None ) extends ClientProvider {
 
-  private val builder = ClientBuilder()
+  private var builder = ClientBuilder()
       .cluster(hosts)
       .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
@@ -50,9 +50,9 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .hostConnectionLimit(maxConnectionsPerHost)
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
 
-  statsReceiver match {
+  builder = statsReceiver match {
     case Some(receiver) => builder.reportTo(receiver)
-    case None => {}
+    case None => builder
   }
 
   private val service = builder.build()
