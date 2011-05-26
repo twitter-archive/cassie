@@ -31,7 +31,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
     val jacksonMap  = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.6.1"
 
-    val finagleVersion = "1.4.3"
+    val finagleVersion = "1.5.1"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val finagleOstrich = "com.twitter" % "finagle-ostrich4" % finagleVersion

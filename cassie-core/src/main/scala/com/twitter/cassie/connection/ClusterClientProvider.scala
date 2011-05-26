@@ -11,7 +11,7 @@ import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.finagle.Codec
+import com.twitter.finagle.{Codec, ClientCodecConfig}
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -68,7 +68,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
   }
 
   class ThriftFramedCodec extends Codec[ThriftClientRequest, Array[Byte]] {
-    override def clientCodec = ThriftClientFramedCodec()
+    override def clientCodec = ThriftClientFramedCodec()(ClientCodecConfig(Some("cassie")))
   }
 
   case class CassandraProtocol(keyspace: String) extends Protocol[ThriftClientRequest, Array[Byte]]
