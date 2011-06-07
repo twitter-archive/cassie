@@ -10,7 +10,7 @@ import com.twitter.finagle.Protocol
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
-import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.{Codec, ClientCodecConfig}
 
 /**
@@ -38,9 +38,9 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000,
-                            val statsReceiver: Option[StatsReceiver] = None ) extends ClientProvider {
+                            val statsReceiver: StatsReceiver = NullStatsReceiver ) extends ClientProvider {
 
-  private var builder = ClientBuilder()
+  private var service = ClientBuilder()
       .cluster(hosts)
       .protocol(CassandraProtocol(keyspace))
       .retries(retryAttempts)
@@ -49,13 +49,8 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
-
-  builder = statsReceiver match {
-    case Some(receiver) => builder.reportTo(receiver)
-    case None => builder
-  }
-
-  private val service = builder.build()
+      .reportTo(statsReceiver)
+      .build()
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 

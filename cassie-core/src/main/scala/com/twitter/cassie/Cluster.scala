@@ -7,7 +7,7 @@ import com.twitter.cassie.connection.SocketAddressCluster
 import com.twitter.cassie.connection.CCluster
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
-import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 
 /**
  * A Cassandra cluster.
@@ -40,7 +40,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
     _minConnectionsPerHost: Int = 1,
     _maxConnectionsPerHost: Int = 5,
     _removeAfterIdleForMS: Int = 60000,
-    _statsReceiver: Option[StatsReceiver] = None) {
+    _statsReceiver: StatsReceiver = NullStatsReceiver) {
 
     /**
       * connect to the cluster with the specified parameters */
@@ -76,6 +76,6 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
       copy(_removeAfterIdleForMS = r)
     /**
       * A finagle stats receiver for reporting. */
-    def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = Some(r))
+    def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = r)
   }
 }
