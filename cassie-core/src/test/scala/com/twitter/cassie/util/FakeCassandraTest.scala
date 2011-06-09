@@ -50,9 +50,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       val cf = keyspace().columnFamily[String, String, String]("bar")
       cf.insert("k", Column("b", "c")).get()
       cf.getRow("k").get().size must equal(1)
-      println("a")
       cf.getColumn("k", "b").get().size must equal(1)
-      println("b")
     }
 
     it("should be able to batch mutate") {
@@ -62,15 +60,12 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       batch.insert("k", Column("d", "e"))
       batch.execute().get()
       cf.getRow("k").get().size() must equal(2)
-      
+
       batch = cf.batch
       batch.removeColumn("k", "b")
       batch.removeColumn("k", "d")
-      println("rm")
       batch.execute().get()
-            println("rm")
       cf.getRow("k").get().size() must equal(0)
-      
     }
   }
 }

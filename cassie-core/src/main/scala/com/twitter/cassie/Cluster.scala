@@ -29,53 +29,56 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
   /**
     * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
     * @param name the keyspace's name */
-  def keyspace(name: String): KeyspaceBuilder = KeyspaceBuilder(name)
-
-  case class KeyspaceBuilder(
-    _name: String,
-    _mapHostsEvery: Duration = 10.minutes,
-    _retryAttempts: Int = 0,
-    _requestTimeoutInMS: Int = 10000,
-    _connectionTimeoutInMS: Int = 10000,
-    _minConnectionsPerHost: Int = 1,
-    _maxConnectionsPerHost: Int = 5,
-    _removeAfterIdleForMS: Int = 60000,
-    _statsReceiver: StatsReceiver = NullStatsReceiver) {
-
-    /**
-      * connect to the cluster with the specified parameters */
-    def connect(): Keyspace = {
-      val hosts = if (_mapHostsEvery > 0)
-        // either map the cluster for this keyspace: TODO: use all seed hosts
-        new ClusterRemapper(_name, seedHosts.head, _mapHostsEvery)
-      else
-        // or connect directly to the hosts that were given as seeds
-        new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
-
-      // TODO: move to builder pattern as well
-      val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver)
-      new Keyspace(_name, ccp)
-    }
-
-    /**
-      * @param d Cassie will query the cassandra cluster every [[d]] period
-      *          to refresh its host list. */
-    def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
-    def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
-    /**
-      * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
-    def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeoutInMS = r)
-    /**
-      * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]*/
-    def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectionTimeoutInMS = r)
-    def minConnectionsPerHost(m: Int): KeyspaceBuilder =
-      copy(_minConnectionsPerHost = m)
-    def maxConnectionsPerHost(m: Int): KeyspaceBuilder =
-      copy(_maxConnectionsPerHost = m)
-    def removeAfterIdleForMS(r: Int): KeyspaceBuilder =
-      copy(_removeAfterIdleForMS = r)
-    /**
-      * A finagle stats receiver for reporting. */
-    def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = r)
-  }
+  def keyspace(name: String): KeyspaceBuilder = KeyspaceBuilder(seedHosts, seedPort, name)
 }
+
+case class KeyspaceBuilder(
+  seedHosts: Set[String],
+  seedPort: Int,
+  _name: String,
+  _mapHostsEvery: Duration = 10.minutes,
+  _retryAttempts: Int = 0,
+  _requestTimeoutInMS: Int = 10000,
+  _connectionTimeoutInMS: Int = 10000,
+  _minConnectionsPerHost: Int = 1,
+  _maxConnectionsPerHost: Int = 5,
+  _removeAfterIdleForMS: Int = 60000,
+  _statsReceiver: StatsReceiver = NullStatsReceiver) {
+
+  /**
+    * connect to the cluster with the specified parameters */
+  def connect(): Keyspace = {
+    val hosts = if (_mapHostsEvery > 0)
+      // either map the cluster for this keyspace: TODO: use all seed hosts
+      new ClusterRemapper(_name, seedHosts.head, _mapHostsEvery)
+    else
+      // or connect directly to the hosts that were given as seeds
+      new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
+
+    // TODO: move to builder pattern as well
+    val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver)
+    new Keyspace(_name, ccp)
+  }
+
+  /**
+    * @param d Cassie will query the cassandra cluster every [[d]] period
+    *          to refresh its host list. */
+  def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
+  def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
+  /**
+    * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
+  def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeoutInMS = r)
+  /**
+    * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]*/
+  def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectionTimeoutInMS = r)
+  def minConnectionsPerHost(m: Int): KeyspaceBuilder =
+    copy(_minConnectionsPerHost = m)
+  def maxConnectionsPerHost(m: Int): KeyspaceBuilder =
+    copy(_maxConnectionsPerHost = m)
+  def removeAfterIdleForMS(r: Int): KeyspaceBuilder =
+    copy(_removeAfterIdleForMS = r)
+  /**
+    * A finagle stats receiver for reporting. */
+  def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = r)
+}
+
