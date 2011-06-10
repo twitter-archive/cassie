@@ -10,15 +10,20 @@ import com.twitter.util._
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 import CassieReducer._
+import scala.math._
+import com.twitter.conversions.time._
+
+import com.twitter.cassie.hadoop._
 
 object CassieReducer {
-  val DEFAULT_PAGE_SIZE = 1000
-  val DEFAULT_MAX_FUTURES = 1000
-  val MAX_FUTURES = "max_futures"
+  val DEFAULT_PAGE_SIZE = 100
   val PAGE_SIZE = "page_size"
   val KEYSPACE = "keyspace"
   val COLUMN_FAMILY = "column_family"
   val HOSTS = "hosts"
+  val MIN_BACKOFF = "min_backoff"
+  val MAX_BACKOFF = "max_backoff"
+  val IGNORE_FAILURES = "ignore_failures"
 }
 
 class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable] {
@@ -32,41 +37,74 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   var keyspace: Keyspace = null
   var columnFamily: ColumnFamily[ByteBuffer, ByteBuffer, ByteBuffer] = null
   var page: Int = CassieReducer.DEFAULT_PAGE_SIZE
-  var maxFutures: Int = CassieReducer.DEFAULT_MAX_FUTURES
   var i = 0
+  var consecutiveFailures = 0
+  var consecutiveSuccesses = 0
+
+  var minBackoff = 1000
+  var maxBackoff = 30000
+  var ignoreFailures = true
+
   var batch: BatchMutationBuilder[ByteBuffer, ByteBuffer, ByteBuffer] = null
-  var futures = new ListBuffer[Future[Void]]
 
   type ReducerContext = Reducer[BytesWritable, ColumnWritable, BytesWritable, BytesWritable]#Context
 
   override def setup(context: ReducerContext) = {
     def conf(key: String) = context.getConfiguration.get(key)
     cluster = new Cluster(conf(HOSTS))
+    if(conf(MIN_BACKOFF) != null ) minBackoff = Integer.valueOf(conf(MIN_BACKOFF)).intValue
+    if(conf(MAX_BACKOFF) != null ) maxBackoff = Integer.valueOf(conf(MAX_BACKOFF)).intValue
+    if(conf(IGNORE_FAILURES) != null ) ignoreFailures = conf(IGNORE_FAILURES) == "true"
     if(conf(PAGE_SIZE) != null ) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
-    if(conf(MAX_FUTURES) != null ) maxFutures = Integer.valueOf(conf(MAX_FUTURES)).intValue
-    keyspace = cluster.keyspace(conf(KEYSPACE)).retryAttempts(2).connect()
+
+
+    keyspace = configure(cluster.keyspace(conf(KEYSPACE))).connect()
     columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY))
     batch = columnFamily.batch
   }
 
-  override def reduce(key: BytesWritable, values: java.lang.Iterable[ColumnWritable], context: ReducerContext) = try {
+  def configure(c: KeyspaceBuilder): KeyspaceBuilder = {
+    c.retryAttempts(2)
+  }
+
+  override def reduce(key: BytesWritable, values: java.lang.Iterable[ColumnWritable], context: ReducerContext) = {
     for (value <- values) {
       val bufKey = bufCopy(ByteBuffer.wrap(key.getBytes, 0, key.getLength))
       batch.insert(bufKey, new Column(bufCopy(value.name), bufCopy(value.value)))
       i += 1
       if (i % page == 0) {
-        futures += batch.execute
+        execute(context)
+        consecutiveSuccesses += 1
+        consecutiveFailures = 0
         batch = columnFamily.batch
       }
-      if(futures.size == maxFutures) {
-        Future.join(futures)
-        futures = new ListBuffer[Future[Void]]
-      }
     }
+  }
+
+  private def execute(context: ReducerContext): Unit = try {
+    batch.execute.get()
+    context.getCounter(CassieCounters.Counters.SUCCESS).increment(1)
   } catch {
-    case e: Throwable =>
-      e.printStackTrace
-      throw(e)
+    case t: Throwable => {
+      t.printStackTrace
+      val toSleep = minBackoff * (1 << consecutiveFailures)
+      if(toSleep < maxBackoff) {
+        Thread.sleep(toSleep)
+        context.getCounter(CassieCounters.Counters.RETRY).increment(1)
+        execute(context)
+      } else {
+        context.getCounter(CassieCounters.Counters.FAILURE).increment(1)
+        if(ignoreFailures) {
+          System.err.println("Ignoring......")
+          t.printStackTrace
+          //continue
+        } else {
+          throw(t)
+        }
+      }
+      consecutiveSuccesses = 0
+      consecutiveFailures += 1
+    }
   }
 
   private def bufCopy(old: ByteBuffer) = {
@@ -76,8 +114,5 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
     n
   }
 
-  override def cleanup(context: ReducerContext) = {
-    futures += batch.execute
-    Future.join(futures)
-  }
+  override def cleanup(context: ReducerContext) = execute(context)
 }
