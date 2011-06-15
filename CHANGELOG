@@ -1,3 +1,6 @@
+# 0.9.1
+* upgrade to finagle 1.5.3
+
 # 0.9.0
 * switch from Option[StatsReceiver] to NullStatsReceiver as an optional parameter
 * improvements to the cassie reducer
