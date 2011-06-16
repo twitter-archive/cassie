@@ -23,7 +23,7 @@
 # Interface definition for Cassandra Service
 #
 
-namespace java org.apache.cassandra.finagle.thrift
+namespace java org.apache.cassandra.thrift
 namespace cpp org.apache.cassandra
 namespace csharp Apache.Cassandra
 namespace py cassandra
@@ -46,7 +46,7 @@ namespace rb CassandraThrift
 #           for every edit that doesn't result in a change to major/minor.
 #
 # See the Semantic Versioning Specification (SemVer) http://semver.org.
-const string VERSION = "19.4.0"
+const string VERSION = "19.10.0"
 
 
 #
@@ -61,8 +61,8 @@ const string VERSION = "19.4.0"
  */
 struct Column {
    1: required binary name,
-   2: required binary value,
-   3: required i64 timestamp,
+   2: optional binary value,
+   3: optional i64 timestamp,
    4: optional i32 ttl,
 }
 
@@ -76,6 +76,16 @@ struct SuperColumn {
    2: required list<Column> columns,
 }
 
+struct CounterColumn {
+    1: required binary name,
+    2: required i64 value
+}
+
+struct CounterSuperColumn {
+    1: required binary name,
+    2: required list<CounterColumn> columns
+}
+
 /**
     Methods for fetching rows/records from Cassandra will return either a single instance of ColumnOrSuperColumn or a list
     of ColumnOrSuperColumns (get_slice()). If you're looking up a SuperColumn (or list of SuperColumns) then the resulting
@@ -83,12 +93,19 @@ struct SuperColumn {
     in Columns, those values will be in the attribute column. This change was made between 0.3 and 0.4 to standardize on
     single query methods that may return either a SuperColumn or Column.
 
+    If the query was on a counter column family, you will either get a counter_column (instead of a column) or a 
+    counter_super_column (instead of a super_column)
+
     @param column. The Column returned by get() or get_slice().
     @param super_column. The SuperColumn returned by get() or get_slice().
+    @param counter_column. The Counterolumn returned by get() or get_slice().
+    @param counter_super_column. The CounterSuperColumn returned by get() or get_slice().
  */
 struct ColumnOrSuperColumn {
     1: optional Column column,
     2: optional SuperColumn super_column,
+    3: optional CounterColumn counter_column,
+    4: optional CounterSuperColumn counter_super_column
 }
 
 
@@ -126,33 +143,55 @@ exception AuthorizationException {
     1: required string why
 }
 
+/** schemas are not in agreement across all nodes */
+exception SchemaDisagreementException {
+}
+
 
 #
 # service api
 #
-/** The ConsistencyLevel is an enum that controls both read and write behavior based on <ReplicationFactor> in your
- * storage-conf.xml. The different consistency levels have different meanings, depending on if you're doing a write or read
- * operation. Note that if W + R > ReplicationFactor, where W is the number of nodes to block for on write, and R
- * the number to block for on reads, you will have strongly consistent behavior; that is, readers will always see the most
- * recent write. Of these, the most interesting is to do QUORUM reads and writes, which gives you consistency while still
- * allowing availability in the face of node failures up to half of <ReplicationFactor>. Of course if latency is more
- * important than consistency then you can use lower values for either or both.
+/** 
+ * The ConsistencyLevel is an enum that controls both read and write
+ * behavior based on the ReplicationFactor of the keyspace.  The
+ * different consistency levels have different meanings, depending on
+ * if you're doing a write or read operation. 
  *
+ * If W + R > ReplicationFactor, where W is the number of nodes to
+ * block for on write, and R the number to block for on reads, you
+ * will have strongly consistent behavior; that is, readers will
+ * always see the most recent write. Of these, the most interesting is
+ * to do QUORUM reads and writes, which gives you consistency while
+ * still allowing availability in the face of node failures up to half
+ * of <ReplicationFactor>. Of course if latency is more important than
+ * consistency then you can use lower values for either or both.
+ * 
+ * Some ConsistencyLevels (ONE, TWO, THREE) refer to a specific number
+ * of replicas rather than a logical concept that adjusts
+ * automatically with the replication factor.  Of these, only ONE is
+ * commonly used; TWO and (even more rarely) THREE are only useful
+ * when you care more about guaranteeing a certain level of
+ * durability, than consistency.
+ * 
  * Write consistency levels make the following guarantees before reporting success to the client:
  *   ANY          Ensure that the write has been written once somewhere, including possibly being hinted in a non-target node.
  *   ONE          Ensure that the write has been written to at least 1 node's commit log and memory table
+ *   TWO          Ensure that the write has been written to at least 2 node's commit log and memory table
+ *   THREE        Ensure that the write has been written to at least 3 node's commit log and memory table
  *   QUORUM       Ensure that the write has been written to <ReplicationFactor> / 2 + 1 nodes
  *   LOCAL_QUORUM Ensure that the write has been written to <ReplicationFactor> / 2 + 1 nodes, within the local datacenter (requires NetworkTopologyStrategy)
  *   EACH_QUORUM  Ensure that the write has been written to <ReplicationFactor> / 2 + 1 nodes in each datacenter (requires NetworkTopologyStrategy)
  *   ALL          Ensure that the write is written to <code>&lt;ReplicationFactor&gt;</code> nodes before responding to the client.
- *
- * Read:
+ * 
+ * Read consistency levels make the following guarantees before returning successful results to the client:
  *   ANY          Not supported. You probably want ONE instead.
- *   ONE          Will return the record returned by the first node to respond. A consistency check is always done in a background thread to fix any consistency issues when ConsistencyLevel.ONE is used. This means subsequent calls will have correct data even if the initial read gets an older value. (This is called 'read repair'.)
- *   QUORUM       Will query all storage nodes and return the record with the most recent timestamp once it has at least a majority of replicas reported. Again, the remaining replicas will be checked in the background.
+ *   ONE          Returns the record obtained from a single replica.
+ *   TWO          Returns the record with the most recent timestamp once two replicas have replied.
+ *   THREE        Returns the record with the most recent timestamp once three replicas have replied.
+ *   QUORUM       Returns the record with the most recent timestamp once a majority of replicas have replied.
  *   LOCAL_QUORUM Returns the record with the most recent timestamp once a majority of replicas within the local datacenter have replied.
  *   EACH_QUORUM  Returns the record with the most recent timestamp once a majority of replicas within each datacenter have replied.
- *   ALL          Queries all storage nodes and returns the record with the most recent timestamp.
+ *   ALL          Returns the record with the most recent timestamp once all replicas have replied (implies no replica may be down)..
 */
 enum ConsistencyLevel {
     ONE = 1,
@@ -161,6 +200,8 @@ enum ConsistencyLevel {
     EACH_QUORUM = 4,
     ALL = 5,
     ANY = 6,
+    TWO = 7,
+    THREE = 8,
 }
 
 /**
@@ -187,21 +228,6 @@ struct ColumnPath {
     3: required string column_family,
     4: optional binary super_column,
     5: optional binary column,
-}
-
-struct CounterColumn {
-    1: required binary name,
-    2: required i64 value
-}
-
-struct CounterSuperColumn {
-    1: required binary name,
-    2: required list<CounterColumn> columns
-}
-
-struct Counter {
-    1: optional CounterColumn column,
-    2: optional CounterSuperColumn super_column
 }
 
 /**
@@ -297,35 +323,23 @@ struct KeyCount {
     2: required i32 count
 }
 
+/**
+ * Note that the timestamp is only optional in case of counter deletion.
+ */
 struct Deletion {
-    1: required i64 timestamp,
+    1: optional i64 timestamp,
     2: optional binary super_column,
     3: optional SlicePredicate predicate,
 }
 
 /**
-    A Mutation is either an insert, represented by filling column_or_supercolumn, or a deletion, represented by filling the deletion attribute.
-    @param column_or_supercolumn. An insert to a column or supercolumn
+    A Mutation is either an insert (represented by filling column_or_supercolumn) or a deletion (represented by filling the deletion attribute).
+    @param column_or_supercolumn. An insert to a column or supercolumn (possibly counter column or supercolumn)
     @param deletion. A deletion of a column or supercolumn
 */
 struct Mutation {
     1: optional ColumnOrSuperColumn column_or_supercolumn,
     2: optional Deletion deletion,
-}
-
-struct CounterDeletion {
-    1: optional binary super_column,
-    2: optional SlicePredicate predicate,
-}
-
-/**
-    A CounterMutation is either an insert, represented by filling counter, or a deletion, represented by filling the deletion attribute.
-    @param counter. An insert to a counter column or supercolumn
-    @param deletion. A deletion of a counter column or supercolumn
-*/
-struct CounterMutation {
-    1: optional Counter counter,
-    2: optional CounterDeletion deletion,
 }
 
 struct TokenRange {
@@ -376,7 +390,11 @@ struct CfDef {
     21: optional i32 memtable_flush_after_mins,
     22: optional i32 memtable_throughput_in_mb,
     23: optional double memtable_operations_in_millions,
-    24: optional bool replicate_on_write=0,
+    24: optional bool replicate_on_write,
+    25: optional double merge_shards_chance,
+    26: optional string key_validation_class,
+    27: optional string row_cache_provider="org.apache.cassandra.cache.ConcurrentLinkedHashCacheProvider",
+    28: optional binary key_alias,
 }
 
 /* describes a keyspace. */
@@ -384,13 +402,18 @@ struct KsDef {
     1: required string name,
     2: required string strategy_class,
     3: optional map<string,string> strategy_options,
-    4: required i32 replication_factor,
+
+    /** @deprecated */
+    4: optional i32 replication_factor, 
+
     5: required list<CfDef> cf_defs,
+    6: optional bool durable_writes=1,
 }
 
 /** CQL query compression */
 enum Compression {
-    GZIP = 1
+    GZIP = 1,
+    NONE = 2
 }
 
 enum CqlResultType {
@@ -495,6 +518,15 @@ service Cassandra {
        throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
 
   /**
+   * Increment or decrement a counter.
+   */
+  void add(1:required binary key,
+           2:required ColumnParent column_parent,
+           3:required CounterColumn column,
+           4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
+       throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
+
+  /**
     Remove data from the row specified by key at the granularity specified by column_path, and the given timestamp. Note
     that all the values in column_path besides column_path.column_family are truly optional: you can remove the entire
     row by just specifying the ColumnFamily, or you can remove a SuperColumn or a single Column by specifying those levels too.
@@ -504,6 +536,17 @@ service Cassandra {
               3:required i64 timestamp,
               4:ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
        throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
+
+  /**
+   * Remove a counter at the specified location.
+   * Note that counters have limited support for deletes: if you remove a counter, you must wait to issue any following update
+   * until the delete has reached all the nodes and all of them have been fully compacted.
+   */
+  void remove_counter(1:required binary key,
+                      2:required ColumnPath path,
+                      3:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
+      throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
+
 
   /**
     Mutate many columns or super columns for many row keys. See also: Mutation.
@@ -525,57 +568,6 @@ service Cassandra {
   void truncate(1:required string cfname)
        throws (1: InvalidRequestException ire, 2: UnavailableException ue),
 
-
-  # counter methods
-  
-  /**
-   * Increment or decrement a counter.
-   */
-  void add(1:required binary key,
-           2:required ColumnParent column_parent,
-           3:required CounterColumn column,
-           4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-       throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
-  /**
-   * Batch increment or decrement a counter.
-   */
-  void batch_add(1:required map<binary, map<string, list<CounterMutation>>> update_map,
-                 2:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-       throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
-
-  /**
-   * Return the counter at the specified column path.
-   */
-  Counter get_counter(1:required binary key,
-                      2:required ColumnPath path,
-                      3:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-      throws (1:InvalidRequestException ire, 2:NotFoundException nfe, 3:UnavailableException ue, 4:TimedOutException te),
-
-  /**
-   * Get a list of counters from the specified columns.
-   */
-  list<Counter> get_counter_slice(1:required binary key,
-                                  2:required ColumnParent column_parent, 
-                                  3:required SlicePredicate predicate, 
-                                  4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-      throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
-  
-  /**
-   * Get counter slices from multiple keys.
-   */
-  map<binary,list<Counter>> multiget_counter_slice(1:required list<binary> keys,
-                                                   2:required ColumnParent column_parent,
-                                                   3:required SlicePredicate predicate, 
-                                                   4:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-      throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
-
-  /**
-   * Remove a counter at the specified location.
-   */
-  void remove_counter(1:required binary key,
-                      2:required ColumnPath path,
-                      3:required ConsistencyLevel consistency_level=ConsistencyLevel.ONE)
-      throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te),
 
     
   // Meta-APIs -- APIs to get information about the node or cluster,
@@ -628,36 +620,40 @@ service Cassandra {
   list<string> describe_splits(1:required string cfName,
                                2:required string start_token, 
                                3:required string end_token,
-                               4:required i32 keys_per_split),
+                               4:required i32 keys_per_split)
+    throws (1:InvalidRequestException ire),
 
   /** adds a column family. returns the new schema id. */
   string system_add_column_family(1:required CfDef cf_def)
-    throws (1:InvalidRequestException ire),
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
     
   /** drops a column family. returns the new schema id. */
   string system_drop_column_family(1:required string column_family)
-    throws (1:InvalidRequestException ire), 
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde), 
   
   /** adds a keyspace and any column families that are part of it. returns the new schema id. */
   string system_add_keyspace(1:required KsDef ks_def)
-    throws (1:InvalidRequestException ire),
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
   
   /** drops a keyspace and any column families that are part of it. returns the new schema id. */
   string system_drop_keyspace(1:required string keyspace)
-    throws (1:InvalidRequestException ire),
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
   
   /** updates properties of a keyspace. returns the new schema id. */
   string system_update_keyspace(1:required KsDef ks_def)
-    throws (1:InvalidRequestException ire),
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
         
   /** updates properties of a column family. returns the new schema id. */
   string system_update_column_family(1:required CfDef cf_def)
-    throws (1:InvalidRequestException ire),
+    throws (1:InvalidRequestException ire, 2:SchemaDisagreementException sde),
   
   /**
    * Executes a CQL (Cassandra Query Language) statement and returns a
    * CqlResult containing the results.
    */
   CqlResult execute_cql_query(1:required binary query, 2:required Compression compression)
-    throws (1:InvalidRequestException ire, 2:UnavailableException ue, 3:TimedOutException te)
+    throws (1:InvalidRequestException ire,
+            2:UnavailableException ue,
+            3:TimedOutException te,
+            4:SchemaDisagreementException sde)
 }

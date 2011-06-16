@@ -205,10 +205,6 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
   def truncate(cfname: String) = throw new UnsupportedOperationException
   def add(key: ByteBuffer, column_parent: ColumnParent, column: CounterColumn, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def batch_add(update_Map: Map[ByteBuffer,Map[String,List[CounterMutation]]], consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def get_counter(key: ByteBuffer, path: ColumnPath, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def get_counter_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def multiget_counter_slice(keys: List[ByteBuffer], column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
   def remove_counter(key: ByteBuffer, path: ColumnPath, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
   def describe_schema_versions() = throw new UnsupportedOperationException
   def describe_keyspaces() = throw new UnsupportedOperationException

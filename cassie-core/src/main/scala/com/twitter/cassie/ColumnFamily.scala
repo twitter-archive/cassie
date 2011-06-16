@@ -45,6 +45,7 @@ case class ColumnFamily[Key, Name, Value](
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
 
   def newColumn[N, V](n: N, v: V) = Column(n, v)
+  def newColumn[N, V](n: N, v: V, ts: Long) = new Column(n, v, Some(ts), None)
 
   private[cassie] def getColumnAs[K, N, V](key: K,
                            columnName: N)

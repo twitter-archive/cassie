@@ -6,7 +6,7 @@ import java.util.Collections.{singleton => singletonSet}
 
 import codecs.{Codec, Utf8Codec}
 import java.util.{ArrayList, HashMap}
-import org.apache.cassandra.finagle.thrift.{SlicePredicate, Deletion, Mutation, Column => TColumn, ColumnOrSuperColumn}
+import org.apache.cassandra.finagle.thrift.{SlicePredicate, Deletion, Mutation, ColumnOrSuperColumn}
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 
@@ -58,10 +58,16 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
           val timestamp = cf.clock.timestamp
           val cosc = new ColumnOrSuperColumn
           cosc.setColumn(
-            new TColumn(
-              cf.defaultNameCodec.encode(insert.column.name),
-              cf.defaultValueCodec.encode(insert.column.value),
-              insert.column.timestamp.getOrElse(timestamp)
+            Column.convert(
+              cf.defaultNameCodec,
+              cf.defaultValueCodec,
+              cf.clock,
+              new Column(
+                insert.column.name,
+                insert.column.value,
+                Some(insert.column.timestamp.getOrElse(timestamp)),
+                None
+              )
             )
           )
           val mutation = new Mutation
@@ -78,7 +84,8 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
           val pred = new SlicePredicate
           pred.setColumn_names(cf.encodeSet(deletions.columnNames)(cf.defaultNameCodec))
 
-          val deletion = new Deletion(timestamp)
+          val deletion = new Deletion()
+          deletion.setTimestamp(timestamp)
           deletion.setPredicate(pred)
 
           val mutation = new Mutation

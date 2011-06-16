@@ -64,11 +64,6 @@ public final class MockCassandraClient {
     when(client.multiget_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
         anySlicePredicate(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
-    when(client.get_counter_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(new ArrayList<Counter>()));
-    when(client.multiget_counter_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
-        anySlicePredicate(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(new HashMap<ByteBuffer, List<Counter>>()));
     when(client.add(anyByteBuffer(), anyColumnParent(), anyCounterColumn(), anyConsistencyLevel()))
         .thenReturn(new Fulfillment(null));
   }
