@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.util.{List => JList, Map, Set}
 import java.util.Collections.{singleton => singletonSet}
 
-import codecs.{Codec, Utf8Codec}
+import codecs.Codec
 import java.util.{ArrayList, HashMap}
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
@@ -50,12 +50,12 @@ private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFam
       op match {
         case Left(insert) => {
           val cosc = new TColumnOrSuperColumn()
-          val counterColumn = new TCounterColumn(cf.defaultNameCodec.encode(insert.column.name), insert.column.value)
+          val counterColumn = new TCounterColumn(cf.nameCodec.encode(insert.column.name), insert.column.value)
           cosc.setCounter_column(counterColumn)
           val mutation = new TMutation
           mutation.setColumn_or_supercolumn(cosc)
 
-          val encodedKey = cf.defaultKeyCodec.encode(insert.key)
+          val encodedKey = cf.keyCodec.encode(insert.key)
 
           val h = Option(mutations.get(encodedKey)).getOrElse{val x = new HashMap[String, JList[TMutation]]; mutations.put(encodedKey, x); x}
           val l = Option(h.get(cf.name)).getOrElse{ val y = new ArrayList[TMutation]; h.put(cf.name, y); y}
@@ -63,7 +63,7 @@ private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFam
         }
         case Right(deletions) => {
           val pred = new SlicePredicate
-          pred.setColumn_names(cf.encodeSet(deletions.columnNames)(cf.defaultNameCodec))
+          pred.setColumn_names(cf.encodeNames(deletions.columnNames))
 
           val deletion = new TDeletion
           deletion.setPredicate(pred)
@@ -71,7 +71,7 @@ private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFam
           val mutation = new TMutation
           mutation.setDeletion(deletion)
 
-          val encodedKey = cf.defaultKeyCodec.encode(deletions.key)
+          val encodedKey = cf.keyCodec.encode(deletions.key)
 
           val h = Option(mutations.get(encodedKey)).getOrElse{val x = new HashMap[String, JList[TMutation]]; mutations.put(encodedKey, x); x}
           val l = Option(h.get(cf.name)).getOrElse{ val y = new ArrayList[TMutation]; h.put(cf.name, y); y}
