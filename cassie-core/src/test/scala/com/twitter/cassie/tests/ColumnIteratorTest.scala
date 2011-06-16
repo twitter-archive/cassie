@@ -19,7 +19,10 @@ import com.twitter.cassie.MockCassandraClient.Fulfillment
 class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
   def newColumn(name: String, value: String, timestamp: Long) = {
     val cosc = new thrift.ColumnOrSuperColumn
-    cosc.setColumn(new thrift.Column(b(name), b(value), timestamp))
+    val col = new thrift.Column(b(name))
+    col.setValue(b(value))
+    col.setTimestamp(timestamp)
+    cosc.setColumn(col)
     cosc
   }
 

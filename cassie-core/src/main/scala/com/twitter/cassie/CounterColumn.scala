@@ -6,15 +6,6 @@ import org.apache.cassandra.finagle.thrift
 object CounterColumn {
 
   /**
-    * Convert from a thrift.Counter (like CoSC to a cassie CounterColumn) */
-  private[cassie] def convert[A](nameCodec: Codec[A], counter: thrift.Counter): CounterColumn[A] = {
-    CounterColumn(
-      nameCodec.decode(counter.column.name),
-      counter.column.value
-    )
-  }
-
-  /**
     * Convert from a thrift.CounterColumn to a cassie CounterColumn */
   private[cassie] def convert[A](nameCodec: Codec[A], counter: thrift.CounterColumn): CounterColumn[A] = {
     CounterColumn(

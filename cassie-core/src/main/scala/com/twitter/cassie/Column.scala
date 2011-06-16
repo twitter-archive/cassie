@@ -28,11 +28,9 @@ object Column {
   /**
     * Convert from a cassie Column to a thrift.Column */
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], clock: Clock, col: Column[A, B]): thrift.Column = {
-    val tColumn = new thrift.Column(
-      nameCodec.encode(col.name),
-      valueCodec.encode(col.value),
-      col.timestamp.getOrElse(clock.timestamp)
-    )
+    val tColumn = new thrift.Column(nameCodec.encode(col.name))
+    tColumn.setValue(valueCodec.encode(col.value))
+    tColumn.setTimestamp(col.timestamp.getOrElse(clock.timestamp))
     col.ttl.foreach { t => tColumn.setTtl(t.inSeconds) }
     tColumn
   }

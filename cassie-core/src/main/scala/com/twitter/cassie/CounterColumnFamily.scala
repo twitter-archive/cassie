@@ -4,12 +4,12 @@ import codecs.{Codec, Utf8Codec}
 import connection.ClientProvider
 
 import org.apache.cassandra.finagle.thrift
+import thrift.Mutation
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import thrift.CounterMutation
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future
@@ -143,14 +143,14 @@ case class CounterColumnFamily[Key, Name](
     log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
     val encodedKeys = encodeKeys(keys)
     provider.map {
-      _.multiget_counter_slice(encodedKeys, cp, pred, readConsistency.level)
+      _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       // decode result
       val rows: Map[Key, Map[Name, CounterColumn[Name]]] = new HashMap(result.size)
       for (rowEntry <- asScalaIterable(result.entrySet)) {
         val cols: Map[Name, CounterColumn[Name]] = new HashMap(rowEntry.getValue.size)
         for (counter <- asScalaIterable(rowEntry.getValue)) {
-          val col = CounterColumn.convert(defaultNameCodec, counter)
+          val col = CounterColumn.convert(defaultNameCodec, counter.getCounter_column)
           cols.put(col.name, col)
         }
         rows.put(defaultKeyCodec.decode(rowEntry.getKey), cols)
@@ -201,9 +201,9 @@ case class CounterColumnFamily[Key, Name](
    */
   def batch() = new CounterBatchMutationBuilder(this)
 
-  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[CounterMutation]]]) = {
+  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) = {
     log.debug("batch_add(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    provider.map { _.batch_add(mutations, writeConsistency.level) }
+    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
   private def getSlice[K, N, V](key: K,
@@ -211,11 +211,11 @@ case class CounterColumnFamily[Key, Name](
                                 keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N,CounterColumn[N]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_counter_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    provider.map { _.get_counter_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
+    provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
       .map { result =>
         val cols: Map[N,CounterColumn[N]] = new HashMap(result.size)
-        for (counter <- result.iterator) {
-          val col = CounterColumn.convert(nameCodec, counter)
+        for (c <- result.iterator) {
+          val col = CounterColumn.convert(nameCodec, c.getCounter_column)
           cols.put(col.name, col)
         }
         cols
