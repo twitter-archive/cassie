@@ -45,13 +45,6 @@ case class CounterColumnFamily[Key, Name](
    */
   def newColumn[N](n: N, v: Long) = CounterColumn(n, v)
 
-  private[cassie] def getColumnAs[K, N](key: K,
-                           columnName: N)
-                          (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Option[CounterColumn[N]]] = {
-    getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec)
-      .map { resmap => Option(resmap.get(columnName)) }
-  }
-
   /**
     * Get an individual column from a single row.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
@@ -60,12 +53,9 @@ case class CounterColumnFamily[Key, Name](
     * @param the name of the column */
   def getColumn(key: Key,
                 columnName: Name): Future[Option[CounterColumn[Name]]] = {
-    getColumnAs[Key, Name](key, columnName)(defaultKeyCodec, defaultNameCodec)
-  }
-
-  private[cassie] def getRowAs[K, N](key: K)
-                    (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[N, CounterColumn[N]]] = {
-    getRowSliceAs[K, N](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec)
+    getColumns(key, singletonSet(columnName)).map {
+      result => Option(result.get(columnName))
+    }
   }
 
   /**
@@ -75,23 +65,7 @@ case class CounterColumnFamily[Key, Name](
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key */
   def getRow(key: Key): Future[Map[Name, CounterColumn[Name]]] = {
-    getRowAs[Key, Name](key)(defaultKeyCodec, defaultNameCodec)
-  }
-
-  /**
-   * Returns a slice of all columns of a row as the given types.
-   */
-  private[cassie] def getRowSliceAs[K, N](key: K,
-                          startColumnName: Option[N],
-                          endColumnName: Option[N],
-                          count: Int,
-                          order: Order)
-                          (implicit keyCodec: Codec[K], nameCodec: Codec[N]) = {
-    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
-    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
-    val pred = new thrift.SlicePredicate()
-    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
-    getSlice(key, pred, keyCodec, nameCodec)
+    getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
   }
 
   /**
@@ -109,7 +83,11 @@ case class CounterColumnFamily[Key, Name](
                   endColumnName: Option[Name],
                   count: Int,
                   order: Order): Future[Map[Name, CounterColumn[Name]]] = {
-    getRowSliceAs[Key, Name](key, startColumnName, endColumnName, count, order)(defaultKeyCodec, defaultNameCodec)
+    val startBytes = startColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
+    val endBytes = endColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
+    getSlice(key, pred, defaultKeyCodec, defaultNameCodec)
   }
 
   private[cassie] def getColumnsAs[K, N](key: K,
@@ -128,20 +106,9 @@ case class CounterColumnFamily[Key, Name](
     * @param the column names you want */
   def getColumns(key: Key,
                  columnNames: Set[Name]): Future[Map[Name, CounterColumn[Name]]] = {
-    getColumnsAs[Key, Name](key, columnNames)(defaultKeyCodec, defaultNameCodec)
-  }
-
-  private[cassie] def multigetColumnAs[K, N](keys: Set[K],
-                             columnName: N)
-                             (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[K, CounterColumn[N]]] = {
-    multigetColumnsAs[K, N](keys, singletonSet(columnName))(keyCodec, nameCodec).map { rows =>
-      val cols: Map[K, CounterColumn[N]] = new HashMap(rows.size)
-      for (rowEntry <- asScalaIterable(rows.entrySet))
-        if (!rowEntry.getValue.isEmpty) {
-          cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
-        }
-      cols
-    }
+    val pred = new thrift.SlicePredicate()
+    pred.setColumn_names(encodeNames(columnNames))
+    getSlice(key, pred, defaultKeyCodec, defaultNameCodec)
   }
 
   /**
@@ -152,31 +119,14 @@ case class CounterColumnFamily[Key, Name](
     * @param the column name */
   def multigetColumn(keys: Set[Key],
                      columnName: Name): Future[Map[Key, CounterColumn[Name]]] = {
-    multigetColumnAs[Key, Name](keys, columnName)(defaultKeyCodec, defaultNameCodec)
-  }
-
-  private[cassie] def multigetColumnsAs[K, N](keys: Set[K],
-                              columnNames: Set[N])
-                             (implicit keyCodec: Codec[K], nameCodec: Codec[N]): Future[Map[K, Map[N, CounterColumn[N]]]] = {
-    val cp = new thrift.ColumnParent(name)
-    val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(encodeSet(columnNames))
-    log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    val encodedKeys = encodeSet(keys)
-    provider.map {
-      _.multiget_counter_slice(encodedKeys, cp, pred, readConsistency.level)
-    }.map { result =>
-      // decode result
-      val rows: Map[K, Map[N, CounterColumn[N]]] = new HashMap(result.size)
-      for (rowEntry <- asScalaIterable(result.entrySet)) {
-        val cols: Map[N, CounterColumn[N]] = new HashMap(rowEntry.getValue.size)
-        for (counter <- asScalaIterable(rowEntry.getValue)) {
-          val col = CounterColumn.convert(nameCodec, counter)
-          cols.put(col.name, col)
+    multigetColumns(keys, singletonSet(columnName)).map { rows => 
+      val cols: Map[Key, CounterColumn[Name]] = new HashMap(rows.size)
+      for (rowEntry <- asScalaIterable(rows.entrySet))
+        if (!rowEntry.getValue.isEmpty) {
+          cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
         }
-        rows.put(keyCodec.decode(rowEntry.getKey), cols)
-      }
-      rows
+      cols
+
     }
   }
 
@@ -187,23 +137,36 @@ case class CounterColumnFamily[Key, Name](
     * @param keys the row keys
     * @param columnNames the column names */
   def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
-    multigetColumnsAs[Key, Name](keys, columnNames)(defaultKeyCodec, defaultNameCodec)
+    val cp = new thrift.ColumnParent(name)
+    val pred = new thrift.SlicePredicate()
+    pred.setColumn_names(encodeNames(columnNames))
+    log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
+    val encodedKeys = encodeKeys(keys)
+    provider.map {
+      _.multiget_counter_slice(encodedKeys, cp, pred, readConsistency.level)
+    }.map { result =>
+      // decode result
+      val rows: Map[Key, Map[Name, CounterColumn[Name]]] = new HashMap(result.size)
+      for (rowEntry <- asScalaIterable(result.entrySet)) {
+        val cols: Map[Name, CounterColumn[Name]] = new HashMap(rowEntry.getValue.size)
+        for (counter <- asScalaIterable(rowEntry.getValue)) {
+          val col = CounterColumn.convert(defaultNameCodec, counter)
+          cols.put(col.name, col)
+        }
+        rows.put(defaultKeyCodec.decode(rowEntry.getKey), cols)
+      }
+      rows
+    }
   }
 
   /**
    * Increments a column. */
   def add(key: Key, column: CounterColumn[Name]) = {
-    addAs(key, column)(defaultKeyCodec, defaultNameCodec)
-  }
-
-  private[cassie] def addAs[K, N](key: K, column: CounterColumn[N])
-                  (implicit keyCodec: Codec[K], nameCodec: Codec[N]) = {
     val cp = new thrift.ColumnParent(name)
-    val col = CounterColumn.convert(nameCodec, column)
-    log.debug("add(%s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      writeConsistency.level)
+    val col = CounterColumn.convert(defaultNameCodec, column)
+    log.debug("add(%s, %s, %s, %d, %s)", keyspace, key, cp, column.value, writeConsistency.level)
     provider.map {
-      _.add(keyCodec.encode(key), cp, col, writeConsistency.level)
+      _.add(defaultKeyCodec.encode(key), cp, col, writeConsistency.level)
     }
   }
 
@@ -265,6 +228,22 @@ case class CounterColumnFamily[Key, Name](
       output.add(codec.encode(value))
     output
   }
+
+  def encodeNames(values: Set[Name]): List[ByteBuffer] = {
+    val output = new ArrayList[ByteBuffer](values.size)
+    for (value <- asScalaIterable(values))
+      output.add(defaultNameCodec.encode(value))
+    output
+  }
+
+  def encodeKeys(values: Set[Key]): List[ByteBuffer] = {
+    val output = new ArrayList[ByteBuffer](values.size)
+    for (value <- asScalaIterable(values))
+      output.add(defaultKeyCodec.encode(value))
+    output
+  }
+
+
 }
 
 private[cassie] object CounterColumnFamily
