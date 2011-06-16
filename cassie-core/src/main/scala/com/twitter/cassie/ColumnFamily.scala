@@ -229,13 +229,13 @@ case class ColumnFamily[Key, Name, Value](
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  private[cassie] def columnsIterateeAs[K, N, V](key: K, batchSize: Int)
+  private[cassie] def columnsIterateeAs[K, N, V](batchSize: Int, key: K)
       (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
     new ColumnIteratee(this, keyCodec.encode(key), keyCodec.encode(key), batchSize, new thrift.SlicePredicate, keyCodec, nameCodec, valueCodec)
   }
 
-  def columnsIteratee(key: Key, batchSize: Int): ColumnIteratee[Key, Name, Value] =
-    columnsIterateeAs[Key, Name, Value](key, batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  def columnsIteratee(batchSize: Int, key: Key): ColumnIteratee[Key, Name, Value] =
+    columnsIterateeAs[Key, Name, Value](batchSize, key)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   def columnsIteratee(batchSize: Int,
                       columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {

@@ -25,6 +25,14 @@ class Keyspace(val name: String, val provider: ClientProvider) {
     new ColumnFamily(this.name, name, provider, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   /**
+   * Returns a CounterColumnFamily with the given name and column codecs
+   */
+  def counterColumnFamily[Key, Name](name: String)
+    (implicit defaultKeyCodec: Codec[Key],
+              defaultNameCodec: Codec[Name]) =
+    new CounterColumnFamily(this.name, name, provider, defaultKeyCodec, defaultNameCodec)
+
+  /**
     * Execute batch mutations across column families. To use this, build a separate BatchMutationBuilder
     *   for each CF, then send them all to this method.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
