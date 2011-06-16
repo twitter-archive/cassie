@@ -23,7 +23,7 @@
 # Interface definition for Cassandra Service
 #
 
-namespace java org.apache.cassandra.thrift
+namespace java org.apache.cassandra.finagle.thrift
 namespace cpp org.apache.cassandra
 namespace csharp Apache.Cassandra
 namespace py cassandra
