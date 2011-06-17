@@ -15,7 +15,7 @@ import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import com.twitter.util.Future
 import java.util.{HashMap, Map, List, ArrayList}
 import java.nio.ByteBuffer
-import org.apache.cassandra.finagle.thrift.{Mutation, Column => TColumn, ColumnOrSuperColumn}
+import org.apache.cassandra.finagle.thrift
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -74,8 +74,8 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
 
       // java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]
       val expectedMutations = tmp.mutations
-      val tmpMap = new ArrayList[Map[String, List[Mutation]]](expectedMutations.values).get(0)
-      val col = new ArrayList[List[Mutation]](tmpMap.values).get(0)
+      val tmpMap = new ArrayList[Map[String, List[thrift.Mutation]]](expectedMutations.values).get(0)
+      val col = new ArrayList[List[thrift.Mutation]](tmpMap.values).get(0)
       tmpMap.put("Dogs", col)
 
 

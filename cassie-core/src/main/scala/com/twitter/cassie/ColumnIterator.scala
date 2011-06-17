@@ -8,7 +8,6 @@ import com.twitter.util.Future
 import codecs.Codec
 
 import collection.mutable.ArrayBuffer
-import org.apache.cassandra.finagle.thrift.{ColumnOrSuperColumn, KeySlice, SlicePredicate}
 
 /**
   * A fully synchronous wrapper around ColumnIteratee */

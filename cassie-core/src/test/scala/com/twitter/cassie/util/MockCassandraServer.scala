@@ -3,7 +3,7 @@ package com.twitter.cassie.tests.util
 
 import java.util.concurrent.atomic.AtomicInteger
 import org.mockito.Mockito.mock
-import org.apache.cassandra.finagle.thrift.Cassandra
+import org.apache.cassandra.finagle.thrift
 import org.apache.thrift.transport.{TServerSocket, TFramedTransport}
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.TThreadPoolServer
@@ -18,7 +18,7 @@ object MockCassandraServer {
  * port.
  */
 class MockCassandraServer(val port: Int) {
-  val cassandra = mock(classOf[Cassandra.Iface])
+  val cassandra = mock(classOf[thrift.Cassandra.Iface])
   val thread = new FakeCassandra.ServerThread(cassandra, port)
 
   def start() {

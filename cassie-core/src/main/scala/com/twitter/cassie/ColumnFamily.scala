@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import org.apache.cassandra.finagle.thrift.Mutation
+import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future
@@ -198,7 +198,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def batch() = new BatchMutationBuilder(this)
 
-  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]) = {
+  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
@@ -229,14 +229,6 @@ case class ColumnFamily[Key, Name, Value](
     pred.setColumn_names(encodeSet(columnNames))
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
-
-  private[cassie] def columnsIterateeAs[K, N, V](batchSize: Int, key: K)
-      (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
-    new ColumnIteratee(this, keyCodec.encode(key), keyCodec.encode(key), batchSize, new thrift.SlicePredicate, keyCodec, nameCodec, valueCodec)
-  }
-
-  def columnsIteratee(batchSize: Int, key: Key): ColumnIteratee[Key, Name, Value] =
-    columnsIterateeAs[Key, Name, Value](batchSize, key)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
 
   def columnsIteratee(batchSize: Int,
                       columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {

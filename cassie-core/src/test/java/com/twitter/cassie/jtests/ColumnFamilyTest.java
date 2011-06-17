@@ -10,9 +10,7 @@ import com.twitter.cassie.clocks.MicrosecondEpochClock;
 import com.twitter.cassie.codecs.Codec;
 import com.twitter.cassie.codecs.Utf8Codec;
 
-import org.apache.cassandra.finagle.thrift.SlicePredicate;
-import org.apache.cassandra.finagle.thrift.ColumnParent;
-import org.apache.cassandra.finagle.thrift.ConsistencyLevel;
+import org.apache.cassandra.finagle.thrift;
 
 import org.junit.Test;
 import org.junit.Before;
@@ -37,10 +35,10 @@ public class ColumnFamilyTest {
         Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get(),
         ReadConsistency.Quorum(), WriteConsistency.Quorum());
     cf.getColumn("key", "name");
-    ColumnParent cp = new ColumnParent("cf");
-    ArgumentCaptor<SlicePredicate> pred = ArgumentCaptor.forClass(SlicePredicate.class);
+    thrift.ColumnParent cp = new thrift.ColumnParent("cf");
+    ArgumentCaptor<thrift.SlicePredicate> pred = ArgumentCaptor.forClass(thrift.SlicePredicate.class);
     verify(mock.client).get_slice(eq(codec.encode("key")), eq(cp),
-        pred.capture(), eq(ConsistencyLevel.QUORUM));
+        pred.capture(), eq(thrift.ConsistencyLevel.QUORUM));
     for (ByteBuffer name : pred.getValue().getColumn_names()) {
       assertEquals(codec.decode(name), "name");
     }

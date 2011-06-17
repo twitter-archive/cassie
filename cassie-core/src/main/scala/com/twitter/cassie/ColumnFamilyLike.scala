@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import org.apache.cassandra.finagle.thrift.Mutation
+import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future

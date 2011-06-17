@@ -1,12 +1,11 @@
 package com.twitter.cassie
 
-import clocks.Clock
 import codecs.Codec
 import connection.ClientProvider
 import com.twitter.util.Future
 import scala.collection.JavaConversions._
-import java.util.{HashMap, Map, List, ArrayList}
-import org.apache.cassandra.finagle.thrift.Mutation
+import java.util.{HashMap => JHashMap, Map => JMap, List => JList, ArrayList => JArrayList}
+import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
 
 /**
@@ -42,18 +41,17 @@ class Keyspace(val name: String, val provider: ClientProvider) {
   def execute(batches: Seq[BatchMutationBuilder[_, _, _]]): Future[Void] = {
     if(batches.size == 0) return Future.void
 
-    val mutations = new HashMap[ByteBuffer, Map[String, List[Mutation]]]
+    val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
 
-    // java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]
     batches.map(_.mutations).foreach { ms =>
       for ((row, inner) <- ms) {
         if (!mutations.containsKey(row)) {
-          mutations.put(row, new HashMap[String, List[Mutation]])
+          mutations.put(row, new JHashMap[String, JList[thrift.Mutation]])
         }
         val oldRowMap = mutations.get(row)
         for ((cf, mutationList) <- inner) {
           if (!oldRowMap.containsKey(cf)) {
-            oldRowMap.put(cf, new ArrayList[Mutation])
+            oldRowMap.put(cf, new JArrayList[thrift.Mutation])
           }
           val oldList = oldRowMap.get(cf)
           oldList.addAll(mutationList)
