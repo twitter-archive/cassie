@@ -1,7 +1,7 @@
 package com.twitter.cassie.tests.examples
 
 import com.twitter.cassie._
-import com.twitter.cassie.Codecs._
+import com.twitter.cassie.codecs.Utf8Codec
 import com.twitter.logging.Logger
 import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
 // TODO: unfortunate
@@ -24,7 +24,7 @@ object CassieRun {
       .connect()
 
     // create a column family
-    val cass = keyspace.columnFamily[String, String, String]("Standard1")
+    val cass = keyspace.columnFamily[String, String, String]("Standard1", Utf8Codec, Utf8Codec, Utf8Codec)
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda")).apply()
