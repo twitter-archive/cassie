@@ -45,37 +45,35 @@ private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFam
   private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
     val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]()
 
-    ops.map { op =>
-      op match {
-        case Left(insert) => {
-          val cosc = new thrift.ColumnOrSuperColumn()
-          val counterColumn = new thrift.CounterColumn(cf.nameCodec.encode(insert.column.name), insert.column.value)
-          cosc.setCounter_column(counterColumn)
-          val mutation = new thrift.Mutation
-          mutation.setColumn_or_supercolumn(cosc)
+    ops.map {
+      case Left(insert) => {
+        val cosc = new thrift.ColumnOrSuperColumn()
+        val counterColumn = new thrift.CounterColumn(cf.nameCodec.encode(insert.column.name), insert.column.value)
+        cosc.setCounter_column(counterColumn)
+        val mutation = new thrift.Mutation
+        mutation.setColumn_or_supercolumn(cosc)
 
-          val encodedKey = cf.keyCodec.encode(insert.key)
+        val encodedKey = cf.keyCodec.encode(insert.key)
 
-          val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-          val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
-          l.add(mutation)
-        }
-        case Right(deletions) => {
-          val pred = new thrift.SlicePredicate
-          pred.setColumn_names(cf.encodeNames(deletions.columnNames))
+        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
+        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        l.add(mutation)
+      }
+      case Right(deletions) => {
+        val pred = new thrift.SlicePredicate
+        pred.setColumn_names(cf.encodeNames(deletions.columnNames))
 
-          val deletion = new thrift.Deletion
-          deletion.setPredicate(pred)
+        val deletion = new thrift.Deletion
+        deletion.setPredicate(pred)
 
-          val mutation = new thrift.Mutation
-          mutation.setDeletion(deletion)
+        val mutation = new thrift.Mutation
+        mutation.setDeletion(deletion)
 
-          val encodedKey = cf.keyCodec.encode(deletions.key)
+        val encodedKey = cf.keyCodec.encode(deletions.key)
 
-          val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-          val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
-          l.add(mutation)
-        }
+        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
+        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        l.add(mutation)
       }
     }
     mutations
