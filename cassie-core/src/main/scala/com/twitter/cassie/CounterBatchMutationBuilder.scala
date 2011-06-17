@@ -9,6 +9,7 @@ import codecs.Codec
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 import org.apache.cassandra.finagle.thrift
+import com.twitter.util.Future
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call for counters.
@@ -36,10 +37,13 @@ private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFam
   }
 
   /**
-   * Submits the batch of operations, returning a future to allow blocking for success.
-   */
+    * Submits the batch of operations, returning a future to allow blocking for success. */
   def execute() = {
-    cf.batch(mutations)
+    try {
+      cf.batch(mutations)
+    } catch {
+      case e => Future.exception(e)
+    }
   }
 
   private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {

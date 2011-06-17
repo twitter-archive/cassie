@@ -7,6 +7,7 @@ import java.util.Collections.{singleton => singletonJSet}
 
 import org.apache.cassandra.finagle.thrift
 import scala.collection.mutable.ListBuffer
+import com.twitter.util.Future
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
@@ -41,10 +42,13 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
   }
 
   /**
-   * Submits the batch of operations, returning a future to allow blocking for success.
-   */
+    * Submits the batch of operations, returning a Future[Void] to allow blocking for success. */
   def execute() = {
-    cf.batch(mutations)
+    try {
+      cf.batch(mutations)
+    }  catch {
+      case e => Future.exception(e)
+    }
   }
 
   private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
