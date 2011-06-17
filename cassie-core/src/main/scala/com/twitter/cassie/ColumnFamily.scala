@@ -11,7 +11,7 @@ import java.util.Collections.{singleton => singletonSet}
 
 import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
 import org.apache.cassandra.finagle.thrift
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions._ // TODO get rid of this
 
 import com.twitter.util.Future
 
@@ -47,25 +47,14 @@ case class ColumnFamily[Key, Name, Value](
   def newColumn[N, V](n: N, v: V) = Column(n, v)
   def newColumn[N, V](n: N, v: V, ts: Long) = new Column(n, v, Some(ts), None)
 
-  private[cassie] def getColumnAs[K, N, V](key: K,
-                           columnName: N)
-                          (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Option[Column[N, V]]] = {
-    getColumnsAs(key, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
-      .map { resmap => Option(resmap.get(columnName)) }
-  }
-
   def getColumn(key: Key,
                 columnName: Name): Future[Option[Column[Name, Value]]] = {
-    getColumnAs[Key, Name, Value](key, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+    getColumns(key, singletonSet(columnName)).map { result => Option(result.get(columnName))}
   }
 
-  private[cassie] def getRowAs[K, N, V](key: K)
-                    (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
-    getRowSliceAs[K, N, V](key, None, None, Int.MaxValue, Order.Normal)(keyCodec, nameCodec, valueCodec)
-  }
 
   def getRow(key: Key): Future[Map[Name, Column[Name, Value]]] = {
-    getRowAs[Key, Name, Value](key)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+    getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
   }
 
   private[cassie] def getRowSliceAs[K, N, V](key: K,
@@ -86,28 +75,22 @@ case class ColumnFamily[Key, Name, Value](
                   endColumnName: Option[Name],
                   count: Int,
                   order: Order): Future[Map[Name, Column[Name, Value]]] = {
-    getRowSliceAs[Key, Name, Value](key, startColumnName, endColumnName, count, order)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  }
-
-  private[cassie] def getColumnsAs[K, N, V](key: K,
-                            columnNames: Set[N])
-                           (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N, Column[N, V]]] = {
+    val startBytes = startColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
+    val endBytes = endColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(encodeSet(columnNames))
-    getSlice(key, pred, keyCodec, nameCodec, valueCodec)
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
+    getSlice(key, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  def getColumns(key: Key,
-                 columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]] = {
-    getColumnsAs[Key, Name, Value](key, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+  def getColumns(key: Key, columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]] = {
+    val pred = new thrift.SlicePredicate()
+    pred.setColumn_names(encodeNames(columnNames))
+    getSlice(key, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-
-  private[cassie] def multigetColumnAs[K, N, V](keys: Set[K],
-                                columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Column[N, V]]] = {
-    multigetColumnsAs[K, N, V](keys, singletonSet(columnName))(keyCodec, nameCodec, valueCodec).map { rows =>
-      val cols: Map[K, Column[N, V]] = new HashMap(rows.size)
+  def multigetColumn(keys: Set[Key], columnName: Name): Future[Map[Key, Column[Name, Value]]] = {
+    multigetColumns(keys, singletonSet(columnName)).map { rows =>
+      val cols: Map[Key, Column[Name, Value]] = new HashMap(rows.size)
       for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty)
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
@@ -115,52 +98,36 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  def multigetColumn(keys: Set[Key],
-                     columnName: Name): Future[Map[Key, Column[Name, Value]]] = {
-    multigetColumnAs[Key, Name, Value](keys, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  }
-
-  private[cassie] def multigetColumnsAs[K, N, V](keys: Set[K],
-                              columnNames: Set[N])
-                             (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[K, Map[N, Column[N, V]]]] = {
+  def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(encodeSet(columnNames))
+    pred.setColumn_names(encodeNames(columnNames))
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    val encodedKeys = encodeSet(keys)
+    val encodedKeys = encodeKeys(keys)
     provider.map {
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       // decode result
-      val rows: Map[K, Map[N, Column[N, V]]] = new HashMap(result.size)
+      val rows: Map[Key, Map[Name, Column[Name, Value]]] = new HashMap(result.size)
       for (rowEntry <- asScalaIterable(result.entrySet)) {
-        val cols: Map[N, Column[N, V]] = new HashMap(rowEntry.getValue.size)
+        val cols: Map[Name, Column[Name, Value]] = new HashMap(rowEntry.getValue.size)
         for (cosc <- asScalaIterable(rowEntry.getValue)) {
-          val col = Column.convert(nameCodec, valueCodec, cosc)
+          val col = Column.convert(defaultNameCodec, defaultValueCodec, cosc)
           cols.put(col.name, col)
         }
-        rows.put(keyCodec.decode(rowEntry.getKey), cols)
+        rows.put(defaultKeyCodec.decode(rowEntry.getKey), cols)
       }
       rows
     }
   }
 
-  def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
-    multigetColumnsAs[Key, Name, Value](keys, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  }
-
   def insert(key: Key, column: Column[Name, Value]) = {
-    insertAs(key, column)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  }
-
-  private[cassie] def insertAs[K, N, V](key: K, column: Column[N, V])
-                  (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]) = {
     val cp = new thrift.ColumnParent(name)
-    val col = Column.convert(nameCodec, valueCodec, clock, column)
+    val col = Column.convert(defaultNameCodec, defaultValueCodec, clock, column)
     log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
       col.timestamp, writeConsistency.level)
     provider.map {
-      _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
+      _.insert(defaultKeyCodec.encode(key), cp, col, writeConsistency.level)
     }
   }
 
@@ -203,36 +170,20 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
-  private[cassie] def rowIterateeAs[K, N, V](batchSize: Int)
-                         (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
+  def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
     val pred = new thrift.SlicePredicate
     pred.setSlice_range(new thrift.SliceRange(EMPTY, EMPTY, false, Int.MaxValue))
-    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
-
-  def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
-    rowIterateeAs[Key, Name, Value](batchSize)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
-  }
-
-  private[cassie] def columnIterateeAs[K, N, V](batchSize: Int, columnName: N)
-                               (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] =
-    columnsIterateeAs(batchSize, singletonSet(columnName))(keyCodec, nameCodec, valueCodec)
 
   def columnIteratee(batchSize: Int,
                      columnName: Name): ColumnIteratee[Key, Name, Value] =
-    columnIterateeAs[Key, Name, Value](batchSize, columnName)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+    columnsIteratee(batchSize, singletonSet(columnName))
 
-  private[cassie] def columnsIterateeAs[K, N, V](batchSize: Int,
-                                 columnNames: Set[N])
-                                (implicit keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): ColumnIteratee[K, N, V] = {
+  def columnsIteratee(batchSize: Int, columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {
     val pred = new thrift.SlicePredicate
-    pred.setColumn_names(encodeSet(columnNames))
-    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
-  }
-
-  def columnsIteratee(batchSize: Int,
-                      columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {
-    columnsIterateeAs[Key, Name, Value](batchSize, columnNames)(defaultKeyCodec, defaultNameCodec, defaultValueCodec)
+    pred.setColumn_names(encodeNames(columnNames))
+    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
   private def getSlice[K, N, V](key: K,
@@ -267,6 +218,20 @@ case class ColumnFamily[Key, Name, Value](
     val output = new ArrayList[ByteBuffer](values.size)
     for (value <- asScalaIterable(values))
       output.add(codec.encode(value))
+    output
+  }
+
+  def encodeNames(values: Set[Name]): List[ByteBuffer] = {
+    val output = new ArrayList[ByteBuffer](values.size)
+    for (value <- asScalaIterable(values))
+      output.add(defaultNameCodec.encode(value))
+    output
+  }
+
+  def encodeKeys(values: Set[Key]): List[ByteBuffer] = {
+    val output = new ArrayList[ByteBuffer](values.size)
+    for (value <- asScalaIterable(values))
+      output.add(defaultKeyCodec.encode(value))
     output
   }
 }
