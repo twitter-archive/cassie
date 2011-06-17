@@ -1,15 +1,16 @@
 package com.twitter.cassie
 
 import clocks.{MicrosecondEpochClock, Clock}
-import codecs.{Codec, Utf8Codec}
+import codecs.{Codec}
 import connection.ClientProvider
 
 import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
-import java.util.Collections.{singleton => singletonSet}
+import java.util.Collections.{singleton => singletonJSet}
 
-import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
+import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList, 
+  Map => JMap, Set => JSet}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 
@@ -49,11 +50,11 @@ case class ColumnFamily[Key, Name, Value](
 
   def getColumn(key: Key,
                 columnName: Name): Future[Option[Column[Name, Value]]] = {
-    getColumns(key, singletonSet(columnName)).map { result => Option(result.get(columnName))}
+    getColumns(key, singletonJSet(columnName)).map { result => Option(result.get(columnName))}
   }
 
 
-  def getRow(key: Key): Future[Map[Name, Column[Name, Value]]] = {
+  def getRow(key: Key): Future[JMap[Name, Column[Name, Value]]] = {
     getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
   }
 
@@ -74,7 +75,7 @@ case class ColumnFamily[Key, Name, Value](
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
                   count: Int,
-                  order: Order): Future[Map[Name, Column[Name, Value]]] = {
+                  order: Order): Future[JMap[Name, Column[Name, Value]]] = {
     val startBytes = startColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
     val endBytes = endColumnName.map { c => defaultNameCodec.encode(c) }.getOrElse(EMPTY)
     val pred = new thrift.SlicePredicate()
@@ -82,15 +83,15 @@ case class ColumnFamily[Key, Name, Value](
     getSlice(key, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  def getColumns(key: Key, columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]] = {
+  def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(encodeNames(columnNames))
     getSlice(key, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
   }
 
-  def multigetColumn(keys: Set[Key], columnName: Name): Future[Map[Key, Column[Name, Value]]] = {
-    multigetColumns(keys, singletonSet(columnName)).map { rows =>
-      val cols: Map[Key, Column[Name, Value]] = new HashMap(rows.size)
+  def multigetColumn(keys: JSet[Key], columnName: Name): Future[JMap[Key, Column[Name, Value]]] = {
+    multigetColumns(keys, singletonJSet(columnName)).map { rows =>
+      val cols: JMap[Key, Column[Name, Value]] = new JHashMap(rows.size)
       for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty)
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
@@ -98,7 +99,7 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  def multigetColumns(keys: Set[Key], columnNames: Set[Name]) = {
+  def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
     val cp = new thrift.ColumnParent(name)
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(encodeNames(columnNames))
@@ -108,9 +109,9 @@ case class ColumnFamily[Key, Name, Value](
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       // decode result
-      val rows: Map[Key, Map[Name, Column[Name, Value]]] = new HashMap(result.size)
+      val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
       for (rowEntry <- asScalaIterable(result.entrySet)) {
-        val cols: Map[Name, Column[Name, Value]] = new HashMap(rowEntry.getValue.size)
+        val cols: JMap[Name, Column[Name, Value]] = new JHashMap(rowEntry.getValue.size)
         for (cosc <- asScalaIterable(rowEntry.getValue)) {
           val col = Column.convert(defaultNameCodec, defaultValueCodec, cosc)
           cols.put(col.name, col)
@@ -141,13 +142,13 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.remove(defaultKeyCodec.encode(key), cp, timestamp, writeConsistency.level) }
   }
 
-  def removeColumns(key: Key, columnNames: Set[Name]): Future[Void] = {
+  def removeColumns(key: Key, columnNames: JSet[Name]): Future[Void] = {
     batch()
       .removeColumns(key, columnNames)
       .execute()
   }
 
-  def removeColumns(key: Key, columnNames: Set[Name], timestamp: Long): Future[Void] = {
+  def removeColumns(key: Key, columnNames: JSet[Name], timestamp: Long): Future[Void] = {
     batch()
       .removeColumns(key, columnNames, timestamp)
       .execute()
@@ -165,7 +166,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def batch() = new BatchMutationBuilder(this)
 
-  private[cassie] def batch(mutations: java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[thrift.Mutation]]]) = {
+  private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
@@ -178,9 +179,9 @@ case class ColumnFamily[Key, Name, Value](
 
   def columnIteratee(batchSize: Int,
                      columnName: Name): ColumnIteratee[Key, Name, Value] =
-    columnsIteratee(batchSize, singletonSet(columnName))
+    columnsIteratee(batchSize, singletonJSet(columnName))
 
-  def columnsIteratee(batchSize: Int, columnNames: Set[Name]): ColumnIteratee[Key, Name, Value] = {
+  def columnsIteratee(batchSize: Int, columnNames: JSet[Name]): ColumnIteratee[Key, Name, Value] = {
     val pred = new thrift.SlicePredicate
     pred.setColumn_names(encodeNames(columnNames))
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, defaultKeyCodec, defaultNameCodec, defaultValueCodec)
@@ -188,12 +189,12 @@ case class ColumnFamily[Key, Name, Value](
 
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
-                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[Map[N,Column[N,V]]] = {
+                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[JMap[N,Column[N,V]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
       .map { result =>
-        val cols: Map[N,Column[N,V]] = new HashMap(result.size)
+        val cols: JMap[N,Column[N,V]] = new JHashMap(result.size)
         for (cosc <- result.iterator) {
           val col = Column.convert(nameCodec, valueCodec, cosc)
           cols.put(col.name, col)
@@ -214,22 +215,22 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
   }
 
-  def encodeSet[V](values: Set[V])(implicit codec: Codec[V]): List[ByteBuffer] = {
-    val output = new ArrayList[ByteBuffer](values.size)
+  def encodeSet[V](values: JSet[V])(implicit codec: Codec[V]): JList[ByteBuffer] = {
+    val output = new JArrayList[ByteBuffer](values.size)
     for (value <- asScalaIterable(values))
       output.add(codec.encode(value))
     output
   }
 
-  def encodeNames(values: Set[Name]): List[ByteBuffer] = {
-    val output = new ArrayList[ByteBuffer](values.size)
+  def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {
+    val output = new JArrayList[ByteBuffer](values.size)
     for (value <- asScalaIterable(values))
       output.add(defaultNameCodec.encode(value))
     output
   }
 
-  def encodeKeys(values: Set[Key]): List[ByteBuffer] = {
-    val output = new ArrayList[ByteBuffer](values.size)
+  def encodeKeys(values: JSet[Key]): JList[ByteBuffer] = {
+    val output = new JArrayList[ByteBuffer](values.size)
     for (value <- asScalaIterable(values))
       output.add(defaultKeyCodec.encode(value))
     output
