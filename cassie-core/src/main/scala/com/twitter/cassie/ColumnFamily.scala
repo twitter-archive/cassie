@@ -47,7 +47,6 @@ case class ColumnFamily[Key, Name, Value](
     getColumns(key, singletonJSet(columnName)).map { result => Option(result.get(columnName))}
   }
 
-
   def getRow(key: Key): Future[JMap[Name, Column[Name, Value]]] = {
     getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
   }

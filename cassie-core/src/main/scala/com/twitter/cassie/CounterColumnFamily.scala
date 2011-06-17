@@ -27,7 +27,8 @@ case class CounterColumnFamily[Key, Name](
     provider: ClientProvider,
     keyCodec: Codec[Key],
     nameCodec: Codec[Name],
-    readConsistency: ReadConsistency = ReadConsistency.Quorum) {
+    readConsistency: ReadConsistency = ReadConsistency.Quorum,
+    writeConsistency: WriteConsistency = WriteConsistency.One) {
 
   val log = Logger.get
 
@@ -36,6 +37,7 @@ case class CounterColumnFamily[Key, Name](
   def keysAs[K](codec: Codec[K]): CounterColumnFamily[K, Name] = copy(keyCodec = codec)
   def namesAs[N](codec: Codec[N]): CounterColumnFamily[Key, N] = copy(nameCodec = codec)
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
+  def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
 
   /**
    * @Java
@@ -70,7 +72,8 @@ case class CounterColumnFamily[Key, Name](
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
     *   ordering is determined by the server. 
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
-    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+    *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or
+    *   [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
     * @param key the row's key
     * @param startColumnName an optional start. if None it starts at the first column
     * @param endColumnName an optional end. if None it ends at the last column
@@ -183,9 +186,8 @@ case class CounterColumnFamily[Key, Name](
   }
 
   /**
-   * @return A Builder that can be used to execute multiple actions in a single
-   * request.
-   */
+    * @return A Builder that can be used to execute multiple actions in a single
+    * request. */
   def batch() = new CounterBatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
