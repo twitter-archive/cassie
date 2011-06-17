@@ -6,9 +6,11 @@ import org.apache.thrift.server.TThreadPoolServer
 import java.util.concurrent.CountDownLatch
 import org.apache.cassandra.finagle.thrift._
 import java.nio.ByteBuffer
-import java.util._
 import com.twitter.cassie.codecs.Utf8Codec
 import scala.collection.JavaConversions._
+import java.util.{HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSortedSet,
+  TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap}
+import java.util.Comparator
 
 object FakeCassandra {
   class ServerThread(cassandra: Cassandra.Iface, port: Int) extends Thread {
@@ -71,7 +73,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   var currentKeyspace = "default"
 
   //                     keyspace        CF              row         column
-  val data = new TreeMap[String, TreeMap[String, TreeMap[ByteBuffer, SortedSet[Column]]]]
+  val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[Column]]]]
 
   def start() = {
     thread = new FakeCassandra.ServerThread(this, port)
@@ -79,16 +81,16 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     thread.latch.await()
   }
 
-  private def getColumnFamily(cp: ColumnParent): TreeMap[ByteBuffer, SortedSet[Column]] = getColumnFamily(cp.getColumn_family)
-  private def getColumnFamily(name: String): TreeMap[ByteBuffer, SortedSet[Column]]  = synchronized {
+  private def getColumnFamily(cp: ColumnParent): JTreeMap[ByteBuffer, JSortedSet[Column]] = getColumnFamily(cp.getColumn_family)
+  private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JSortedSet[Column]]  = synchronized {
     var keyspace = data.get(currentKeyspace)
     if (keyspace == null) {
-      keyspace = new TreeMap[String, TreeMap[ByteBuffer, SortedSet[Column]]]
+      keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[Column]]]
       data.put(currentKeyspace, keyspace)
     }
     var cf = keyspace.get(name)
     if (cf == null) {
-      cf = new TreeMap[ByteBuffer, SortedSet[Column]](comparator)
+      cf = new JTreeMap[ByteBuffer, JSortedSet[Column]](comparator)
       keyspace.put(name, cf)
     }
     cf
@@ -107,18 +109,21 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
     if(row == null) {
-      row = new TreeSet[Column](columnComparator)
+      row = new JTreeSet[Column](columnComparator)
       cf.put(key, row)
     }
     row.add(column)
   }
 
-  def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel): List[ColumnOrSuperColumn] = get_slice(key, column_parent, predicate, consistency_level, System.currentTimeMillis, false)
+  def get_slice(key: ByteBuffer, column_parent: ColumnParent, 
+      predicate: SlicePredicate, consistency_level: ConsistencyLevel): JList[ColumnOrSuperColumn] = 
+    get_slice(key, column_parent, predicate, consistency_level, System.currentTimeMillis, false)
 
-  def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): List[ColumnOrSuperColumn] = {
+  def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, 
+      consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): JList[ColumnOrSuperColumn] = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
-    val list = new ArrayList[ColumnOrSuperColumn]
+    val list = new JArrayList[ColumnOrSuperColumn]
     def add(col: Column) = {
       val cosc = new ColumnOrSuperColumn
       cosc.setColumn(col)
@@ -126,7 +131,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
     if (row != null) {
       var limit = Int.MaxValue
-      val rowView: SortedSet[Column] = if (predicate.isSetSlice_range()) {
+      val rowView: JSortedSet[Column] = if (predicate.isSetSlice_range()) {
         val start = new Column
         val finish = new Column
         val sr = predicate.getSlice_range
@@ -143,13 +148,13 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
         row
       }
 
-      val names = new HashSet[String]
+      val names = new JHashSet[String]
       if (predicate.isSetColumn_names) {
         for(name <- predicate.getColumn_names) names.add(Utf8Codec.decode(name))
       }
 
       var i = 0
-      val toRemove = new ArrayList[Column]
+      val toRemove = new JArrayList[Column]
       for(entry <- rowView) {
         if(i < limit &&
           (names.isEmpty || names.contains(Utf8Codec.decode(ByteBuffer.wrap(entry.getName))))
@@ -170,7 +175,9 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
     list
   }
-  def batch_mutate(mutation_Map: Map[ByteBuffer,Map[String,List[Mutation]]], consistency_level: ConsistencyLevel) = {
+
+  def batch_mutate(mutation_Map: JMap[ByteBuffer, JMap[String, JList[Mutation]]], 
+      consistency_level: ConsistencyLevel) = {
     for((key, map) <- mutation_Map) {
       for((cf, mutations) <- map) {
         val cp = new ColumnParent
@@ -195,17 +202,39 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   }
 
   def login(auth_request: AuthenticationRequest ) = throw new UnsupportedOperationException
-  def get(key: ByteBuffer, column_path: ColumnPath, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def get_count(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def multiget_slice(keys: List[ByteBuffer], column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def multiget_count(keys: List[ByteBuffer], column_parent: ColumnParent, predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate, range: KeyRange, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def get_indexed_slices(column_parent: ColumnParent, index_clause: IndexClause, column_predicate: SlicePredicate, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
 
-  def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+  def get(key: ByteBuffer, column_path: ColumnPath, consistency_level: ConsistencyLevel) =
+    throw new UnsupportedOperationException
+
+  def get_count(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate,
+      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
+  def multiget_slice(keys: JList[ByteBuffer], column_parent: ColumnParent,
+      predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
+    throw new UnsupportedOperationException
+
+  def multiget_count(keys: JList[ByteBuffer], column_parent: ColumnParent,
+      predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
+    throw new UnsupportedOperationException
+
+  def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate, 
+      range: KeyRange, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
+  def get_indexed_slices(column_parent: ColumnParent, index_clause: IndexClause,
+      column_predicate: SlicePredicate, consistency_level: ConsistencyLevel) = 
+    throw new UnsupportedOperationException
+
+  def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long,
+      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
   def truncate(cfname: String) = throw new UnsupportedOperationException
-  def add(key: ByteBuffer, column_parent: ColumnParent, column: CounterColumn, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
-  def remove_counter(key: ByteBuffer, path: ColumnPath, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
+  def add(key: ByteBuffer, column_parent: ColumnParent, column: CounterColumn,
+      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
+  def remove_counter(key: ByteBuffer, path: ColumnPath,
+      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+
   def describe_schema_versions() = throw new UnsupportedOperationException
   def describe_keyspaces() = throw new UnsupportedOperationException
   def describe_cluster_name() = throw new UnsupportedOperationException
@@ -214,7 +243,10 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def describe_partitioner() = throw new UnsupportedOperationException
   def describe_snitch() = throw new UnsupportedOperationException
   def describe_keyspace(keyspace: String) = throw new UnsupportedOperationException
-  def describe_splits(cfName: String, start_token: String, end_token: String, keys_per_split: Int) = throw new UnsupportedOperationException
+
+  def describe_splits(cfName: String, start_token: String, end_token: String, 
+      keys_per_split: Int) = throw new UnsupportedOperationException
+
   def system_add_column_family(cf_def: CfDef) = throw new UnsupportedOperationException
   def system_drop_column_family(column_family: String) = throw new UnsupportedOperationException
   def system_add_keyspace(ks_def: KsDef) = throw new UnsupportedOperationException

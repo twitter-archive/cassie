@@ -1,17 +1,7 @@
 package com.twitter.cassie
 
-import clocks.Clock
-import codecs.{Codec, Utf8Codec}
-import connection.ClientProvider
-
-import com.twitter.logging.Logger
-import java.nio.ByteBuffer
-import java.util.Collections.{singleton => singletonSet}
-
-import java.util.{ArrayList, HashMap, Iterator, List, Map, Set}
-import org.apache.cassandra.finagle.thrift
-import scala.collection.JavaConversions._
-
+import codecs.Codec
+import java.util.{Map => JMap, Set => JSet}
 import com.twitter.util.Future
 
 trait ColumnFamilyLike[Key, Name, Value] {
@@ -61,7 +51,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key */
-  def getRow(key: Key): Future[Map[Name, Column[Name, Value]]]
+  def getRow(key: Key): Future[JMap[Name, Column[Name, Value]]]
 
   /**
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
@@ -77,7 +67,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
                   count: Int,
-                  order: Order): Future[Map[Name, Column[Name, Value]]]
+                  order: Order): Future[JMap[Name, Column[Name, Value]]]
 
   /**
     * Get a selection of columns from a single row.
@@ -86,15 +76,15 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * @param key the row key
     * @param the column names you want */
   def getColumns(key: Key,
-                 columnNames: Set[Name]): Future[Map[Name, Column[Name, Value]]]
+                 columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]]
   /**
     * Get a single column from multiple rows.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
     * @param keys the row keys
     * @param the column name */
-  def multigetColumn(keys: Set[Key],
-                     columnName: Name): Future[Map[Key, Column[Name, Value]]]
+  def multigetColumn(keys: JSet[Key],
+                     columnName: Name): Future[JMap[Key, Column[Name, Value]]]
 
   /**
     * Get multiple columns from multiple rows.
@@ -102,7 +92,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param keys the row keys
     * @param columnNames the column names */
-  def multigetColumns(keys: Set[Key], columnNames: Set[Name]): Future[Map[Key, Map[Name, Column[Name, Value]]]]
+  def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]): Future[JMap[Key, JMap[Name, Column[Name, Value]]]]
 
   /**
     * Insert a single column.
@@ -132,7 +122,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key
     * @param columnNames the names of the columns to be deleted */
-  def removeColumns(key: Key, columnNames: Set[Name]): Future[Void]
+  def removeColumns(key: Key, columnNames: JSet[Name]): Future[Void]
 
   /**
     * Remove a set of columns from a single row at a specific timestamp. Useful for replaying data.
@@ -141,7 +131,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
     * @param key the row key
     * @param columnNames the columns to be deleted
     * @param timestamp the timestamp at which the columns should be deleted */
-  def removeColumns(key: Key, columnNames: Set[Name], timestamp: Long): Future[Void]
+  def removeColumns(key: Key, columnNames: JSet[Name], timestamp: Long): Future[Void]
 
   /**
     * Remove an entire row.
@@ -180,5 +170,5 @@ trait ColumnFamilyLike[Key, Name, Value] {
    * in the column family with the given batch size as the default types.
    * @param batchSize the number of rows to load at a time.
    * @param columnNames the columns to load from each row */
-  def columnsIteratee(batchSize: Int, columnNames: Set[Name]): ColumnIteratee[Key, Name, Value]
+  def columnsIteratee(batchSize: Int, columnNames: JSet[Name]): ColumnIteratee[Key, Name, Value]
 }

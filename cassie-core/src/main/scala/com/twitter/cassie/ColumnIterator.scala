@@ -1,18 +1,11 @@
 package com.twitter.cassie
 
-import java.nio.ByteBuffer
-import java.util.List
-import scala.collection.JavaConversions._
-import com.twitter.util.Future
-
-import codecs.Codec
-
-import collection.mutable.ArrayBuffer
+import java.util.{Iterator => JIterator}
 
 /**
   * A fully synchronous wrapper around ColumnIteratee */
 class ColumnIterator[Key, Name, Value](private var iteratee: ColumnIteratee[Key, Name, Value])
-        extends java.util.Iterator[(Key, Column[Name, Value])]
+        extends JIterator[(Key, Column[Name, Value])]
         with Iterator[(Key, Column[Name, Value])] {
   private var iterator = iteratee.buffer.iterator
 

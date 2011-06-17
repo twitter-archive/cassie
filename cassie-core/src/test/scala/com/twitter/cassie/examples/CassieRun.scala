@@ -63,9 +63,6 @@ object CassieRun {
     // drop some UUID sauce on things
     cass.insert(LexicalUUID(cass.clock), Column("yay", "boo")).apply()
 
-    cass.getColumnAs[String, FixedLong, AsciiString]("key", 2).apply()
-    cass.insertAs[String, VarInt, VarInt]("digits", Column(1, 300)).apply()
-
     log.info("Iterating!")
     for ((key, col) <- cass.rowIteratee(2)) {
       log.info("Found: %s", col)

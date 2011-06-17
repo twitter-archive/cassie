@@ -14,7 +14,7 @@ import com.twitter.cassie.codecs.Utf8Codec;
 import com.twitter.cassie.ReadConsistency;
 import com.twitter.cassie.WriteConsistency;
 
-import org.apache.cassandra.finagle.thrift;
+import org.apache.cassandra.finagle.thrift.*;
 import org.junit.Test;
 import org.junit.Before;
 import static junit.framework.Assert.assertEquals;
@@ -42,8 +42,8 @@ public final class MockCassandraClient {
     return any(ConsistencyLevel.class);
   }
 
-  public static thrift.CounterColumn anyCounterColumn() {
-    return any(thrift.CounterColumn.class);
+  public static org.apache.cassandra.finagle.thrift.CounterColumn anyCounterColumn() {
+    return any(org.apache.cassandra.finagle.thrift.CounterColumn.class);
   }
 
   public final ServiceToClient client;
