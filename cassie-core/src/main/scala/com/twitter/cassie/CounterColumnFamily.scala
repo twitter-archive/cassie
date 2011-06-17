@@ -7,6 +7,7 @@ import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
+import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap,
     Iterator => JIterator, List => JList, Map => JMap, Set => JSet}
@@ -29,8 +30,6 @@ case class CounterColumnFamily[Key, Name](
     readConsistency: ReadConsistency = ReadConsistency.Quorum) {
 
   val log = Logger.get
-
-  import CounterColumnFamily._
 
   val writeConsistency = WriteConsistency.One
 
@@ -222,11 +221,4 @@ case class CounterColumnFamily[Key, Name](
       output.add(keyCodec.encode(value))
     output
   }
-
-
-}
-
-private[cassie] object CounterColumnFamily
-{
-  val EMPTY = ByteBuffer.allocate(0)
 }

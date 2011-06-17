@@ -8,7 +8,7 @@ import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
-
+import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList,
   Map => JMap, Set => JSet}
 import org.apache.cassandra.finagle.thrift
@@ -18,10 +18,7 @@ import com.twitter.util.Future
 
 /**
  * A readable, writable column family with batching capabilities. This is a
- * lightweight object: it inherits a connection pool from the Keyspace.
- *
- * TODO: remove (insert/get)As methods in favor of copying the CF to allow for alternate types.
- */
+ * lightweight object: it inherits a connection pool from the Keyspace. */
 case class ColumnFamily[Key, Name, Value](
     keyspace: String,
     name: String,
@@ -31,13 +28,10 @@ case class ColumnFamily[Key, Name, Value](
     valueCodec: Codec[Value],
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.Quorum
-    )
-    extends ColumnFamilyLike[Key, Name, Value] {
+  ) extends ColumnFamilyLike[Key, Name, Value] {
 
   private[cassie] var clock: Clock = MicrosecondEpochClock
   val log: Logger = Logger.get
-
-  import ColumnFamily._
 
   def keysAs[K](codec: Codec[K]): ColumnFamily[K, Name, Value] = copy(keyCodec = codec)
   def namesAs[N](codec: Codec[N]): ColumnFamily[Key, N, Value] = copy(nameCodec = codec)
@@ -215,9 +209,4 @@ case class ColumnFamily[Key, Name, Value](
       output.add(keyCodec.encode(value))
     output
   }
-}
-
-private[cassie] object ColumnFamily
-{
-  val EMPTY = ByteBuffer.allocate(0)
 }

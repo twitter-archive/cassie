@@ -3,6 +3,7 @@ package com.twitter.cassie
 import codecs.Codec
 import java.util.{Map => JMap, Set => JSet}
 import com.twitter.util.Future
+import java.nio.ByteBuffer
 
 trait ColumnFamilyLike[Key, Name, Value] {
 
