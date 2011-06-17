@@ -72,9 +72,9 @@ public final class CassieRun {
     // drop some UUID sauce on things
     cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo")).apply();
 
-    cass.namesAs(FixedLongCodec.get()).valuesAs(Utf8Codec.get()).getColumn("key", new FixedLong(2)).apply();
-    cass.namesAs(FixedIntCodec.get()).valuesAs(FixedIntCodec.get())
-        .insert("digits", cass.newColumn(new FixedInt(1), new FixedInt(300))).apply();
+    cass.namesAs(LongCodec.get()).valuesAs(Utf8Codec.get()).getColumn("key", 2L).apply();
+    cass.namesAs(IntCodec.get()).valuesAs(IntCodec.get())
+        .insert("digits", cass.newColumn(1, 300)).apply();
 
     info("Iterating!");
     for (Tuple2<String, Column<String,String>> row : cass.rowIteratee(2)) {

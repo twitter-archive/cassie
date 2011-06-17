@@ -3,7 +3,7 @@ package com.twitter.cassie.tests.examples
 import com.twitter.cassie._
 import com.twitter.cassie.codecs.Utf8Codec
 import com.twitter.logging.Logger
-import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
+import types.LexicalUUID
 // TODO: unfortunate
 import scala.collection.JavaConversions._
 

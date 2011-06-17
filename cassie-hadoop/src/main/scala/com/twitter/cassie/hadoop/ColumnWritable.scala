@@ -15,13 +15,13 @@ class ColumnWritable extends ArrayWritable(classOf[BytesWritable]) {
   def set(name: ByteBuffer, value: ByteBuffer, timestamp: Long) {
     val a = writable(name)
     val b = writable(value)
-    val c = writable(FixedLongCodec.encode(timestamp))
+    val c = writable(LongCodec.encode(timestamp))
     set(Array(a, b, c))
   }
 
   def name = getBuf(0)
   def value = getBuf(1)
-  def timestamp = FixedLongCodec.decode(getBuf(2)).value
+  def timestamp = LongCodec.decode(getBuf(2))
 
   def getBuf(i: Int) = {
     val bw = get()(i).asInstanceOf[BytesWritable]
