@@ -1,3 +1,12 @@
+# 0.10.0
+* no more implicits for codecs
+* removed redundant codecs. going forward we'll use one codec per datatype.
+    This means instead of VarLong and FixedLong we just have Long (and its
+    encoded fixed)
+* update to new thrift IDL for counters (should be backwards compat if you 
+    don't use counters)
+* make it possible to iterate over the columns in a row (by @iano)
+
 # 0.9.1
 * upgrade to finagle 1.5.3
 
