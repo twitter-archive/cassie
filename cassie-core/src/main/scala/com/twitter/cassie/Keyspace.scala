@@ -14,21 +14,24 @@ import java.nio.ByteBuffer
  * @param provider a [[com.twitter.cassie.connection.ClientProvider]] instance
  */
 class Keyspace(val name: String, val provider: ClientProvider) {
+
   /**
    * Returns a ColumnFamily with the given name and column/value codecs.
    */
-  def columnFamily[Key, Name, Value](name: String)
-    (implicit keyCodec: Codec[Key],
-              nameCodec: Codec[Name],
-              valueCodec: Codec[Value]) =
+  def columnFamily[Key, Name, Value](
+      name: String,
+      keyCodec: Codec[Key],
+      nameCodec: Codec[Name],
+      valueCodec: Codec[Value]) =
     new ColumnFamily(this.name, name, provider, keyCodec, nameCodec, valueCodec)
 
   /**
    * Returns a CounterColumnFamily with the given name and column codecs
    */
-  def counterColumnFamily[Key, Name](name: String)
-    (implicit keyCodec: Codec[Key],
-              nameCodec: Codec[Name]) =
+  def counterColumnFamily[Key, Name](
+      name: String,
+      keyCodec: Codec[Key],
+      nameCodec: Codec[Name]) =
     new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec)
 
   /**

@@ -107,7 +107,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1")
       val ks = cluster.keyspace("ks").mapHostsEvery(0.seconds).connect()
-      val cf = ks.columnFamily[String, String, String]("cf")
+      val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
       cf.getRow("0").get().get("default").value must equal("hello")
 
@@ -122,7 +122,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1")
       val ks = cluster.keyspace("ks").mapHostsEvery(0.seconds).connect()
-      val cf = ks.columnFamily[String, String, String]("cf")
+      val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
       fake.stop()
     }

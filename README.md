@@ -76,12 +76,8 @@ is seamless. Cassie handles `String` and `Array[Byte]` instances out of the box,
 and also provides some useful non-standard types:
 
 * `AsciiString`: character sequence encoded with `US-ASCII`
-* `FixedInt`: 32-bit integer stored as a 4-byte sequence
-* `FixedLong`: 64-bit integer stored as an 8-byte sequence
-* `VarInt`: 32-bit integer stored using [Avro](http://hadoop.apache.org/avro/)'s
-  variable-length integer encoding
-* `VarLong`: 64-bit integer stored using
-  [Avro](http://hadoop.apache.org/avro/)'s variable-length integer encoding
+* `Int`: 32-bit integer stored as a 4-byte sequence
+* `Long`: 64-bit integer stored as an 8-byte sequence
 
 These types also have implicit conversions defined, so if you have an instance
 of `ColumnFamily[String, String, VarLong]` you can use regular `Long`s.

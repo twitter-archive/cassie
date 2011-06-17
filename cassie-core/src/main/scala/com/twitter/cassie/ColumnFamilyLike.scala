@@ -55,7 +55,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
 
   /**
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
-    *   ordering is determined by the server. 
+    *   ordering is determined by the server.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row's key
@@ -141,7 +141,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
   def removeRow(key: Key): Future[Void]
 
   /**
-    * Remove an entire row at the given timestamp. 
+    * Remove an entire row at the given timestamp.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param key the row key to be deleted

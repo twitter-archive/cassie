@@ -31,8 +31,6 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   val defaultReadConsistency = ReadConsistency.One
   val defaultWriteConsistency = WriteConsistency.One
 
-  implicit val byteCodec = ByteArrayCodec
-
   var cluster: Cluster = null
   var keyspace: Keyspace = null
   var columnFamily: ColumnFamily[ByteBuffer, ByteBuffer, ByteBuffer] = null
@@ -59,7 +57,8 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
 
 
     keyspace = configure(cluster.keyspace(conf(KEYSPACE))).connect()
-    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY))
+    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), 
+      ByteArrayCodec, ByteArrayCodec, ByteArrayCodec)
     batch = columnFamily.batch
   }
 

@@ -47,14 +47,14 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
 
   describe("a fake cassandra") {
     it("should be able to connect to an arbitrary columnfamily and read and write") {
-      val cf = keyspace().columnFamily[String, String, String]("bar")
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec,Utf8Codec, Utf8Codec)
       cf.insert("k", Column("b", "c")).get()
       cf.getRow("k").get().size must equal(1)
       cf.getColumn("k", "b").get().size must equal(1)
     }
 
     it("should be able to batch mutate") {
-      val cf = keyspace().columnFamily[String, String, String]("bar")
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec,Utf8Codec, Utf8Codec)
       var batch = cf.batch
       batch.insert("k", Column("b", "c"))
       batch.insert("k", Column("d", "e"))

@@ -1,7 +1,7 @@
 package com.twitter.cassie
 
 import java.nio.ByteBuffer
-import java.util.{List => JList, Map => JMap, Set => JSet, 
+import java.util.{List => JList, Map => JMap, Set => JSet,
   ArrayList => JArrayList, HashMap => JHashMap}
 import java.util.Collections.{singleton => singletonJSet}
 

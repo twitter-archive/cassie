@@ -2,7 +2,7 @@ import com.twitter.ostrich.admin.RuntimeEnvironment
 import com.twitter.ostrich.admin.AdminHttpService
 import com.twitter.conversions.time._
 import com.twitter.cassie._
-import types.{LexicalUUID, VarInt, AsciiString, FixedLong}
+import types.{LexicalUUID, VarInt, FixedLong}
 import com.twitter.cassie.Codecs._
 
 var a = new AdminHttpService(9990, 10, new RuntimeEnvironment(this))

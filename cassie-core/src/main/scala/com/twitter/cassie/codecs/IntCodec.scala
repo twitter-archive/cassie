@@ -1,22 +1,21 @@
 package com.twitter.cassie.codecs
 
-import com.twitter.cassie.types.FixedInt
 import java.nio.{IntBuffer, LongBuffer, ByteBuffer}
 
 /**
   * Encodes and decodes 32-bit integers as 4-byte, big-endian byte buffers. */
-object FixedIntCodec extends Codec[FixedInt] {
+object IntCodec extends Codec[Int] {
   private val length = 4
 
-  def encode(v: FixedInt) = {
+  def encode(v: Int) = {
     val buf = ByteBuffer.allocate(length)
-    buf.putInt(v.value)
+    buf.putInt(v)
     buf.rewind
     buf
   }
 
   def decode(buf: ByteBuffer) = {
     require(buf.remaining == length)
-    FixedInt(buf.duplicate().getInt)
+    buf.duplicate().getInt
   }
 }
