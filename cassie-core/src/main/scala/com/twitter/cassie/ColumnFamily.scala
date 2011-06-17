@@ -9,7 +9,7 @@ import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
 
-import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList, 
+import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList,
   Map => JMap, Set => JSet}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
