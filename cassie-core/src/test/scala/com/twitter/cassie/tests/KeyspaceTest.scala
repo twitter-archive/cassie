@@ -51,7 +51,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
     }
 
     it("executes empty batch") {
-      keyspace.execute(Seq()).get()
+      keyspace.execute(Seq(), WriteConsistency.One).get()
     }
 
     it("executes multiple batches") {
@@ -81,7 +81,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
       aBatch.insert("foo", Column("bar", "baz"))
       bBatch.insert("foo", Column("bar", "baz"))
       when(stc.batch_mutate(anyObject(), anyObject())).thenReturn(void);
-      keyspace.execute(Seq(aBatch, bBatch)).get()
+      keyspace.execute(Seq(aBatch, bBatch), WriteConsistency.Quorum).get()
       verify(stc).batch_mutate(expectedMutations, WriteConsistency.Quorum.level)
     }
   }

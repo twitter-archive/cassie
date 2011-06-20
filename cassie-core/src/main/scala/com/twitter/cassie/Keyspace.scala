@@ -1,6 +1,6 @@
 package com.twitter.cassie
 
-import codecs.Codec
+import codecs.{ThriftCodec, Codec}
 import connection.ClientProvider
 import com.twitter.util.Future
 import scala.collection.JavaConversions._
@@ -40,8 +40,9 @@ class Keyspace(val name: String, val provider: ClientProvider) {
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
     * @param batches a Seq of BatchMutationBuilders, each for a different CF. Their mutations will be merged and
-    *   sent as one operation */
-  def execute(batches: Seq[BatchMutationBuilder[_, _, _]]): Future[Void] = {
+    *   sent as one operation
+    * @param writeConsistency to write this at */
+  def execute(batches: Seq[BatchMutation], writeConsistency: WriteConsistency): Future[Void] = {
     if(batches.size == 0) return Future.void
 
     val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
@@ -62,7 +63,6 @@ class Keyspace(val name: String, val provider: ClientProvider) {
       }
     }
 
-    val writeConsistency = batches.head.cf.writeConsistency
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 

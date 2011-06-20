@@ -8,13 +8,18 @@ import java.util.Collections.{singleton => singletonJSet}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.mutable.ListBuffer
 
+trait BatchMutation {
+  private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
+}
+
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
  * TODO: Port to Java collections.
  * TODO: make into a CFLike
  */
-class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[Key,Name,Value]) {
+class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[Key,Name,Value])
+    extends BatchMutation{
 
   private[cassie] case class Insert(key: Key, column: Column[Name, Value])
   private[cassie] case class Deletions(key: Key, columnNames: JSet[Name], timestamp: Long)
@@ -47,7 +52,7 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
     cf.batch(mutations)
   }
 
-  private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
+  private[cassie] override def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
     val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]()
 
     ops.map {
