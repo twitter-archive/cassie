@@ -32,8 +32,6 @@ case class CounterColumnFamily[Key, Name](
 
   val log = Logger.get
 
-  val writeConsistency = WriteConsistency.One
-
   def keysAs[K](codec: Codec[K]): CounterColumnFamily[K, Name] = copy(keyCodec = codec)
   def namesAs[N](codec: Codec[N]): CounterColumnFamily[Key, N] = copy(nameCodec = codec)
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
