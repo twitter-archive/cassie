@@ -56,17 +56,25 @@ case class ColumnFamily[Key, Name, Value](
                   endColumnName: Option[Name],
                   count: Int,
                   order: Order): Future[JMap[Name, Column[Name, Value]]] = {
+    val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
+    getSlice(key, pred)
+  }
+
+  private def sliceRangePredicate(startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {
     val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
     val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
     val pred = new thrift.SlicePredicate()
     pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
-    getSlice(key, pred, keyCodec, nameCodec, valueCodec)
+  }
+
+  private def sliceRangePredicate(columnNames: JSet[Name]) = {
+    new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
   }
 
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
     val pred = new thrift.SlicePredicate()
     pred.setColumn_names(encodeNames(columnNames))
-    getSlice(key, pred, keyCodec, nameCodec, valueCodec)
+    getSlice(key, pred)
   }
 
   def multigetColumn(keys: JSet[Key], columnName: Name): Future[JMap[Key, Column[Name, Value]]] = {
@@ -81,14 +89,11 @@ case class ColumnFamily[Key, Name, Value](
 
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
     val cp = new thrift.ColumnParent(name)
-    val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(encodeNames(columnNames))
+    val pred = sliceRangePredicate(columnNames)
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    val encodedKeys = encodeKeys(keys)
     provider.map {
-      _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
+      _.multiget_slice(encodeKeys(keys), cp, pred, readConsistency.level)
     }.map { result =>
-      // decode result
       val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
       for (rowEntry <- asScalaIterable(result.entrySet)) {
         val cols: JMap[Name, Column[Name, Value]] = new JHashMap(rowEntry.getValue.size)
@@ -152,8 +157,7 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
-    val pred = new thrift.SlicePredicate
-    pred.setSlice_range(new thrift.SliceRange(EMPTY, EMPTY, false, Int.MaxValue))
+    val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
@@ -162,8 +166,7 @@ case class ColumnFamily[Key, Name, Value](
     columnsIteratee(batchSize, singletonJSet(columnName))
 
   def columnsIteratee(batchSize: Int, columnNames: JSet[Name]): ColumnIteratee[Key, Name, Value] = {
-    val pred = new thrift.SlicePredicate
-    pred.setColumn_names(encodeNames(columnNames))
+    val pred = sliceRangePredicate(columnNames)
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
@@ -179,14 +182,13 @@ case class ColumnFamily[Key, Name, Value](
       valueCodec)
   }
 
-  private def getSlice[K, N, V](key: K,
-                                pred: thrift.SlicePredicate,
-                                keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[JMap[N,Column[N,V]]] = {
+  private def getSlice(key: Key,
+                          pred: thrift.SlicePredicate): Future[JMap[Name,Column[Name,Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
       .map { result =>
-        val cols: JMap[N,Column[N,V]] = new JHashMap(result.size)
+        val cols: JMap[Name,Column[Name,Value]] = new JHashMap(result.size)
         for (cosc <- result.iterator) {
           val col = Column.convert(nameCodec, valueCodec, cosc)
           cols.put(col.name, col)
@@ -200,9 +202,7 @@ case class ColumnFamily[Key, Name, Value](
                                     count: Int,
                                     predicate: thrift.SlicePredicate) = {
     val cp = new thrift.ColumnParent(name)
-    val range = new thrift.KeyRange(count)
-    range.setStart_key(startKey)
-    range.setEnd_key(endKey)
+    val range = new thrift.KeyRange(count).setStart_key(startKey).setEnd_key(endKey)
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
     provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
   }
