@@ -167,6 +167,18 @@ case class ColumnFamily[Key, Name, Value](
     new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
+  def columnsIteratee(batchSize: Int, key: Key): ColumnIteratee[Key, Name, Value] = {
+    new ColumnIteratee(
+      this,
+      keyCodec.encode(key),
+      keyCodec.encode(key),
+      batchSize,
+      new thrift.SlicePredicate,
+      keyCodec,
+      nameCodec,
+      valueCodec)
+  }
+
   private def getSlice[K, N, V](key: K,
                                 pred: thrift.SlicePredicate,
                                 keyCodec: Codec[K], nameCodec: Codec[N], valueCodec: Codec[V]): Future[JMap[N,Column[N,V]]] = {
