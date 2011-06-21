@@ -65,15 +65,15 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
   }
 
-  val columnComparator = new Comparator[Column] {
-    def compare(a: Column, b: Column) = comparator.compare(a.BufferForName, b.BufferForName)
+  val columnComparator = new Comparator[ColumnOrSuperColumn] {
+    def compare(a: ColumnOrSuperColumn, b: ColumnOrSuperColumn) = comparator.compare(a.getColumn.BufferForName, b.getColumn.BufferForName)
   }
 
   var thread: FakeCassandra.ServerThread = null
   var currentKeyspace = "default"
 
   //                     keyspace        CF              row         column
-  val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[Column]]]]
+  val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]]]
 
   def start() = {
     thread = new FakeCassandra.ServerThread(this, port)
@@ -81,16 +81,16 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     thread.latch.await()
   }
 
-  private def getColumnFamily(cp: ColumnParent): JTreeMap[ByteBuffer, JSortedSet[Column]] = getColumnFamily(cp.getColumn_family)
-  private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JSortedSet[Column]]  = synchronized {
+  private def getColumnFamily(cp: ColumnParent): JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]] = getColumnFamily(cp.getColumn_family)
+  private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]  = synchronized {
     var keyspace = data.get(currentKeyspace)
     if (keyspace == null) {
-      keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[Column]]]
+      keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]]
       data.put(currentKeyspace, keyspace)
     }
     var cf = keyspace.get(name)
     if (cf == null) {
-      cf = new JTreeMap[ByteBuffer, JSortedSet[Column]](comparator)
+      cf = new JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]](comparator)
       keyspace.put(name, cf)
     }
     cf
@@ -109,10 +109,10 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
     if(row == null) {
-      row = new JTreeSet[Column](columnComparator)
+      row = new JTreeSet[ColumnOrSuperColumn](columnComparator)
       cf.put(key, row)
     }
-    row.add(column)
+    row.add(new ColumnOrSuperColumn().setColumn(column))
   }
 
   def get_slice(key: ByteBuffer, column_parent: ColumnParent, 
@@ -124,22 +124,18 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
     val list = new JArrayList[ColumnOrSuperColumn]
-    def add(col: Column) = {
-      val cosc = new ColumnOrSuperColumn
-      cosc.setColumn(col)
-      list.add(cosc)
-    }
+
     if (row != null) {
       var limit = Int.MaxValue
-      val rowView: JSortedSet[Column] = if (predicate.isSetSlice_range()) {
-        val start = new Column
-        val finish = new Column
+      val rowView: JSortedSet[ColumnOrSuperColumn] = if (predicate.isSetSlice_range()) {
+        val start = new ColumnOrSuperColumn
+        val finish = new ColumnOrSuperColumn
         val sr = predicate.getSlice_range
-        start.setName(if(sr.isSetStart) sr.getStart else Array.empty[Byte])
+        start.setColumn((new Column).setName(if(sr.isSetStart) sr.getStart else Array.empty[Byte]))
 
         if (sr.isSetCount && sr.getCount > 0) limit = sr.getCount
         if(sr.isSetFinish && sr.getFinish.length > 0) {
-          finish.setName(sr.getFinish)
+          finish.column.setName(sr.getFinish)
           row.subSet(start, finish)
         } else {
           row.tailSet(start)
@@ -154,17 +150,17 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
       }
 
       var i = 0
-      val toRemove = new JArrayList[Column]
+      val toRemove = new JArrayList[ColumnOrSuperColumn]
       for(entry <- rowView) {
         if(i < limit &&
-          (names.isEmpty || names.contains(Utf8Codec.decode(ByteBuffer.wrap(entry.getName))))
+          (names.isEmpty || names.contains(Utf8Codec.decode(ByteBuffer.wrap(entry.getColumn.getName))))
           // && entry.getTimestamp <= asOf
           ) {
           if(andDelete) {
 
             toRemove.add(entry)
           } else {
-            add(entry)
+            list.add(entry)
           }
           i += 1
         }
