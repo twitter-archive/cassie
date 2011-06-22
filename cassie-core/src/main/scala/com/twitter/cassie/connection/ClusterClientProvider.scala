@@ -65,8 +65,10 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
 
   class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) {
     override def prepareService(cs: Service[ThriftClientRequest, Array[Byte]]) = {
-      val client = new ServiceToClient(cs, new TBinaryProtocol.Factory())
-      client.set_keyspace(keyspace).map{ _ => cs }
+      super.prepareService(cs) flatMap { service =>
+        val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
+        client.set_keyspace(keyspace).map{ _ => service }
+      }
     }
   }
 }
