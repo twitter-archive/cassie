@@ -65,15 +65,11 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
   }
 
-  val columnComparator = new Comparator[ColumnOrSuperColumn] {
-    def compare(a: ColumnOrSuperColumn, b: ColumnOrSuperColumn) = comparator.compare(a.getColumn.BufferForName, b.getColumn.BufferForName)
-  }
-
   var thread: FakeCassandra.ServerThread = null
   var currentKeyspace = "default"
 
   //                     keyspace        CF              row         column
-  val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]]]
+  val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]]]]
 
   def start() = {
     thread = new FakeCassandra.ServerThread(this, port)
@@ -81,16 +77,18 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     thread.latch.await()
   }
 
-  private def getColumnFamily(cp: ColumnParent): JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]] = getColumnFamily(cp.getColumn_family)
-  private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]  = synchronized {
+  private def getColumnFamily(cp: ColumnParent): JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]] =
+    getColumnFamily(cp.getColumn_family)
+  private def getColumnFamily(cp: ColumnPath): JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]] = getColumnFamily(cp.getColumn_family)
+  private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]]  = synchronized {
     var keyspace = data.get(currentKeyspace)
     if (keyspace == null) {
-      keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]]]
+      keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]]]
       data.put(currentKeyspace, keyspace)
     }
     var cf = keyspace.get(name)
     if (cf == null) {
-      cf = new JTreeMap[ByteBuffer, JSortedSet[ColumnOrSuperColumn]](comparator)
+      cf = new JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]](comparator)
       keyspace.put(name, cf)
     }
     cf
@@ -109,10 +107,10 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
     if(row == null) {
-      row = new JTreeSet[ColumnOrSuperColumn](columnComparator)
+      row = new JTreeMap[ByteBuffer, ColumnOrSuperColumn](comparator)
       cf.put(key, row)
     }
-    row.add(new ColumnOrSuperColumn().setColumn(column))
+    row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
   }
 
   def get_slice(key: ByteBuffer, column_parent: ColumnParent, 
@@ -123,56 +121,34 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
       consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): JList[ColumnOrSuperColumn] = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
-    val list = new JArrayList[ColumnOrSuperColumn]
+    var list: JArrayList[ColumnOrSuperColumn] = null
 
-    if (row != null) {
-      var limit = Int.MaxValue
-      val rowView: JSortedSet[ColumnOrSuperColumn] = if (predicate.isSetSlice_range()) {
-        val start = new ColumnOrSuperColumn
-        val finish = new ColumnOrSuperColumn
-        val sr = predicate.getSlice_range
-        start.setColumn((new Column).setName(if(sr.isSetStart) sr.getStart else Array.empty[Byte]))
-
-        if (sr.isSetCount && sr.getCount > 0) limit = sr.getCount
-        if(sr.isSetFinish && sr.getFinish.length > 0) {
-          finish.column.setName(sr.getFinish)
-          row.subSet(start, finish)
-        } else {
-          row.tailSet(start)
-        }
+    if (predicate.isSetSlice_range() && predicate.isSetColumn_names) {
+      //throw
+    }
+    if(predicate.isSetSlice_range()) {
+      val sr = predicate.getSlice_range
+      if(sr.isSetStart && sr.getStart().length > 0 &&
+         sr.isSetFinish && sr.getFinish().length > 0) {
+        list = new JArrayList(row.subMap(sr.BufferForStart, sr.BufferForFinish).values)
+      } else if (sr.isSetStart() && sr.getStart.length > 0) {
+        list = new JArrayList(row.tailMap(sr.BufferForStart).values)
+      } else if (sr.isSetFinish() && sr.getFinish.length > 0){
+        list = new JArrayList(row.headMap(sr.BufferForFinish).values)
       } else {
-        row
+        list = new JArrayList(row.values)
       }
-
-      val names = new JHashSet[String]
-      if (predicate.isSetColumn_names) {
-        for(name <- predicate.getColumn_names) names.add(Utf8Codec.decode(name))
-      }
-
-      var i = 0
-      val toRemove = new JArrayList[ColumnOrSuperColumn]
-      for(entry <- rowView) {
-        if(i < limit &&
-          (names.isEmpty || names.contains(Utf8Codec.decode(ByteBuffer.wrap(entry.getColumn.getName))))
-          // && entry.getTimestamp <= asOf
-          ) {
-          if(andDelete) {
-
-            toRemove.add(entry)
-          } else {
-            list.add(entry)
-          }
-          i += 1
-        }
-      }
-      for(entry <- toRemove) {
-        row.remove(entry)
+    } else if(predicate.isSetColumn_names) {
+      list = new JArrayList
+      val names = predicate.getColumn_names
+      for (name <- names) {
+        list.add(row.get(name))
       }
     }
-    list
+    return list
   }
 
-  def batch_mutate(mutation_Map: JMap[ByteBuffer, JMap[String, JList[Mutation]]], 
+  def batch_mutate(mutation_Map: JMap[ByteBuffer, JMap[String, JList[Mutation]]],
       consistency_level: ConsistencyLevel) = {
     for((key, map) <- mutation_Map) {
       for((cf, mutations) <- map) {
@@ -190,7 +166,9 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
           if(mutation.isSetDeletion) {
             val deletion = mutation.getDeletion
             val time = if (deletion.isSetTimestamp) deletion.getTimestamp else System.currentTimeMillis
-            get_slice(key, cp, deletion.getPredicate, ConsistencyLevel.ANY, time, true)
+            for (name <- deletion.getPredicate.getColumn_names) {
+              remove(key, (new ColumnPath).setColumn_family(cf).setColumn(name), deletion.getTimestamp, consistency_level)
+            }
           }
         }
       }
@@ -221,7 +199,9 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     throw new UnsupportedOperationException
 
   def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long,
-      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+      consistency_level: ConsistencyLevel) = {
+    val cf = getColumnFamily(column_path).get(key).remove(column_path.BufferForColumn)
+  }
 
   def truncate(cfname: String) = throw new UnsupportedOperationException
 
