@@ -67,5 +67,13 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       batch.execute().get()
       cf.getRow("k").get().size() must equal(0)
     }
+
+    it("should handle counters") {
+      var cf = keyspace().counterColumnFamily("counters", Utf8Codec, Utf8Codec)
+      cf.add("1", CounterColumn("2", 3))()
+      cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 3)))
+      cf.add("1", CounterColumn("2", 4))()
+      cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 7)))
+    }
   }
 }

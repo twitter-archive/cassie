@@ -121,6 +121,8 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
       consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): JList[ColumnOrSuperColumn] = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
+    if (row == null)
+      return new JArrayList()
     var list: JArrayList[ColumnOrSuperColumn] = null
 
     if (predicate.isSetSlice_range() && predicate.isSetColumn_names) {
@@ -206,7 +208,19 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def truncate(cfname: String) = throw new UnsupportedOperationException
 
   def add(key: ByteBuffer, column_parent: ColumnParent, column: CounterColumn,
-      consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+      consistency_level: ConsistencyLevel) = synchronized {
+    val cf = getColumnFamily(column_parent)
+    var row = cf.get(key)
+    if(row == null) {
+      row = new JTreeMap[ByteBuffer, ColumnOrSuperColumn](comparator)
+      cf.put(key, row)
+    }
+    var col = row.get(column.BufferForName)
+    if (col != null) {
+      column.setValue(column.getValue + row.get(column.BufferForName).getCounter_column.getValue)
+    }
+    row.put(column.BufferForName, new ColumnOrSuperColumn().setCounter_column(column))
+  }
 
   def remove_counter(key: ByteBuffer, path: ColumnPath,
       consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
