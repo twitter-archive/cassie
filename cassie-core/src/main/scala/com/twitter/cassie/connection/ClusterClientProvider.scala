@@ -6,12 +6,13 @@ import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.apache.thrift.protocol.TBinaryProtocol
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.Protocol
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.{Codec, ClientCodecConfig}
+import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
+
 
 /**
  * Manages connections to the nodes in a Cassandra cluster.
@@ -42,7 +43,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
 
   private var service = ClientBuilder()
       .cluster(hosts)
-      .protocol(CassandraProtocol(keyspace))
+      .codec(new CassandraThriftFramedCodec(new TBinaryProtocol.Factory(), ClientCodecConfig(Some("cassie"))))
       .retries(retryAttempts)
       .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
       .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
@@ -62,17 +63,12 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     ()
   }
 
-  class ThriftFramedCodec extends Codec[ThriftClientRequest, Array[Byte]] {
-    override def clientCodec = ThriftClientFramedCodec()(ClientCodecConfig(Some("cassie")))
-  }
-
-  case class CassandraProtocol(keyspace: String) extends Protocol[ThriftClientRequest, Array[Byte]]
-  {
-    def codec = new ThriftFramedCodec()
-    override def prepareChannel(cs: Service[ThriftClientRequest, Array[Byte]]) = {
-      // perform connection setup
-      val client = new ServiceToClient(cs, new TBinaryProtocol.Factory())
-      client.set_keyspace(keyspace).map{ _ => cs }
+  class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) {
+    override def prepareService(cs: Service[ThriftClientRequest, Array[Byte]]) = {
+      super.prepareService(cs) flatMap { service =>
+        val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
+        client.set_keyspace(keyspace) map { _ => service }
+      }
     }
   }
 }
