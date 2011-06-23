@@ -7,6 +7,9 @@
     don't use counters)
 * make it possible to iterate over the columns in a row (by @iano)
 
+# 0.9.2
+* upgrade to finagle 1.6.1
+
 # 0.9.1
 * upgrade to finagle 1.5.3
 
