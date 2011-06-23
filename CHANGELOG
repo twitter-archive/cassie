@@ -1,3 +1,4 @@
+
 # 0.10.0
 * no more implicits for codecs
 * removed redundant codecs. going forward we'll use one codec per datatype.
@@ -6,6 +7,9 @@
 * update to new thrift IDL for counters (should be backwards compat if you 
     don't use counters)
 * make it possible to iterate over the columns in a row (by @iano)
+
+# 0.9.3
+* upgrade util-core dependency
 
 # 0.9.2
 * upgrade to finagle 1.6.1
