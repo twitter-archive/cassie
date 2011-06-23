@@ -67,7 +67,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     override def prepareService(cs: Service[ThriftClientRequest, Array[Byte]]) = {
       super.prepareService(cs) flatMap { service =>
         val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
-        client.set_keyspace(keyspace).map{ _ => service }
+        client.set_keyspace(keyspace) map { _ => service }
       }
     }
   }
