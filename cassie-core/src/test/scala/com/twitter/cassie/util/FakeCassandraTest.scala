@@ -47,7 +47,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
 
   describe("a fake cassandra") {
     it("should be able to connect to an arbitrary columnfamily and read and write") {
-      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec,Utf8Codec, Utf8Codec)
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
       cf.insert("k", Column("b", "c")).get()
       cf.getRow("k").get().size must equal(1)
       cf.getColumn("k", "b").get().size must equal(1)
@@ -66,6 +66,14 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       batch.removeColumn("k", "d")
       batch.execute().get()
       cf.getRow("k").get().size() must equal(0)
+    }
+
+    it("should handle counters") {
+      var cf = keyspace().counterColumnFamily("counters", Utf8Codec, Utf8Codec)
+      cf.add("1", CounterColumn("2", 3))()
+      cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 3)))
+      cf.add("1", CounterColumn("2", 4))()
+      cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 7)))
     }
   }
 }
