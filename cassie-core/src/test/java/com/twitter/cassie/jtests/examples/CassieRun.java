@@ -81,6 +81,10 @@ public final class CassieRun {
       info("Found: " + row._2());
     }
 
+    for (Tuple2<String, Column<String,String>> row : cass.columnsIteratee(2, "yay for me")) {
+      info("Found Columns Iteratee: " + row._2());
+    }
+
     info("removing a column");
     cass.removeColumn("yay for me", "motto").apply();
 
