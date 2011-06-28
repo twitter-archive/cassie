@@ -64,8 +64,12 @@ object CassieRun {
     cass.insert(LexicalUUID(cass.clock), Column("yay", "boo")).apply()
 
     log.info("Iterating!")
-    for ((key, col) <- cass.rowIteratee(2)) {
+    for ((key, col) <- cass.rowsIteratee(2)) {
       log.info("Found: %s", col)
+    }
+
+    for ((key, col) <- cass.columnsIteratee(2, "yay for me")) {
+      log.info("Found Columns Iteratee: %s", col)
     }
 
     log.info("removing a column")

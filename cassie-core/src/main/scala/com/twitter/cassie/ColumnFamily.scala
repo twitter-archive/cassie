@@ -156,18 +156,18 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
-  def rowIteratee(batchSize: Int): RowIteratee[Key, Name, Value] = {
+  def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
-    new RowIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  def columnIteratee(batchSize: Int,
-                     columnName: Name): RowIteratee[Key, Name, Value] =
-    columnsIteratee(batchSize, singletonJSet(columnName))
+  def rowsIteratee(batchSize: Int,
+                     columnName: Name): RowsIteratee[Key, Name, Value] =
+    rowsIteratee(batchSize, singletonJSet(columnName))
 
-  def columnsIteratee(batchSize: Int, columnNames: JSet[Name]): RowIteratee[Key, Name, Value] = {
+  def rowsIteratee(batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(columnNames)
-    new RowIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
   def columnsIteratee(batchSize: Int, key: Key): ColumnsIteratee[Key, Name, Value] = {

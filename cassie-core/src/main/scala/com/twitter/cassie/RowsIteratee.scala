@@ -28,7 +28,7 @@ trait Iteratee[Key, Name, Value] extends java.lang.Iterable[(Key, Column[Name, V
  * Provides a sequence of (row key, column).
  * TODO an example
  */
-case class RowIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
+case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
                                             startKey: ByteBuffer,
                                             endKey: ByteBuffer,
                                             batchSize: Int,
@@ -56,7 +56,7 @@ case class RowIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make 
    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
-  def next(): Future[RowIteratee[Key, Name, Value]] = {
+  def next(): Future[RowsIteratee[Key, Name, Value]] = {
     if (cycled)
       throw new UnsupportedOperationException("No more results.")
 

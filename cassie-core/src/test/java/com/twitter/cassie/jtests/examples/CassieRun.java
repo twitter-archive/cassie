@@ -77,7 +77,7 @@ public final class CassieRun {
         .insert("digits", cass.newColumn(1, 300)).apply();
 
     info("Iterating!");
-    for (Tuple2<String, Column<String,String>> row : cass.rowIteratee(2)) {
+    for (Tuple2<String, Column<String,String>> row : cass.rowsIteratee(2)) {
       info("Found: " + row._2());
     }
 

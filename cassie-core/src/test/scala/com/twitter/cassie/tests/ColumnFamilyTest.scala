@@ -284,7 +284,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("returns a ColumnIterator with an all-column predicate") {
-      val iterator = cf.rowIteratee(16)
+      val iterator = cf.rowsIteratee(16)
 
       iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
@@ -301,7 +301,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("returns a ColumnIterator with a single-column predicate") {
-      val iterator = cf.columnIteratee(16, "name")
+      val iterator = cf.rowsIteratee(16, "name")
 
       iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
@@ -315,7 +315,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     val (client, cf) = setup
 
     it("returns a ColumnIterator with a column-list predicate") {
-      val iterator = cf.columnsIteratee(16, Set("name", "motto"))
+      val iterator = cf.rowsIteratee(16, Set("name", "motto"))
 
       iterator.cf must equal(cf)
       iterator.startKey must equal(b(""))
