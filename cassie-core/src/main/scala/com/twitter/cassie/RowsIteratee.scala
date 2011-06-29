@@ -1,7 +1,6 @@
 package com.twitter.cassie
 
 import java.nio.ByteBuffer
-import java.util.{List => JList}
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
 
@@ -9,6 +8,17 @@ import codecs.Codec
 
 import com.twitter.logging.Logger
 import org.apache.cassandra.finagle.thrift
+import java.util.{HashMap, Map, Iterator, List => JList}
+
+trait Iteratee[Key, Name, Value] extends java.lang.Iterable[(Key, Column[Name, Value])] {
+  def iterator() = new ColumnIterator(this)
+  
+  def buffer: JList[(Key, Column[Name, Value])]
+
+  def next(): Future[Iteratee[Key, Name, Value]]
+
+  def hasNext(): Boolean
+}
 
 /**
  * Given a column family, a key range, a batch size, a slice predicate, and
@@ -18,7 +28,7 @@ import org.apache.cassandra.finagle.thrift
  * Provides a sequence of (row key, column).
  * TODO an example
  */
-case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
+case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
                                             startKey: ByteBuffer,
                                             endKey: ByteBuffer,
                                             batchSize: Int,
@@ -29,7 +39,7 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO ma
                                             buffer: JList[(Key, Column[Name, Value])] = Nil: JList[(Key, Column[Name, Value])],
                                             cycled: Boolean = false,
                                             skip: Option[ByteBuffer] = None)
-        extends java.lang.Iterable[(Key, Column[Name, Value])] {
+        extends Iteratee[Key, Name, Value] {
   val log = Logger.get
 
   /** Copy constructors for next() and end() cases. */
@@ -46,7 +56,7 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO ma
    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
-  def next(): Future[ColumnIteratee[Key, Name, Value]] = {
+  def next(): Future[RowsIteratee[Key, Name, Value]] = {
     if (cycled)
       throw new UnsupportedOperationException("No more results.")
 
@@ -67,11 +77,6 @@ case class ColumnIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO ma
         next(buffer, lastFoundKey)
     }
   }
-
-  /**
-   * @return An Iterator which will consume this Iteratee synchronously.
-   */
-  def iterator() = new ColumnIterator(this)
 
   private def requestNextSlice(): Future[JList[thrift.KeySlice]] = {
     val effectiveSize = if (skip.isDefined) batchSize else batchSize + 1

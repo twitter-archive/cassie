@@ -77,8 +77,12 @@ public final class CassieRun {
         .insert("digits", cass.newColumn(1, 300)).apply();
 
     info("Iterating!");
-    for (Tuple2<String, Column<String,String>> row : cass.rowIteratee(2)) {
+    for (Tuple2<String, Column<String,String>> row : cass.rowsIteratee(2)) {
       info("Found: " + row._2());
+    }
+
+    for (Tuple2<String, Column<String,String>> row : cass.columnsIteratee(2, "yay for me")) {
+      info("Found Columns Iteratee: " + row._2());
     }
 
     info("removing a column");

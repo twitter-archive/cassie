@@ -7,7 +7,7 @@ import java.util.{ArrayList, Arrays}
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
-import com.twitter.cassie.{Column, ColumnFamily, ColumnIteratee}
+import com.twitter.cassie.{Column, ColumnFamily, RowsIteratee}
 import org.mockito.Mockito.{when, inOrder => inOrderVerify}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.finagle.thrift
@@ -39,7 +39,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
     val cf = mock[ColumnFamily[String, String, String]]
     when(cf.getRangeSlice(anyByteBuffer, anyByteBuffer, anyInt, matchEq(predicate))).thenReturn(new Fulfillment(new ArrayList[thrift.KeySlice]()))
 
-    val iterator = new ColumnIteratee(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec).iterator()
+    val iterator = new RowsIteratee(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec).iterator()
 
     it("doesn't throw an error") {
       iterator.foreach { _ => () }
@@ -74,7 +74,7 @@ class ColumnIteratorTest extends Spec with MustMatchers with MockitoSugar with O
       new Fulfillment(new ArrayList(Arrays.asList(slice3)))
     )
 
-    val iterator = new ColumnIteratee(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec).iterator()
+    val iterator = new RowsIteratee(cf, b("start"), b("end"), 5, predicate, Utf8Codec, Utf8Codec, Utf8Codec).iterator()
 
     it("does a buffered iteration over the columns in the rows in the range") {
       iterator.toList must equal(List(

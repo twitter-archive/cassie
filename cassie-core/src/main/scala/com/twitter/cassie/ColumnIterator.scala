@@ -3,8 +3,8 @@ package com.twitter.cassie
 import java.util.{Iterator => JIterator}
 
 /**
-  * A fully synchronous wrapper around ColumnIteratee */
-class ColumnIterator[Key, Name, Value](private var iteratee: ColumnIteratee[Key, Name, Value])
+  * A fully synchronous wrapper around RowsIteratee and ColumnIteratee */
+class ColumnIterator[Key, Name, Value](private var iteratee: Iteratee[Key, Name, Value])
         extends JIterator[(Key, Column[Name, Value])]
         with Iterator[(Key, Column[Name, Value])] {
   private var iterator = iteratee.buffer.iterator

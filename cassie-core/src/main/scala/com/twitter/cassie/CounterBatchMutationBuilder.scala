@@ -15,7 +15,7 @@ import org.apache.cassandra.finagle.thrift
  *
  * TODO: Port to Java collections.
  */
-private[cassie] class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
+class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
     extends BatchMutation {
 
   case class Insert(key: Key, column: CounterColumn[Name])

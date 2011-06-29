@@ -51,7 +51,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
           performChange(asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
             new InetSocketAddress(host, seedPort) } }.toSeq)
         } onFailure { error =>
-          log.error("error mapping ring")
+          log.error(error, "error mapping ring")
         }
       }
 

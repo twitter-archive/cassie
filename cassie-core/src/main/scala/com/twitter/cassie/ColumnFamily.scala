@@ -156,24 +156,23 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
-  def rowIteratee(batchSize: Int): ColumnIteratee[Key, Name, Value] = {
+  def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
-    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  def columnIteratee(batchSize: Int,
-                     columnName: Name): ColumnIteratee[Key, Name, Value] =
-    columnsIteratee(batchSize, singletonJSet(columnName))
+  def rowsIteratee(batchSize: Int,
+                     columnName: Name): RowsIteratee[Key, Name, Value] =
+    rowsIteratee(batchSize, singletonJSet(columnName))
 
-  def columnsIteratee(batchSize: Int, columnNames: JSet[Name]): ColumnIteratee[Key, Name, Value] = {
+  def rowsIteratee(batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(columnNames)
-    new ColumnIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
   }
 
-  def columnsIteratee(batchSize: Int, key: Key): ColumnIteratee[Key, Name, Value] = {
-    new ColumnIteratee(
+  def columnsIteratee(batchSize: Int, key: Key): ColumnsIteratee[Key, Name, Value] = {
+    new ColumnsIteratee(
       this,
-      keyCodec.encode(key),
       keyCodec.encode(key),
       batchSize,
       new thrift.SlicePredicate,
@@ -182,7 +181,7 @@ case class ColumnFamily[Key, Name, Value](
       valueCodec)
   }
 
-  private def getSlice(key: Key,
+  private[cassie] def getSlice(key: Key,
                           pred: thrift.SlicePredicate): Future[JMap[Name,Column[Name,Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
