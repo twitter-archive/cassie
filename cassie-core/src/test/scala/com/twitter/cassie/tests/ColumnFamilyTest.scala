@@ -324,4 +324,14 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }
   }
+
+  describe("exception handling") {
+    // TODO
+    // getRowSlice
+    // getColumns
+    // multigetColumns
+    // insert
+    // removeColumn
+    // rowsIteratee
+  }
 }

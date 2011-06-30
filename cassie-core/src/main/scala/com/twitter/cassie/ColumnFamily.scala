@@ -56,8 +56,12 @@ case class ColumnFamily[Key, Name, Value](
                   endColumnName: Option[Name],
                   count: Int,
                   order: Order): Future[JMap[Name, Column[Name, Value]]] = {
-    val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
-    getSlice(key, pred)
+    try {
+      val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
+      getSlice(key, pred)
+    } catch {
+      case e => Future.exception(e)
+    }
   }
 
   private def sliceRangePredicate(startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {
@@ -72,9 +76,12 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
-    val pred = new thrift.SlicePredicate()
-    pred.setColumn_names(encodeNames(columnNames))
-    getSlice(key, pred)
+    try {
+      val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
+      getSlice(key, pred)
+    }  catch {
+      case e => Future.exception(e)
+    }
   }
 
   def multigetColumn(keys: JSet[Key], columnName: Name): Future[JMap[Key, Column[Name, Value]]] = {
@@ -88,43 +95,55 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
-    val cp = new thrift.ColumnParent(name)
-    val pred = sliceRangePredicate(columnNames)
-    log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    provider.map {
-      _.multiget_slice(encodeKeys(keys), cp, pred, readConsistency.level)
-    }.map { result =>
-      val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
-      for (rowEntry <- asScalaIterable(result.entrySet)) {
-        val cols: JMap[Name, Column[Name, Value]] = new JHashMap(rowEntry.getValue.size)
-        for (cosc <- asScalaIterable(rowEntry.getValue)) {
-          val col = Column.convert(nameCodec, valueCodec, cosc)
-          cols.put(col.name, col)
+    try {
+      val cp = new thrift.ColumnParent(name)
+      val pred = sliceRangePredicate(columnNames)
+      log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
+      provider.map {
+        _.multiget_slice(encodeKeys(keys), cp, pred, readConsistency.level)
+      }.map { result =>
+        val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
+        for (rowEntry <- asScalaIterable(result.entrySet)) {
+          val cols: JMap[Name, Column[Name, Value]] = new JHashMap(rowEntry.getValue.size)
+          for (cosc <- asScalaIterable(rowEntry.getValue)) {
+            val col = Column.convert(nameCodec, valueCodec, cosc)
+            cols.put(col.name, col)
+          }
+          rows.put(keyCodec.decode(rowEntry.getKey), cols)
         }
-        rows.put(keyCodec.decode(rowEntry.getKey), cols)
+        rows
       }
-      rows
+    } catch {
+      case e => Future.exception(e)
     }
   }
 
   def insert(key: Key, column: Column[Name, Value]) = {
-    val cp = new thrift.ColumnParent(name)
-    val col = Column.convert(nameCodec, valueCodec, clock, column)
-    log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
-      col.timestamp, writeConsistency.level)
-    provider.map {
-      _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
+    try {
+      val cp = new thrift.ColumnParent(name)
+      val col = Column.convert(nameCodec, valueCodec, clock, column)
+      log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
+        col.timestamp, writeConsistency.level)
+      provider.map {
+        _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
+      }
+    }  catch {
+      case e => Future.exception(e)
     }
   }
 
   def truncate() = provider.map(_.truncate(name))
 
   def removeColumn(key: Key, columnName: Name) = {
-    val cp = new thrift.ColumnPath(name)
-    val timestamp = clock.timestamp
-    cp.setColumn(nameCodec.encode(columnName))
-    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    provider.map { _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level) }
+    try {
+      val cp = new thrift.ColumnPath(name)
+      val timestamp = clock.timestamp
+      cp.setColumn(nameCodec.encode(columnName))
+      log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
+      provider.map { _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level) }
+    }  catch {
+      case e => Future.exception(e)
+    }
   }
 
   def removeColumns(key: Key, columnNames: JSet[Name]): Future[Void] = {
