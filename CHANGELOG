@@ -8,6 +8,9 @@
     don't use counters)
 * make it possible to iterate over the columns in a row (by @iano)
 
+# 0.9.4
+* drop finagle-ostrich dependency
+
 # 0.9.3
 * upgrade util-core dependency
 
