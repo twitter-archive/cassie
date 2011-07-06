@@ -1,4 +1,3 @@
-
 # 0.10.0
 * no more implicits for codecs
 * removed redundant codecs. going forward we'll use one codec per datatype.
@@ -7,6 +6,7 @@
 * update to new thrift IDL for counters (should be backwards compat if you 
     don't use counters)
 * make it possible to iterate over the columns in a row (by @iano)
+* make it possible to pass in a tracer
 
 # 0.9.4
 * drop finagle-ostrich dependency
