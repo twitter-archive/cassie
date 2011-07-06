@@ -10,7 +10,8 @@ import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
-import com.twitter.finagle.{Codec, ClientCodecConfig}
+import com.twitter.finagle.{CodecFactory, Codec, ClientCodecConfig}
+import com.twitter.finagle.tracing.{Tracer, NullTracer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
 
@@ -39,11 +40,12 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000,
-                            val statsReceiver: StatsReceiver = NullStatsReceiver ) extends ClientProvider {
+                            val statsReceiver: StatsReceiver = NullStatsReceiver,
+                            val tracer: Tracer = NullTracer) extends ClientProvider {
 
   private var service = ClientBuilder()
       .cluster(hosts)
-      .codec(new CassandraThriftFramedCodec(new TBinaryProtocol.Factory(), ClientCodecConfig(Some("cassie"))))
+      .codec(CassandraThriftFramedCodec())
       .retries(retryAttempts)
       .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
       .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
@@ -51,6 +53,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .hostConnectionLimit(maxConnectionsPerHost)
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
       .reportTo(statsReceiver)
+      .tracer(tracer)
       .build()
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
@@ -61,6 +64,25 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     hosts.close
     service.release()
     ()
+  }
+
+  /**
+   * Convenience methods for passing in a codec factory.
+   */
+  object CassandraThriftFramedCodec {
+    def apply() = new CassandraThriftFramedCodecFactory
+    def get() = apply()
+  }
+
+  /**
+   * Create a CassandraThriftFramedCodec with a BinaryProtocol
+   */
+  class CassandraThriftFramedCodecFactory
+    extends CodecFactory[ThriftClientRequest, Array[Byte]]#Client
+  {
+    def apply(config: ClientCodecConfig) = {
+      new CassandraThriftFramedCodec(new TBinaryProtocol.Factory(), config)
+    }
   }
 
   class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) {
