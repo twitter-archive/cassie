@@ -27,13 +27,10 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
     val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
 
-    val codecs = "commons-codec" % "commons-codec" % "1.4" //withSources()
-
-    val jackson     = "org.codehaus.jackson" % "jackson-core-asl" % "1.6.1"
-    val jacksonMap  = "org.codehaus.jackson" % "jackson-mapper-asl" % "1.6.1"
+    val codecs = "commons-codec" % "commons-codec" % "1.4"
 
     val finagleVersion = "1.6.3"
-    val utilVersion = "1.9.0"
+    val utilVersion = "1.10.1"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val utilCore = "com.twitter" % "util-core" % utilVersion
