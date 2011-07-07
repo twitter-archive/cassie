@@ -7,6 +7,7 @@
     don't use counters)
 * make it possible to iterate over the columns in a row (by @iano)
 * make it possible to pass in a tracer
+* retry on more than just WriteError's
 
 # 0.9.4
 * drop finagle-ostrich dependency

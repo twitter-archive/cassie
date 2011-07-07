@@ -4,17 +4,19 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.cassandra.finagle.thrift.{UnavailableException, TimedOutException}
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.ClientBuilder
 import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
 import com.twitter.util.Duration
-import com.twitter.util.Future
+import com.twitter.util.{Future, Throw, Timer, TimerTask, Time}
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.{CodecFactory, Codec, ClientCodecConfig}
 import com.twitter.finagle.tracing.{Tracer, NullTracer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
-
+import com.twitter.finagle.service.{RetryingFilter, Backoff}
+import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
 /**
  * Manages connections to the nodes in a Cassandra cluster.
  *
@@ -43,10 +45,37 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
                             val tracer: Tracer = NullTracer) extends ClientProvider {
 
+  implicit val fakeTimer = new Timer {
+    def schedule(when: Time)(f: => Unit): TimerTask = throw new Exception("illegal use!")
+    def schedule(when: Time, period: Duration)(f: => Unit): TimerTask = throw new Exception("illegal use!")
+    def stop() { throw new Exception("illegal use!") }
+  }
+  private val filter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+    case Throw(ex: WriteException) => {
+      statsReceiver.counter("WriteException").incr
+      true
+    }
+    case Throw(ex: TimedoutRequestException) => {
+      statsReceiver.counter("TimedoutRequestException").incr
+      true
+    }
+    case Throw(ex: ChannelException) => {
+      statsReceiver.counter("ChannelException").incr
+      true
+    }
+    case Throw(ex: UnavailableException) => {
+      statsReceiver.counter("UnavailableException").incr
+      true
+    }
+    case Throw(ex: TimedOutException) => {
+      statsReceiver.counter("TimedOutException").incr
+      true
+    }
+  }
+
   private var service = ClientBuilder()
       .cluster(hosts)
       .codec(CassandraThriftFramedCodec())
-      .retries(retryAttempts)
       .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
       .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
@@ -55,6 +84,8 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .reportTo(statsReceiver)
       .tracer(tracer)
       .build()
+
+  service = filter andThen service
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 
