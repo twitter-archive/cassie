@@ -51,11 +51,26 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     def stop() { throw new Exception("illegal use!") }
   }
   private val filter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
-    case Throw(ex: WriteException) => true
-    case Throw(ex: TimedoutRequestException) => true
-    case Throw(ex: ChannelException) => true
-    case Throw(ex: UnavailableException) => true
-    case Throw(ex: TimedOutException) => true
+    case Throw(ex: WriteException) => {
+      statsReceiver.counter("WriteException").incr
+      true
+    }
+    case Throw(ex: TimedoutRequestException) => {
+      statsReceiver.counter("TimedoutRequestException").incr
+      true
+    }
+    case Throw(ex: ChannelException) => {
+      statsReceiver.counter("ChannelException").incr
+      true
+    }
+    case Throw(ex: UnavailableException) => {
+      statsReceiver.counter("UnavailableException").incr
+      true
+    }
+    case Throw(ex: TimedOutException) => {
+      statsReceiver.counter("TimedOutException").incr
+      true
+    }
   }
 
   private var service = ClientBuilder()
