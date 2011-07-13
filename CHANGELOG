@@ -1,3 +1,6 @@
+# 0.10.1
+* upgrade to finagle 1.7.1
+
 # 0.10.0
 * no more implicits for codecs
 * removed redundant codecs. going forward we'll use one codec per datatype.
@@ -8,6 +11,9 @@
 * make it possible to iterate over the columns in a row (by @iano)
 * make it possible to pass in a tracer
 * retry on more than just WriteError's
+* update to StandardProject 0.12.7 and sbt-thrift 1.4.4
+* update to util 1.10.1
+* better exception handling in ColumnFamily
 
 # 0.9.4
 * drop finagle-ostrich dependency
