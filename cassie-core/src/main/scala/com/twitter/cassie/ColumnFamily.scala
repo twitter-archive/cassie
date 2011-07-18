@@ -178,7 +178,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
-    new RowsIteratee(this, None, None, batchSize, pred)
+    new RowsIteratee(this, batchSize, pred)
   }
 
   def rowsIteratee(batchSize: Int,
@@ -187,7 +187,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def rowsIteratee(batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(columnNames)
-    new RowsIteratee(this, None, None, batchSize, pred)
+    new RowsIteratee(this, batchSize, pred)
   }
 
   def columnsIteratee(key: Key): ColumnsIteratee[Key, Name, Value] = {
