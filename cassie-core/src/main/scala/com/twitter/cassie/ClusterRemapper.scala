@@ -47,7 +47,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
 
       timer.schedule(Time.now, remapPeriod) {
         fetchHosts(underlyingMap.keys.toSeq) onSuccess { ring =>
-          log.error("Received: %s", ring)
+          log.debug("Received: %s", ring)
           performChange(asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
             new InetSocketAddress(host, seedPort) } }.toSeq)
         } onFailure { error =>
@@ -86,7 +86,7 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
       requestTimeoutInMS = timeoutMS,
       maxConnectionsPerHost = 1
     )
-    log.info("Mapping cluster...")
+    log.debug("Mapping cluster...")
     ccp map {
        _.describe_ring(keyspace)
     } ensure {

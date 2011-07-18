@@ -1,24 +1,10 @@
 package com.twitter.cassie
 
-import java.nio.ByteBuffer
 import scala.collection.JavaConversions._
-import com.twitter.util.Future
-
-import codecs.Codec
-
-import com.twitter.logging.Logger
+import com.twitter.util.{Future, Promise}
 import org.apache.cassandra.finagle.thrift
-import java.util.{HashMap, Map, Iterator, List => JList}
-
-trait Iteratee[Key, Name, Value] extends java.lang.Iterable[(Key, Column[Name, Value])] {
-  def iterator() = new ColumnIterator(this)
-
-  def buffer: JList[(Key, Column[Name, Value])]
-
-  def next(): Future[Iteratee[Key, Name, Value]]
-
-  def hasNext(): Boolean
-}
+import java.util.{List => JList, ArrayList => JArrayList}
+import com.twitter.cassie.util.ByteBufferUtil
 
 /**
  * Given a column family, a key range, a batch size, a slice predicate, and
@@ -28,58 +14,79 @@ trait Iteratee[Key, Name, Value] extends java.lang.Iterable[(Key, Column[Name, V
  * Provides a sequence of (row key, column).
  * TODO an example
  */
-case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[_, _, _], //TODO make this a CFL
-                                            startKey: ByteBuffer,
-                                            endKey: ByteBuffer,
+case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
+                                            startKey: Option[Key],
+                                            endKey: Option[Key],
                                             batchSize: Int,
                                             predicate: thrift.SlicePredicate,
-                                            keyCodec: Codec[Key],
-                                            nameCodec: Codec[Name],
-                                            valueCodec: Codec[Value],
-                                            buffer: JList[(Key, Column[Name, Value])] = Nil: JList[(Key, Column[Name, Value])],
+                                            buffer: JList[(Key, JList[Column[Name, Value]])] = Nil: JList[(Key, JList[Column[Name, Value]])],
                                             cycled: Boolean = false,
-                                            skip: Option[ByteBuffer] = None)
-        extends Iteratee[Key, Name, Value] {
-  val log = Logger.get
+                                            skip: Option[Key] = None) {
+
+  def foreach(f: (Key, JList[Column[Name, Value]]) => Unit): Future[Unit] = {
+    val p = new Promise[Unit]
+    next map (_.visit(p, f))
+    p
+  }
+
+  private def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit): Unit = {
+    if (buffer.size > 0) {
+      for((key, columns) <- buffer){
+        f(key, columns)
+      }
+    }
+    if (hasNext) {
+      next map {n =>
+        n.visit(p, f)
+      }
+    } else {
+      p.setValue(Unit)
+    }
+  }
 
   /** Copy constructors for next() and end() cases. */
-  private def end(buffer: JList[(Key, Column[Name, Value])]) = copy(cycled = true, buffer = buffer)
-  private def next(buffer: JList[(Key, Column[Name, Value])],
-                      startKey: ByteBuffer) =
-    copy(startKey = startKey, skip = Some(startKey), buffer = buffer)
+  private def end(buffer: JList[(Key, JList[Column[Name, Value]])]) = copy(cycled = true, buffer = buffer)
+  private def next(buf: JList[(Key, JList[Column[Name, Value]])],
+                      startKey: Key) =
+    copy(startKey = Some(startKey), skip = Some(startKey), buffer = buf)
 
   /** @return True if calling next() will request another batch of data. */
-  def hasNext() = !cycled
+  private def hasNext() = !cycled && buffer.size > 0
   /**
    * If hasNext == true, requests the next batch of data, otherwise throws
    * UnsupportedOperationException.
    * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
-  def next(): Future[RowsIteratee[Key, Name, Value]] = {
+  private def next(): Future[RowsIteratee[Key, Name, Value]] = {
     if (cycled)
       throw new UnsupportedOperationException("No more results.")
 
     requestNextSlice().map { slice =>
-      val skipped = if (!slice.isEmpty && slice.head.key == skip.orNull) slice.tail else slice.toSeq
-      val buffer = skipped.flatMap { ks =>
-        asScalaIterable(ks.columns).map { col =>
-          keyCodec.decode(ks.key) -> Column.convert(nameCodec, valueCodec, col)
+      val skipped = if (!slice.isEmpty && cf.keyCodec.decode(slice.head.key) == skip.orNull) slice.tail else slice.toSeq
+      val buf:JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](skipped.size)
+      skipped.foreach { ks =>
+        val key = cf.keyCodec.decode(ks.key)
+        val cols = new JArrayList[Column[Name, Value]](ks.columns.size)
+        ks.columns.foreach { col =>
+          cols.add(Column.convert(cf.nameCodec, cf.valueCodec, col))
         }
+        buf.add((key, cols))
       }
       // the last found key, or the end key if the slice was empty
-      val lastFoundKey = slice.lastOption.map { _.key }.getOrElse(endKey)
+      val lastFoundKey = slice.lastOption.map{r =>
+        cf.keyCodec.decode(r.key)}.getOrElse(endKey.getOrElse(cf.keyCodec.decode(ByteBufferUtil.EMPTY)))
       if (lastFoundKey == endKey)
         // no more content: end with last batch
-        end(buffer)
+        end(buf)
       else
         // clone the iteratee with a new buffer and start key
-        next(buffer, lastFoundKey)
+        next(buf, lastFoundKey)
     }
   }
 
   private def requestNextSlice(): Future[JList[thrift.KeySlice]] = {
     val effectiveSize = if (skip.isDefined) batchSize else batchSize + 1
-    cf.getRangeSlice(startKey, endKey, effectiveSize, predicate)
+    cf.getRangeSlice(startKey.getOrElse(cf.keyCodec.decode(ByteBufferUtil.EMPTY)), endKey.getOrElse(cf.keyCodec.decode(ByteBufferUtil.EMPTY)), effectiveSize, predicate)
   }
 }

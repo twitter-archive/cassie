@@ -13,7 +13,7 @@ import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
 import thrift.Mutation
 import com.twitter.cassie._
-
+import scala.collection.mutable.ListBuffer
 import MockCassandraClient._
 
 /**
@@ -61,7 +61,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       pred1.setSlice_range(range1)
       when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns1))
 
-      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("dj"))
+      val l = new ListBuffer[String]
+      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      l must equal(List("dj"))
     }
 
     it("fetches multiple slices") {
@@ -87,7 +89,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       pred3.setSlice_range(range3)
       when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns3))
 
-      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("cat", "name", "radish", "sofa", "xray"))
+      val l = new ListBuffer[String]
+      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      l must equal(List("cat", "name", "radish", "sofa", "xray"))
     }
   }
 
@@ -331,8 +335,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.rowsIteratee(16)
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
+      iterator.startKey must equal(None)
+      iterator.endKey must equal(None)
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names must be(null)
       iterator.predicate.getSlice_range.getStart must equal(Array[Byte]())
@@ -348,8 +352,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.rowsIteratee(16, "name")
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
+      iterator.startKey must equal(None)
+      iterator.endKey must equal(None)
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) } must be(List("name"))
     }
@@ -362,8 +366,8 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       val iterator = cf.rowsIteratee(16, Set("name", "motto"))
 
       iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
+      iterator.startKey must equal(None)
+      iterator.endKey must equal(None)
       iterator.batchSize must equal(16)
       iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }

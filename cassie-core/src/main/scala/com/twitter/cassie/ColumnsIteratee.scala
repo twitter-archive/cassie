@@ -1,39 +1,51 @@
 package com.twitter.cassie
 
-import java.nio.ByteBuffer
 import scala.collection.JavaConversions._
-import com.twitter.util.Future
-
-import codecs.Codec
-
-import com.twitter.logging.Logger
+import com.twitter.util.{Future, Promise}
+import java.util.{Map => JMap, List => JList, ArrayList => JArrayList}
 import org.apache.cassandra.finagle.thrift
-import java.util.{HashMap, Map, Iterator, List => JList}
+import com.twitter.cassie.util.ByteBufferUtil
 
-case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], //TODO make this a CFL
-                                             key: ByteBuffer,
+case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
+                                             key: Key,
                                              batchSize: Int,
-                                             predicate: thrift.SlicePredicate,
-                                             keyCodec: Codec[Key],
-                                             nameCodec: Codec[Name],
-                                             valueCodec: Codec[Value],
-                                             buffer: JList[(Key, Column[Name, Value])] = Nil: JList[(Key, Column[Name, Value])],
+                                             buffer: JList[Column[Name, Value]] = Nil: JList[Column[Name, Value]],
                                              cycled: Boolean = false,
-                                             skip: Option[ByteBuffer] = None,
-                                             startColumn: ByteBuffer = ByteBuffer.wrap(Array[Byte]()))
-    extends Iteratee[Key, Name, Value] {
-  val log = Logger.get
+                                             skip: Option[Name] = None,
+                                             startColumn: Option[Name] = None) {
+
+  def foreach(f: Column[Name, Value] => Unit): Future[Unit] = {
+    val p = new Promise[Unit]
+    next map (_.visit(p, f))
+    p
+  }
+
+  private def visit(p: Promise[Unit], f: Column[Name, Value] => Unit): Unit = {
+    for (c <- buffer) {
+      f(c)
+    }
+    if (hasNext) {
+      next map  {n =>
+        n.visit(p, f)
+      }
+    } else {
+      p.setValue(Unit)
+    }
+  }
 
   /** Copy constructors for next() and end() cases. */
-  private def end(buffer: JList[(Key, Column[Name, Value])]) = copy(cycled = true, buffer = buffer)
-  private def next(buffer: JList[(Key, Column[Name, Value])], lastFoundColumn: ByteBuffer) =
-    copy(startColumn = lastFoundColumn, skip = Some(lastFoundColumn), buffer = buffer)
+
+  private def end(buffer: JList[Column[Name, Value]]) = copy(cycled = true, buffer = buffer)
+  private def next(buffer: JList[Column[Name, Value]],
+                    lastFoundColumn: Name) =
+    copy(startColumn = Some(lastFoundColumn), skip = Some(lastFoundColumn), buffer = buffer)
 
   private val requestSize = batchSize + skip.size
 
   /** @return True if calling next() will request another batch of data. */
-  def hasNext() = !cycled
-
+  private def hasNext() = {
+    !cycled && buffer.size > 0
+  }
   /**
    * If hasNext == true, requests the next batch of data, otherwise throws
    * UnsupportedOperationException.
@@ -44,25 +56,18 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
     if (cycled) throw new UnsupportedOperationException("No more results.")
 
     requestNextSlice().map { slice =>
-      val buffer = slice.drop(skip.size).map { col =>
-        (keyCodec.decode(key) -> col)
-      }
+      val buffer = slice.drop(skip.size)
       if (buffer.size() == 0) {
-        end(Nil: JList[(Key, Column[Name, Value])])
+        end(Nil: JList[Column[Name, Value]])
       } else if (buffer.size() < batchSize) {
         end(buffer)
       } else {
-        next(buffer, nameCodec.encode(slice.last.name))
+        next(buffer, slice.last.name)
       }
     }
   }
 
   private def requestNextSlice(): Future[Seq[Column[Name, Value]]] = {
-    val sr = new thrift.SliceRange
-    sr.start = startColumn
-    sr.finish = ByteBuffer.wrap(Array[Byte]())
-    sr.count = requestSize
-    predicate.setSlice_range(sr)
-    cf.getOrderedSlice(keyCodec.decode(key), predicate)
+    cf.getOrderedSlice(key, startColumn, None, requestSize)
   }
 }
