@@ -22,14 +22,14 @@ import com.twitter.cassie.util.ByteBufferUtil
  * }
  * finished() //this is a Future[Unit]. wait on it to know when the iteration is done
  */
-case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
-                                            startKey: Key,
-                                            endKey: Key,
-                                            batchSize: Int,
-                                            predicate: thrift.SlicePredicate,
-                                            buffer: JList[(Key, JList[Column[Name, Value]])] = Nil: JList[(Key, JList[Column[Name, Value]])],
-                                            cycled: Boolean = false,
-                                            skip: Option[Key] = None) {
+class RowsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value],
+                                      val startKey: Key,
+                                      val endKey: Key,
+                                      val batchSize: Int,
+                                      val predicate: thrift.SlicePredicate,
+                                      val buffer: JList[(Key, JList[Column[Name, Value]])] = Nil: JList[(Key, JList[Column[Name, Value]])],
+                                      val cycled: Boolean = false,
+                                      val skip: Option[Key] = None) {
 
   def this(cf: ColumnFamily[Key, Name, Value], batchSize: Int, pred: thrift.SlicePredicate) = {
     this(cf, cf.keyCodec.decode(ByteBufferUtil.EMPTY), cf.keyCodec.decode(ByteBufferUtil.EMPTY),
@@ -57,10 +57,13 @@ case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
     }
   }
 
-  private def end(buffer: JList[(Key, JList[Column[Name, Value]])]) = copy(cycled = true, buffer = buffer)
+  private def end(buf: JList[(Key, JList[Column[Name, Value]])]) = {
+    new RowsIteratee(cf, startKey, endKey, batchSize, predicate, buf, true, skip)
+  }
   private def next(buf: JList[(Key, JList[Column[Name, Value]])],
-                      start: Key) =
-    copy(startKey = start, skip = Some(start), buffer = buf)
+                      start: Key) = {
+    new RowsIteratee(cf, start, endKey, batchSize, predicate, buf, cycled, Some(start))
+  }
 
   private def hasNext() = !cycled && buffer.size > 0
 
