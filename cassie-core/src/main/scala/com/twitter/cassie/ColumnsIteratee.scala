@@ -6,6 +6,20 @@ import java.util.{Map => JMap, List => JList, ArrayList => JArrayList}
 import org.apache.cassandra.finagle.thrift
 import com.twitter.cassie.util.ByteBufferUtil
 
+
+/**
+  * Async iteration across the columns for a given key.
+  *
+  * EXAMPLE
+  * val cf = new Cluster("127.0.0.1").keyspace("foo")
+  *   .connect().columnFamily("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+  *
+  * val done = cf.columnsIteratee.foreach("bam").foreach {col =>
+  *   println(col) // this function is executed asynchronously for each column
+  * }
+  * done() // this is a Future[Unit] that will be satisfied when the iteration
+  *        //   is done
+  */
 case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
                                              key: Key,
                                              batchSize: Int,

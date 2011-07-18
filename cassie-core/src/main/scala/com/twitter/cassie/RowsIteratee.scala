@@ -7,12 +7,20 @@ import java.util.{List => JList, ArrayList => JArrayList}
 import com.twitter.cassie.util.ByteBufferUtil
 
 /**
- * Given a column family, a key range, a batch size, a slice predicate, and
- * a consistency level, iterates through each matching column of each matching
- * key until a cycle is detected (e.g., Cassandra returns the last slice a
- * second time) or until an empty slice is returned (e.g., no more slices).
- * Provides a sequence of (row key, column).
- * TODO an example
+ * Given a column family, a key range, a batch size, a slice predicate, 
+ * iterates through slices of each matching row until a cycle is detected 
+ * (e.g., Cassandra returns the last slice a second time) or until an empty
+ * slice is returned (e.g., no more slices).
+ * Provides a sequence of (row key, columns).
+ *
+ * EXAMPLE: 
+ * val cluster = new Cluster("127.0.0.1").keyspace("foo")
+ *   .connect().columnFamily("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+ * val finished = cf.rowIteratee(100).foreach { case(key, columns)} =>
+ *   println(key) //this function is executed async for each row
+ *   println(cols)
+ * }
+ * finished() //this is a Future[Unit]. wait on it to know when the iteration is done
  */
 case class RowsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
                                             startKey: Option[Key],
