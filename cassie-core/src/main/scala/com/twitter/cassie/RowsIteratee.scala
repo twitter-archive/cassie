@@ -12,7 +12,7 @@ import java.util.{HashMap, Map, Iterator, List => JList}
 
 trait Iteratee[Key, Name, Value] extends java.lang.Iterable[(Key, Column[Name, Value])] {
   def iterator() = new ColumnIterator(this)
-  
+
   def buffer: JList[(Key, Column[Name, Value])]
 
   def next(): Future[Iteratee[Key, Name, Value]]

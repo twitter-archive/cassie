@@ -215,6 +215,17 @@ case class ColumnFamily[Key, Name, Value](
       }
   }
 
+  private[cassie] def getOrderedSlice(key: Key, pred: thrift.SlicePredicate): Future[Seq[Column[Name, Value]]] = {
+    val cp = new thrift.ColumnParent(name)
+    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
+    provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
+      .map { result =>
+        result.map { cosc =>
+          Column.convert(nameCodec, valueCodec, cosc)
+        }
+      }
+  }
+
   private[cassie] def getRangeSlice(startKey: ByteBuffer,
                                     endKey: ByteBuffer,
                                     count: Int,
