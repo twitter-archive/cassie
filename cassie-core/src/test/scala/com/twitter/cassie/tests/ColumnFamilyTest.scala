@@ -47,6 +47,50 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     (mcc.client, cf)
   }
 
+  describe("page through columns") {
+    val (client, cf) = setup
+
+    it("can return exactly one column") {
+      val key = "trance"
+      val cp = new thrift.ColumnParent("cf")
+
+      val columns1 = Seq(newColumn(cf, "dj", "Armin van Buuren", 2293L))
+
+      val range1 = new thrift.SliceRange(b(""), b(""), false, 2)
+      val pred1 = new thrift.SlicePredicate()
+      pred1.setSlice_range(range1)
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns1))
+
+      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("dj"))
+    }
+
+    it("fetches multiple slices") {
+      val key = "trance"
+      val cp = new thrift.ColumnParent("cf")
+
+      val columns1 = Seq(newColumn(cf, "cat", "Commie", 2293L), newColumn(cf, "name", "Coda", 2292L))
+      val columns2 = Seq(newColumn(cf, "name", "Coda", 2292L), newColumn(cf, "radish", "red", 2294L), newColumn(cf, "sofa", "plush", 2298L))
+      val columns3 = Seq(newColumn(cf, "sofa", "plush", 2298L), newColumn(cf, "xray", "ow", 2294L))
+
+      val range1 = new thrift.SliceRange(b(""), b(""), false, 2)
+      val pred1 = new thrift.SlicePredicate()
+      pred1.setSlice_range(range1)
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns1))
+
+      val range2 = new thrift.SliceRange(b("name"), b(""), false, 3)
+      val pred2 = new thrift.SlicePredicate()
+      pred2.setSlice_range(range2)
+      when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns2))
+
+      val range3 = new thrift.SliceRange(b("sofa"), b(""), false, 3)
+      val pred3 = new thrift.SlicePredicate()
+      pred3.setSlice_range(range3)
+      when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns3))
+
+      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("cat", "name", "radish", "sofa", "xray"))
+    }
+  }
+
   describe("getting a columns for a key") {
     val (client, cf) = setup
 
@@ -335,3 +379,4 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     // rowsIteratee
   }
 }
+

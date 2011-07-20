@@ -26,12 +26,14 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
 
   /** Copy constructors for next() and end() cases. */
   private def end(buffer: JList[(Key, Column[Name, Value])]) = copy(cycled = true, buffer = buffer)
-  private def next(buffer: JList[(Key, Column[Name, Value])],
-                      lastFoundColumn: ByteBuffer) =
+  private def next(buffer: JList[(Key, Column[Name, Value])], lastFoundColumn: ByteBuffer) =
     copy(startColumn = lastFoundColumn, skip = Some(lastFoundColumn), buffer = buffer)
+
+  private val requestSize = batchSize + skip.size
 
   /** @return True if calling next() will request another batch of data. */
   def hasNext() = !cycled
+
   /**
    * If hasNext == true, requests the next batch of data, otherwise throws
    * UnsupportedOperationException.
@@ -39,29 +41,28 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
    *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
   def next(): Future[ColumnsIteratee[Key, Name, Value]] = {
-    if (cycled)
-      throw new UnsupportedOperationException("No more results.")
+    if (cycled) throw new UnsupportedOperationException("No more results.")
 
     requestNextSlice().map { slice =>
-      val buffer = slice.toSeq.map { case(name, col) =>
+      val buffer = slice.drop(skip.size).map { col =>
         (keyCodec.decode(key) -> col)
       }
-      if(slice.size() == 1)
+      if (buffer.size() == 0) {
         end(Nil: JList[(Key, Column[Name, Value])])
-      else if(slice.size() < batchSize)
+      } else if (buffer.size() < batchSize) {
         end(buffer)
-      else
-        next(buffer, nameCodec.encode(slice.last._1))
+      } else {
+        next(buffer, nameCodec.encode(slice.last.name))
+      }
     }
   }
 
-  private def requestNextSlice(): Future[Map[Name,Column[Name,Value]]] = {
-    val effectiveSize = if (skip.isDefined) batchSize else batchSize + 1
+  private def requestNextSlice(): Future[Seq[Column[Name, Value]]] = {
     val sr = new thrift.SliceRange
     sr.start = startColumn
     sr.finish = ByteBuffer.wrap(Array[Byte]())
-    sr.count = effectiveSize
+    sr.count = requestSize
     predicate.setSlice_range(sr)
-    cf.getSlice(keyCodec.decode(key), predicate)
+    cf.getOrderedSlice(keyCodec.decode(key), predicate)
   }
 }
