@@ -30,7 +30,7 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
 
   def foreach(f: Column[Name, Value] => Unit): Future[Unit] = {
     val p = new Promise[Unit]
-    next map (_.visit(p, f))
+    next map (_.visit(p, f)) handle { case e => p.setException(e) }
     p
   }
 
@@ -39,9 +39,7 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
       f(c)
     }
     if (hasNext) {
-      next map  {n =>
-        n.visit(p, f)
-      }
+      next map (_.visit(p, f)) handle { case e => p.setException(e) }
     } else {
       p.setValue(Unit)
     }

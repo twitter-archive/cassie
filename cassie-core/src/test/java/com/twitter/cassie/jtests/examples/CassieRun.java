@@ -59,12 +59,6 @@ public final class CassieRun {
     info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply());
     info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply());
 
-    // drop some UUID sauce on things
-    cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo")).apply();
-    cass.namesAs(LongCodec.get()).valuesAs(Utf8Codec.get()).getColumn("key", 2L).apply();
-    cass.namesAs(IntCodec.get()).valuesAs(IntCodec.get())
-        .insert("digits", cass.newColumn(1, 300)).apply();
-
     info("Iterating!");
     Future f = cass.rowsIteratee(2).foreach(new Function2<String, List<Column<String, String>>, Object>() {
       public Object apply(String key, List<Column<String,String>> columns) {

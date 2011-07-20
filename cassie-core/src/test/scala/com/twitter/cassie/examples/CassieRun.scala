@@ -41,9 +41,6 @@ object CassieRun {
     log.info("getting a column from a set of keys: %s", cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply())
     log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply())
 
-    // drop some UUID sauce on things
-    cass.insert(LexicalUUID(cass.clock), Column("yay", "boo")).apply()
-
     log.info("Iterating!")
     val f = cass.rowsIteratee(2).foreach { case(key, cols) =>
       log.info("Found: %s %s", key, cols)

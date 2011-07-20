@@ -3,7 +3,7 @@ package com.twitter.cassie
 import scala.collection.JavaConversions._
 import com.twitter.util.{Future, Promise}
 import org.apache.cassandra.finagle.thrift
-import java.util.{List => JList, ArrayList => JArrayList}
+import java.util.{List => JList}
 import com.twitter.cassie.util.ByteBufferUtil
 
 /**
@@ -26,7 +26,7 @@ import com.twitter.cassie.util.ByteBufferUtil
 trait RowsIteratee[Key, Name, Value] {
   def foreach(f: (Key, JList[Column[Name, Value]]) => Unit): Future[Unit] = {
     val p = new Promise[Unit]
-    next map (_.visit(p, f))
+    next map (_.visit(p, f)) handle {case e => p.setException(e)}
     p
   }
   def hasNext(): Boolean
@@ -59,11 +59,11 @@ private[cassie] class InitialRowsIteratee[Key, Name, Value](val cf: ColumnFamily
   override def hasNext() = true
 
   def next(): Future[RowsIteratee[Key, Name, Value]] = {
-    cf.getRangeSlice(start, end, batchSize, predicate).map { buf =>
+    cf.getRangeSlice(start, end, batchSize, predicate) map { buf =>
       // the last found key, or the end key if the slice was empty
       buf.lastOption match {
         case None => new FinalRowsIteratee(buf)
-        case Some(r) => new SubsequentRowsIteratee(cf, r._1, end, batchSize, predicate, buf)
+        case Some(row) => new SubsequentRowsIteratee(cf, row._1, end, batchSize, predicate, buf)
       }
     }
   }
@@ -84,7 +84,7 @@ private[cassie] class SubsequentRowsIteratee[Key, Name, Value](
     }
     next map {n =>
       n.visit(p, f)
-    }
+    } handle { case e => p.setException(e)}
   }
 
   def next() = {
