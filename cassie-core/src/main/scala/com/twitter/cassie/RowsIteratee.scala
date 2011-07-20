@@ -16,86 +16,95 @@ import com.twitter.cassie.util.ByteBufferUtil
  * EXAMPLE: 
  * val cluster = new Cluster("127.0.0.1").keyspace("foo")
  *   .connect().columnFamily("bar", Utf8Codec, Utf8Codec, Utf8Codec)
- * val finished = cf.rowIteratee(100).foreach { case(key, columns)} =>
+ * val finished = cf.rowsIteratee(100).foreach { case(key, columns) =>
  *   println(key) //this function is executed async for each row
  *   println(cols)
  * }
  * finished() //this is a Future[Unit]. wait on it to know when the iteration is done
  */
-class RowsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value],
-                                      val startKey: Key,
-                                      val endKey: Key,
+ 
+trait RowsIteratee[Key, Name, Value] {
+  def foreach(f: (Key, JList[Column[Name, Value]]) => Unit): Future[Unit] = {
+    val p = new Promise[Unit]
+    next map (_.visit(p, f))
+    p
+  }
+  def hasNext(): Boolean
+  def next(): Future[RowsIteratee[Key, Name, Value]]
+  def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit): Unit
+}
+
+object RowsIteratee{
+  def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], batchSize: Int, pred: thrift.SlicePredicate) = {
+    new InitialRowsIteratee(cf, batchSize, pred)
+  }
+}
+
+private[cassie] class InitialRowsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value],
+                                      val start: Key,
+                                      val end: Key,
                                       val batchSize: Int,
-                                      val predicate: thrift.SlicePredicate,
-                                      val buffer: JList[(Key, JList[Column[Name, Value]])] = Nil: JList[(Key, JList[Column[Name, Value]])],
-                                      val cycled: Boolean = false,
-                                      val skip: Option[Key] = None) {
+                                      val predicate: thrift.SlicePredicate
+                                      ) extends RowsIteratee[Key, Name, Value] {
 
   def this(cf: ColumnFamily[Key, Name, Value], batchSize: Int, pred: thrift.SlicePredicate) = {
     this(cf, cf.keyCodec.decode(ByteBufferUtil.EMPTY), cf.keyCodec.decode(ByteBufferUtil.EMPTY),
       batchSize, pred)
   }
 
-  def foreach(f: (Key, JList[Column[Name, Value]]) => Unit): Future[Unit] = {
-    val p = new Promise[Unit]
-    next map (_.visit(p, f))
-    p
+  def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit): Unit = {
+    throw new UnsupportedOperationException("no need to visit the initial Iteratee")
   }
 
-  private def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit): Unit = {
-    if (buffer.size > 0) {
-      for((key, columns) <- buffer){
-        f(key, columns)
-      }
-    }
-    if (hasNext) {
-      next map {n =>
-        n.visit(p, f)
-      }
-    } else {
-      p.setValue(Unit)
-    }
-  }
+  override def hasNext() = true
 
-  private def end(buf: JList[(Key, JList[Column[Name, Value]])]) = {
-    new RowsIteratee(cf, startKey, endKey, batchSize, predicate, buf, true, skip)
-  }
-  private def next(buf: JList[(Key, JList[Column[Name, Value]])],
-                      start: Key) = {
-    new RowsIteratee(cf, start, endKey, batchSize, predicate, buf, cycled, Some(start))
-  }
-
-  private def hasNext() = !cycled && buffer.size > 0
-
-  private def next(): Future[RowsIteratee[Key, Name, Value]] = {
-    if (cycled)
-      throw new UnsupportedOperationException("No more results.")
-
-    requestNextSlice().map { slice =>
-      val skipped = if (!slice.isEmpty && cf.keyCodec.decode(slice.head.key) == skip.orNull) slice.tail else slice.toSeq
-      val buf:JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](skipped.size)
-      skipped.foreach { ks =>
-        val key = cf.keyCodec.decode(ks.key)
-        val cols = new JArrayList[Column[Name, Value]](ks.columns.size)
-        ks.columns.foreach { col =>
-          cols.add(Column.convert(cf.nameCodec, cf.valueCodec, col))
-        }
-        buf.add((key, cols))
-      }
+  def next(): Future[RowsIteratee[Key, Name, Value]] = {
+    cf.getRangeSlice(start, end, batchSize, predicate).map { buf =>
       // the last found key, or the end key if the slice was empty
-      val lastFoundKey = slice.lastOption.map{r =>
-        cf.keyCodec.decode(r.key)}.getOrElse(endKey)
-      if (lastFoundKey == endKey)
-        // no more content: end with last batch
-        end(buf)
-      else
-        // clone the iteratee with a new buffer and start key
-        next(buf, lastFoundKey)
+      buf.lastOption match {
+        case None => new FinalRowsIteratee(buf)
+        case Some(r) => new SubsequentRowsIteratee(cf, r._1, end, batchSize, predicate, buf)
+      }
+    }
+  }
+}
+
+private[cassie] class SubsequentRowsIteratee[Key, Name, Value](
+    cf: ColumnFamily[Key, Name, Value],
+    start: Key,
+    end: Key,
+    batchSize:Int,
+    predicate: thrift.SlicePredicate,
+    buffer: JList[(Key, JList[Column[Name, Value]])]) extends RowsIteratee[Key, Name, Value]{
+  override def hasNext = true
+
+  def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit): Unit = {
+    for((key, columns) <- buffer) {
+      f(key, columns)
+    }
+    next map {n =>
+      n.visit(p, f)
     }
   }
 
-  private def requestNextSlice(): Future[JList[thrift.KeySlice]] = {
-    val effectiveSize = if (skip.isDefined) batchSize else batchSize + 1
-    cf.getRangeSlice(startKey, endKey, effectiveSize, predicate)
+  def next() = {
+    cf.getRangeSlice(start, end, batchSize+1, predicate).map { buf =>
+      val skipped = buf.subList(1, buf.length)
+      skipped.lastOption match {
+        case None => new FinalRowsIteratee(skipped)
+        case Some(r) => new SubsequentRowsIteratee(cf, r._1, end, batchSize, predicate, skipped)
+      }
+    }
+  }
+}
+
+private[cassie] class FinalRowsIteratee[Key, Name, Value](buffer: JList[(Key, JList[Column[Name, Value]])]) extends RowsIteratee[Key, Name, Value] {
+  override def hasNext = false
+  def next = Future.exception(new UnsupportedOperationException("No more results."))
+  def visit(p: Promise[Unit], f: (Key, JList[Column[Name, Value]]) => Unit) = {
+    for((key, columns) <- buffer){
+      f(key, columns)
+    }
+    p.setValue(Unit)
   }
 }

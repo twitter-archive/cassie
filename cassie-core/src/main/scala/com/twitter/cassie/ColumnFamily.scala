@@ -178,7 +178,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
-    new RowsIteratee(this, batchSize, pred)
+    RowsIteratee(this, batchSize, pred)
   }
 
   def rowsIteratee(batchSize: Int,
@@ -187,7 +187,7 @@ case class ColumnFamily[Key, Name, Value](
 
   def rowsIteratee(batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(columnNames)
-    new RowsIteratee(this, batchSize, pred)
+    RowsIteratee(this, batchSize, pred)
   }
 
   def columnsIteratee(key: Key): ColumnsIteratee[Key, Name, Value] = {
@@ -235,7 +235,20 @@ case class ColumnFamily[Key, Name, Value](
     val cp = new thrift.ColumnParent(name)
     val range = new thrift.KeyRange(count).setStart_key(keyCodec.encode(startKey)).setEnd_key(keyCodec.encode(endKey))
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
-    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
+    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level)
+      .map{ slices =>
+        val buf:JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](slices.size)
+        slices.foreach { ks =>
+          val key = keyCodec.decode(ks.key)
+          val cols = new JArrayList[Column[Name, Value]](ks.columns.size)
+          ks.columns.foreach { col =>
+            cols.add(Column.convert(nameCodec, valueCodec, col))
+          }
+          buf.add((key, cols))
+        }
+        buf
+      }
+    }
   }
 
   def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {

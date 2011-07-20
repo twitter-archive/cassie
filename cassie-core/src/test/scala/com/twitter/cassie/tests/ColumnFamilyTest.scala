@@ -328,51 +328,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
   }
 
-  describe("iterating through all columns of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with an all-column predicate") {
-      val iterator = cf.rowsIteratee(16)
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(None)
-      iterator.endKey must equal(None)
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names must be(null)
-      iterator.predicate.getSlice_range.getStart must equal(Array[Byte]())
-      iterator.predicate.getSlice_range.getFinish must equal(Array[Byte]())
-      iterator.predicate.getSlice_range.getCount must equal(Int.MaxValue)
-    }
-  }
-
-  describe("iterating through one column of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with a single-column predicate") {
-      val iterator = cf.rowsIteratee(16, "name")
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(None)
-      iterator.endKey must equal(None)
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) } must be(List("name"))
-    }
-  }
-
-  describe("iterating through a set of columns of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with a column-list predicate") {
-      val iterator = cf.rowsIteratee(16, Set("name", "motto"))
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(None)
-      iterator.endKey must equal(None)
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
-    }
-  }
-
   describe("exception handling") {
     // TODO
     // getRowSlice
