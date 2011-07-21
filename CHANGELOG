@@ -1,3 +1,6 @@
+# 0.10.2
+* fix bug where ColumnFamily#columnIteratee might never finish
+
 # 0.10.1
 * upgrade to finagle 1.7.1
 
