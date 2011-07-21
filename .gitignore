@@ -7,3 +7,7 @@ target
 project/plugins/project/
 project/plugins/src_managed/
 .ivyjars
+.classpath
+.project
+.scala_dependencies
+sbt
