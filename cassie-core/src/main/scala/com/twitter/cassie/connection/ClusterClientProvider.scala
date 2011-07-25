@@ -18,7 +18,7 @@ import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 import com.twitter.finagle.service.{RetryingFilter, Backoff}
 import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
 
-sealed case class RetryPolicy(val filter: RetryingFilter[ThriftClientRequest, Array[Byte]])
+sealed case class RetryPolicy()
 
 object RetryPolicy {
   val Idempotent = RetryPolicy()
