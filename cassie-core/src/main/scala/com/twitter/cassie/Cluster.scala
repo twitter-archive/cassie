@@ -3,8 +3,7 @@ package com.twitter.cassie
 import connection._
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
-import com.twitter.cassie.connection.SocketAddressCluster
-import com.twitter.cassie.connection.CCluster
+import com.twitter.cassie.connection.{CCluster, RetryPolicy, SocketAddressCluster}
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
@@ -45,7 +44,8 @@ case class KeyspaceBuilder(
   _maxConnectionsPerHost: Int = 5,
   _removeAfterIdleForMS: Int = 60000,
   _statsReceiver: StatsReceiver = NullStatsReceiver,
-  _tracer: Tracer = NullTracer) {
+  _tracer: Tracer = NullTracer,
+  _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
 
   /**
     * connect to the cluster with the specified parameters */
@@ -58,7 +58,10 @@ case class KeyspaceBuilder(
       new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
 
     // TODO: move to builder pattern as well
-    val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts, _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost, _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver, _tracer)
+    val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts,
+              _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost,
+              _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver, _tracer,
+              _retryPolicy)
     new Keyspace(_name, ccp)
   }
 
@@ -67,6 +70,7 @@ case class KeyspaceBuilder(
     *          to refresh its host list. */
   def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
   def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
+  def retryPolicy(r: RetryPolicy): KeyspaceBuilder = copy(_retryPolicy = r)
   /**
     * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
   def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeoutInMS = r)

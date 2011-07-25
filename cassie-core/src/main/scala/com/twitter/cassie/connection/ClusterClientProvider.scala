@@ -34,6 +34,13 @@ import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelExc
  *                             from the pool
  */
 
+sealed case class RetryPolicy()
+
+object RetryPolicy {
+  val Idempotent = RetryPolicy()
+  val NonIdempotent = RetryPolicy()
+}
+
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
                             val retryAttempts: Int = 5,
@@ -43,14 +50,16 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val maxConnectionsPerHost: Int = 5,
                             val removeAfterIdleForMS: Int = 60000,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
-                            val tracer: Tracer = NullTracer) extends ClientProvider {
+                            val tracer: Tracer = NullTracer,
+                            val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
     def schedule(when: Time)(f: => Unit): TimerTask = throw new Exception("illegal use!")
     def schedule(when: Time, period: Duration)(f: => Unit): TimerTask = throw new Exception("illegal use!")
     def stop() { throw new Exception("illegal use!") }
   }
-  private val filter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+
+  private val idempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
     case Throw(ex: WriteException) => {
       statsReceiver.counter("WriteException").incr
       true
@@ -71,6 +80,22 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       statsReceiver.counter("TimedOutException").incr
       true
     }
+  }
+
+  private val nonIdempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+    case Throw(ex: WriteException) => {
+      statsReceiver.counter("WriteException").incr
+      true
+    }
+    case Throw(ex: UnavailableException) => {
+      statsReceiver.counter("UnavailableException").incr
+      true
+    }
+  }
+
+  val filter = retryPolicy match {
+    case RetryPolicy.Idempotent => idempotentRetryFilter
+    case RetryPolicy.NonIdempotent => nonIdempotentRetryFilter
   }
 
   private var service = ClientBuilder()
