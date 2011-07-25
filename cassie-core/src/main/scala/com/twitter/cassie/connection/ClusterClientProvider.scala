@@ -17,9 +17,19 @@ import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
 import com.twitter.finagle.service.{RetryingFilter, Backoff}
 import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
+
+sealed case class RetryPolicy(val filter: RetryingFilter[ThriftClientRequest, Array[Byte]])
+
+object RetryPolicy {
+  val Idempotent = RetryPolicy()
+  val NonIdempotent = RetryPolicy()
+}
+
 /**
  * Manages connections to the nodes in a Cassandra cluster.
  *
+ * @param hosts the cluster to connect to
+ * @param keyspace the keyspace to connect to
  * @param retryAttempts the number of times a query should be attempted before
  *                      throwing an exception
  * @param requestTimeoutInMS the amount of time, in milliseconds, the client will
@@ -32,14 +42,11 @@ import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelExc
  * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
  *                             idle connections should be closed and removed
  *                             from the pool
+ * @param statsReceiver where to send the stats
+ * @param tracer a finagle tracer
+ * @param retryPolicy a policy specifying which exceptions are retryable. some
+ *                      cassandra operations are non-idempotent
  */
-
-sealed case class RetryPolicy()
-
-object RetryPolicy {
-  val Idempotent = RetryPolicy()
-  val NonIdempotent = RetryPolicy()
-}
 
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
