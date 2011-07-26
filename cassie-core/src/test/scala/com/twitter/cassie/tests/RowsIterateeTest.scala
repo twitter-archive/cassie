@@ -1,19 +1,17 @@
 package com.twitter.cassie.tests
 
 import java.nio.ByteBuffer
-import java.util.{Arrays, List => JList, HashSet => JHashSet, ArrayList => JArrayList}
+import java.util.{List => JList, HashSet => JHashSet, ArrayList => JArrayList}
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
-import com.twitter.cassie.{Column, ColumnFamily, RowsIteratee}
+import com.twitter.cassie._
 import org.mockito.Mockito.{when, inOrder => inOrderVerify, spy}
 import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
 import org.apache.cassandra.finagle.thrift
 import com.twitter.cassie.codecs.{Utf8Codec}
 import scala.collection.JavaConversions._
-import com.twitter.cassie.MockCassandraClient.Fulfillment
 import com.twitter.cassie.MockCassandraClient.SimpleProvider
-import com.twitter.cassie._
 import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
 
@@ -27,7 +25,7 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
     (mcc, cf)
   }
 
-  def newColumn(name: String, value: String, timestamp: Long) = {
+  def c(name: String, value: String, timestamp: Long) = {
     new Column(name, value, Some(timestamp), None)
   }
   def anyByteBuffer = any(classOf[ByteBuffer])
@@ -64,11 +62,11 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
     when(mcc.client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
       Future.value(
         asJavaList(List(
-          keySlice(cf, "start",  List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))),
-          keySlice(cf, "start1", List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))),
-          keySlice(cf, "start2", List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))),
-          keySlice(cf, "start3", List(newColumn("name", "value", 1), newColumn("name1", "value1", 2)))))),
-      Future.value(asJavaList(List(keySlice(cf, "start3", List(newColumn("name", "value", 1), newColumn("name1", "value1", 2))))))
+          keySlice(cf, "start",  List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start1", List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start2", List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start3", List(c("name", "value", 1), c("name1", "value1", 2)))))),
+      Future.value(asJavaList(List(keySlice(cf, "start3", List(c("name", "value", 1), c("name1", "value1", 2))))))
     )
 
     val iterator = cf.rowsIteratee("start", "end", 5, new JHashSet())
@@ -81,10 +79,10 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
 
     it("does a buffered iteration over the columns in the rows in the range") {
       data must equal(ListBuffer(
-        ("start",  asJavaList(List(Column("name", "value").timestamp(1), Column("name1", "value1").timestamp(2)))),
-        ("start1", asJavaList(List(Column("name", "value").timestamp(1), Column("name1", "value1").timestamp(2)))),
-        ("start2", asJavaList(List(Column("name", "value").timestamp(1), Column("name1", "value1").timestamp(2)))),
-        ("start3", asJavaList(List(Column("name", "value").timestamp(1), Column("name1", "value1").timestamp(2))))
+        ("start",  asJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start1", asJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start2", asJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start3", asJavaList(List(c("name", "value", 1), c("name1", "value1", 2))))
       ))
     }
 
