@@ -1,3 +1,6 @@
+#0.11.0
+* improved iteration (see RowsIteratee or ColumnsIteratee for examples)
+
 # 0.10.2
 * fix bug where ColumnFamily#columnIteratee might never finish
 
