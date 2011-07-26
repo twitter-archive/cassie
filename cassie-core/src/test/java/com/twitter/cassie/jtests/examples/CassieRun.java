@@ -2,21 +2,23 @@ package com.twitter.cassie.jtests.examples;
 
 import java.util.Arrays;
 import java.util.HashSet;
-
-import scala.Tuple2;
+import java.util.List;
 
 import com.twitter.cassie.*;
 import com.twitter.cassie.clocks.MicrosecondEpochClock;
 import com.twitter.cassie.types.*;
 import com.twitter.cassie.codecs.*;
+import com.twitter.util.Function2;
+import com.twitter.util.Function;
+import com.twitter.util.Future;
 
 public final class CassieRun {
   public static <V> HashSet<V> Set(V... values) {
     return new HashSet<V>(Arrays.asList(values));
   }
 
-  public static void info(String str) {
-    System.out.println(str);
+  public static void info(Object o) {
+    System.out.println(o);
   }
 
   public static void main(String[] args) throws Exception {
@@ -35,7 +37,8 @@ public final class CassieRun {
     // create a column family
     ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());
 
-    info("inserting some columns asynchronously");
+    info("inserting some columns");
+    //note that these calls are async, the apply() is where the waiting happens
     cass.insert("yay for me", cass.newColumn("name", "Coda")).apply();
     cass.insert("yay for me", cass.newColumn("motto", "Moar lean.")).apply();
 
@@ -49,41 +52,31 @@ public final class CassieRun {
     cass.insert("yay for everyone", cass.newColumn("motto", "Swish!")).apply();
 
     info("getting a column: " + cass.getColumn("yay for me", "name").apply());
-    // Some(Column(name,Coda,1271789761374109))
-
     info("getting a column that doesn't exist: " + cass.getColumn("yay for no one", "name").apply());
-    // None
-
     info("getting a column that doesn't exist #2: " + cass.getColumn("yay for no one", "oink").apply());
-    // None
-
     info("getting a set of columns: " + cass.getColumns("yay for me", Set("name", "motto")).apply());
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
-
     info("getting a whole row: " + cass.getRow("yay for me").apply());
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
-
     info("getting a column from a set of keys: " + cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply());
-    // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
-
     info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply());
-    // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
-
-    // drop some UUID sauce on things
-    cass.keysAs(LexicalUUIDCodec.get()).insert(new LexicalUUID(cass.clock()), cass.newColumn("yay", "boo")).apply();
-
-    cass.namesAs(LongCodec.get()).valuesAs(Utf8Codec.get()).getColumn("key", 2L).apply();
-    cass.namesAs(IntCodec.get()).valuesAs(IntCodec.get())
-        .insert("digits", cass.newColumn(1, 300)).apply();
 
     info("Iterating!");
-    for (Tuple2<String, Column<String,String>> row : cass.rowsIteratee(2)) {
-      info("Found: " + row._2());
-    }
+    Future f = cass.rowsIteratee(2).foreach(new Function2<String, List<Column<String, String>>, Object>() {
+      public Object apply(String key, List<Column<String,String>> columns) {
+        info("Found: " + key);
+        return null;
+      }
+    });
 
-    for (Tuple2<String, Column<String,String>> row : cass.columnsIteratee(2, "yay for me")) {
-      info("Found Columns Iteratee: " + row._2());
-    }
+    f.apply();
+
+    Future f2 = cass.columnsIteratee(2, "yay for me").foreach(new Function<Column<String, String>, Object>() {
+      public Object apply(Column<String,String> column){
+        info("Found Columns Iteratee: " + column);
+        return null;
+      }
+    });
+
+    f2.apply();
 
     info("removing a column");
     cass.removeColumn("yay for me", "motto").apply();

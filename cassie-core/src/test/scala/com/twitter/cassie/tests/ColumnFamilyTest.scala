@@ -13,7 +13,7 @@ import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
 import thrift.Mutation
 import com.twitter.cassie._
-
+import scala.collection.mutable.ListBuffer
 import MockCassandraClient._
 
 /**
@@ -61,7 +61,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       pred1.setSlice_range(range1)
       when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns1))
 
-      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("dj"))
+      val l = new ListBuffer[String]
+      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      l must equal(List("dj"))
     }
 
     it("fetches multiple slices") {
@@ -87,7 +89,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       pred3.setSlice_range(range3)
       when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(new Fulfillment[ColumnList](columns3))
 
-      cf.columnsIteratee(2, key).map { case (k, v) => v.name }.toList must equal(List("cat", "name", "radish", "sofa", "xray"))
+      val l = new ListBuffer[String]
+      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      l must equal(List("cat", "name", "radish", "sofa", "xray"))
     }
   }
 
@@ -321,51 +325,6 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
       Utf8Codec.decode(col.name) must equal("name")
       Utf8Codec.decode(col.value) must equal("value")
       col.getTimestamp must equal(201)
-    }
-  }
-
-  describe("iterating through all columns of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with an all-column predicate") {
-      val iterator = cf.rowsIteratee(16)
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names must be(null)
-      iterator.predicate.getSlice_range.getStart must equal(Array[Byte]())
-      iterator.predicate.getSlice_range.getFinish must equal(Array[Byte]())
-      iterator.predicate.getSlice_range.getCount must equal(Int.MaxValue)
-    }
-  }
-
-  describe("iterating through one column of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with a single-column predicate") {
-      val iterator = cf.rowsIteratee(16, "name")
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) } must be(List("name"))
-    }
-  }
-
-  describe("iterating through a set of columns of all rows") {
-    val (client, cf) = setup
-
-    it("returns a ColumnIterator with a column-list predicate") {
-      val iterator = cf.rowsIteratee(16, Set("name", "motto"))
-
-      iterator.cf must equal(cf)
-      iterator.startKey must equal(b(""))
-      iterator.endKey must equal(b(""))
-      iterator.batchSize must equal(16)
-      iterator.predicate.getColumn_names.map { Utf8Codec.decode(_) }.toSet must be(Set("name", "motto"))
     }
   }
 
