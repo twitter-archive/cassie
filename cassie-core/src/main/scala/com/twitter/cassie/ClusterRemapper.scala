@@ -6,9 +6,11 @@ import com.twitter.cassie.connection.ClusterClientProvider
 import com.twitter.cassie.connection.SocketAddressCluster
 import com.twitter.cassie.connection.CCluster
 import com.twitter.finagle.ServiceFactory
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.util.Timer
 import com.twitter.logging.Logger
 import com.twitter.util.Duration
+import com.twitter.util.Future
 import com.twitter.util.Time
 import java.io.IOException
 import java.net.{InetSocketAddress, SocketAddress}
@@ -21,13 +23,11 @@ import com.twitter.finagle.WriteException
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
  *
- * TODO: Accept a set of seedHosts
- *
  * @param keyspace the keyspace to map
- * @param seedHost the hostname of the seed node
- * @param seedPort the Thrift port of the seed node
+ * @param seeds seed node addresses
+ * @param port the Thrift port of client nodes
  */
-private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: Duration, seedPort: Int = 9160, timeoutMS: Int = 10000) extends CCluster {
+private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160, statsReceiver: StatsReceiver = NullStatsReceiver) extends CCluster {
   private val log = Logger.get
   private[cassie] var timer = new Timer(new HashedWheelTimer())
 
@@ -40,18 +40,19 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
   def mkFactories[Req, Rep](mkBroker: (SocketAddress) => ServiceFactory[Req, Rep]) = {
     new SeqProxy[ServiceFactory[Req, Rep]] {
 
-      @volatile private[this] var underlyingMap: Map[SocketAddress, ServiceFactory[Req, Rep]] = Map(Seq(seedHost) map { address =>
-        new InetSocketAddress(address, seedPort) -> mkBroker(new InetSocketAddress(address, seedPort))
+      @volatile private[this] var underlyingMap: Map[SocketAddress, ServiceFactory[Req, Rep]] = Map(seeds map { address =>
+        address -> mkBroker(address)
       }: _*)
       def self = underlyingMap.values.toSeq
 
       timer.schedule(Time.now, remapPeriod) {
         fetchHosts(underlyingMap.keys.toSeq) onSuccess { ring =>
           log.error("Received: %s", ring)
-          performChange(asScalaIterable(ring).flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-            new InetSocketAddress(host, seedPort) } }.toSeq)
+          performChange(ring.flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
+            new InetSocketAddress(host, port) } }.toSeq)
         } onFailure { error =>
           log.error(error, "error mapping ring")
+          statsReceiver.counter("ClusterRemapFailure." + error.getClass().getName()).incr
         }
       }
 
@@ -83,12 +84,13 @@ private class ClusterRemapper(keyspace: String, seedHost: String, remapPeriod: D
     val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
-      requestTimeoutInMS = timeoutMS,
-      maxConnectionsPerHost = 1
+      retryAttempts = Integer.MAX_VALUE,
+      maxConnectionsPerHost = 1,
+      statsReceiver = statsReceiver
     )
-    log.info("Mapping cluster...")
     ccp map {
-       _.describe_ring(keyspace)
+      log.info("Mapping cluster...")
+      _.describe_ring(keyspace)
     } ensure {
       ccp.close()
     }

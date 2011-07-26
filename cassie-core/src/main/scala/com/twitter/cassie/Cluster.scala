@@ -50,12 +50,13 @@ case class KeyspaceBuilder(
   /**
     * connect to the cluster with the specified parameters */
   def connect(): Keyspace = {
+    val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
     val hosts = if (_mapHostsEvery > 0)
       // either map the cluster for this keyspace: TODO: use all seed hosts
-      new ClusterRemapper(_name, seedHosts.head, _mapHostsEvery)
+      new ClusterRemapper(_name, seedAddresses, _mapHostsEvery, statsReceiver = _statsReceiver)
     else
       // or connect directly to the hosts that were given as seeds
-      new SocketAddressCluster(seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq)
+      new SocketAddressCluster(seedAddresses)
 
     // TODO: move to builder pattern as well
     val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts,
