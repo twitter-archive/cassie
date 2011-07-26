@@ -176,6 +176,10 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
+  def rowsIteratee(start: Key, end:Key, batchSize: Int, columnNames: JSet[Name]) = {
+    RowsIteratee(this, start, end, batchSize, sliceRangePredicate(columnNames))
+  }
+
   def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
     RowsIteratee(this, batchSize, pred)
@@ -232,6 +236,7 @@ case class ColumnFamily[Key, Name, Value](
                                     endKey: Key,
                                     count: Int,
                                     predicate: thrift.SlicePredicate) = {
+
     val cp = new thrift.ColumnParent(name)
     val range = new thrift.KeyRange(count).setStart_key(keyCodec.encode(startKey)).setEnd_key(keyCodec.encode(endKey))
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)

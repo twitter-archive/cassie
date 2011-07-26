@@ -38,6 +38,10 @@ object RowsIteratee{
   def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], batchSize: Int, pred: thrift.SlicePredicate) = {
     new InitialRowsIteratee(cf, batchSize, pred)
   }
+
+  def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], start: Key, end: Key, batchSize: Int, pred: thrift.SlicePredicate) = {
+    new InitialRowsIteratee(cf, start, end, batchSize, pred)
+  }
 }
 
 private[cassie] class InitialRowsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value],
