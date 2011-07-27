@@ -109,7 +109,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .cluster(hosts)
       .codec(CassandraThriftFramedCodec())
       .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
-      .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
+      .tcpConnectTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
       .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))

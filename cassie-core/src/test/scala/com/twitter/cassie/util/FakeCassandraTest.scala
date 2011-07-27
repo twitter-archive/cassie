@@ -7,14 +7,14 @@ import java.net.{SocketAddress, InetSocketAddress}
 import org.apache.cassandra.finagle.thrift
 
 import com.twitter.cassie._
-import codecs._
+import com.twitter.cassie.codecs._
 import com.twitter.logging.Logger
 import scala.collection.JavaConversions._
 import com.twitter.conversions.time._
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.connection.CCluster
 
-class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfter {
+class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   val port = 1359
   def factory() = new FakeCassandra(port)
   var server: FakeCassandra = null

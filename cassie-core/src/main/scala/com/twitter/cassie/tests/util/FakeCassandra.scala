@@ -11,6 +11,7 @@ import scala.collection.JavaConversions._
 import java.util.{HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSortedSet,
   TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap}
 import java.util.Comparator
+import scala.math.min
 
 object FakeCassandra {
   class ServerThread(cassandra: Cassandra.Iface, port: Int) extends Thread {
@@ -45,7 +46,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
         else return -1
       }
 
-      val minLength = Math.min(o1.remaining(), o2.remaining())
+      val minLength = min(o1.remaining(), o2.remaining())
       var x = 0
       var i = o1.position()
       var j = o2.position()
