@@ -199,10 +199,7 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   def columnsIteratee(batchSize: Int, key: Key): ColumnsIteratee[Key, Name, Value] = {
-    new ColumnsIteratee(
-      this,
-      key,
-      batchSize)
+    ColumnsIteratee(this, key, batchSize)
   }
 
   private[cassie] def getSlice(key: Key,
