@@ -1,47 +1,29 @@
 package com.twitter.cassie.tests
 
-import java.nio.ByteBuffer
 import java.util.{List => JList, HashSet => JHashSet, ArrayList => JArrayList}
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
 import com.twitter.cassie._
-import org.mockito.Mockito.{when, inOrder => inOrderVerify, spy, verify, atMost}
-import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
+import org.mockito.Mockito.{when, inOrder => inOrderVerify, verify, atMost}
+import org.mockito.Matchers.{eq => matchEq}
 import org.apache.cassandra.finagle.thrift
-import com.twitter.cassie.codecs.{Utf8Codec}
 import scala.collection.JavaConversions._
-import com.twitter.cassie.MockCassandraClient.SimpleProvider
 import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
+import com.twitter.cassie.util.ColumnFamilyTestHelper
 
-class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
 
-  def newCf() = {
-    val mcc = new MockCassandraClient
-    val cf = new ColumnFamily("ks", "People", new SimpleProvider(mcc.client),
-          Utf8Codec, Utf8Codec, Utf8Codec,
-          ReadConsistency.Quorum, WriteConsistency.Quorum)
-    (mcc, cf)
-  }
+class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper{
 
-  def cosc(cf: ColumnFamily[String, String, String], c: Column[String, String]) = {
-    new thrift.ColumnOrSuperColumn().setColumn(Column.convert(cf.nameCodec, cf.valueCodec, cf.clock, c))
-  }
-  def c(name: String, value: String, timestamp: Long) = {
+  def co(name: String, value: String, timestamp: Long) = {
     new Column(name, value, Some(timestamp), None)
   }
-  def b(string: String) = ByteBuffer.wrap(string.getBytes)
-
-  def pred(start: String, end: String, count: Int) =
-    new thrift.SlicePredicate().setSlice_range(
-      new thrift.SliceRange().setStart(b(start)).setFinish(b(end))
-        .setReversed(false).setCount(count))
 
   describe("iterating through an empty row") {
-    val (mcc, cf) = newCf
+    val (client, cf) = setup
 
-    when(mcc.client.get_slice(matchEq(b("foo")), any(classOf[thrift.ColumnParent]) , matchEq(pred("", "", 100)), matchEq(cf.readConsistency.level))).thenReturn(
+    when(client.get_slice(matchEq(b("foo")), anyColumnParent , matchEq(pred("", "", 100)), matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(new JArrayList[thrift.ColumnOrSuperColumn]())
     )
 
@@ -52,23 +34,23 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
   }
 
   describe("iterating through the columns of a row") {
-    val (mcc, cf) = newCf()
+    val (client, cf) = setup
 
     val columns = asJavaList(List(
-      c("first",  "1", 1),
-      c("second", "2", 2),
-      c("third",  "3", 3),
-      c("fourth", "4", 4)
+      co("first",  "1", 1),
+      co("second", "2", 2),
+      co("third",  "3", 3),
+      co("fourth", "4", 4)
     ))
 
     val coscs = asJavaList(columns.map{c => cosc(cf, c)})
 
-    when(mcc.client.get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]),
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
         matchEq(pred("", "", 4)) , matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(coscs)
     )
 
-    when(mcc.client.get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]),
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
         matchEq(pred("fourth", "", 5)) , matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(asJavaList(List(coscs.get(3))))
     )
@@ -86,11 +68,11 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
 
     it("requests data using the last key as the start key until the end is detected") {
       val cp = new thrift.ColumnParent(cf.name)
-      val inOrder = inOrderVerify(mcc.client)
-      inOrder.verify(mcc.client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))
-      inOrder.verify(mcc.client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))
+      val inOrder = inOrderVerify(client)
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))
 
-      verify(mcc.client, atMost(2)).get_slice(any(classOf[ByteBuffer]), any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]), any(classOf[thrift.ConsistencyLevel]))
+      verify(client, atMost(2)).get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)
     }
   }
 }
