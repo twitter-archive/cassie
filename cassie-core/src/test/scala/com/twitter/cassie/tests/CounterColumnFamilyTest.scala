@@ -12,33 +12,13 @@ import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
 import com.twitter.cassie._
 
-import MockCassandraClient._
+import com.twitter.cassie.util.ColumnFamilyTestHelper
+import com.twitter.util.Future
 
-/**
- * Note that almost all calls on a ColumnFamily would normally be asynchronous.
- * But in this case, MockCassandraClient takes asynchronicity out of the equation.
- */
-class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
-
-  type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
-  type KeyColumnMap = java.util.Map[java.nio.ByteBuffer,ColumnList]
-
-  def newColumn(name: String, value: Long) = {
-    val cosc = new thrift.ColumnOrSuperColumn()
-    cosc.setCounter_column(new thrift.CounterColumn(Utf8Codec.encode(name), value))
-    cosc
-  }
-  def b(keyString: String) = ByteBuffer.wrap(keyString.getBytes)
-
-  def setup = {
-    val mcc = new MockCassandraClient
-    val cf = new CounterColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec.get(), Utf8Codec.get(), ReadConsistency.Quorum)
-    (mcc.client, cf)
-  }
+class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   describe("getting a columns for a key") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a get_counter_slice with a set of column names") {
       cf.getColumn("key", "name")
@@ -57,16 +37,16 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns a option of a column if it exists") {
-      val columns = Seq(newColumn("cats", 2L))
+      val columns = Seq(cc("cats", 2L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
       cf.getColumn("key", "cats")() must equal(Some(CounterColumn("cats", 2L)))
     }
   }
 
   describe("getting a row") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a get_slice with a maxed-out count") {
       cf.getRow("key")
@@ -81,10 +61,10 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns a map of column names to columns") {
-      val columns = Seq(newColumn("cats", 2L),
-                        newColumn("dogs", 4L))
+      val columns = Seq(cc("cats", 2L),
+                        cc("dogs", 4L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
       cf.getRow("key")() must equal(asJavaMap(Map(
         "cats" -> CounterColumn("cats", 2L),
@@ -94,7 +74,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   }
 
   describe("getting a set of columns for a key") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a get_counter_slice with a set of column names") {
       cf.getColumns("key", Set("name", "age"))
@@ -109,10 +89,10 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
     }
 
     it("returns a map of column names to columns") {
-      val columns = Seq(newColumn("cats", 2L),
-                        newColumn("dogs", 3L))
+      val columns = Seq(cc("cats", 2L),
+                        cc("dogs", 3L))
 
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[ColumnList](columns))
+      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
       cf.getColumns("key", Set("cats", "dogs"))() must equal(asJavaMap(Map(
         "cats" -> CounterColumn("cats", 2L),
@@ -122,7 +102,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   }
 
   describe("getting a column for a set of keys") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a multiget_counter_slice with a column name") {
       cf.consistency(ReadConsistency.One).multigetColumn(Set("key1", "key2"), "name")
@@ -138,11 +118,11 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("us") -> asJavaList(Seq(newColumn("cats", 2L))),
-        b("jp") -> asJavaList(Seq(newColumn("cats", 4L)))
+        b("us") -> asJavaList(Seq(cc("cats", 2L))),
+        b("jp") -> asJavaList(Seq(cc("cats", 4L)))
       )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
       cf.multigetColumn(Set("us", "jp"), "cats")() must equal(asJavaMap(Map(
         "us" -> CounterColumn("cats", 2L),
@@ -152,11 +132,11 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
     it("does not explode when the column doesn't exist for a key") {
       val results = Map(
-        b("us") -> asJavaList(Seq(newColumn("cats", 2L))),
+        b("us") -> asJavaList(Seq(cc("cats", 2L))),
         b("jp") -> (asJavaList(Seq()): ColumnList)
       )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
       cf.multigetColumn(Set("us", "jp"), "cats")() must equal(asJavaMap(Map(
         "us" -> CounterColumn("cats", 2L)
@@ -165,7 +145,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   }
 
   describe("getting a set of columns for a set of keys") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a multiget_counter_slice with a set of column names") {
       cf.consistency(ReadConsistency.One).multigetColumns(Set("us", "jp"), Set("cats", "dogs"))
@@ -181,13 +161,13 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("us") -> asJavaList(Seq(newColumn("cats", 2L),
-                                newColumn("dogs", 9L))),
-        b("jp") -> asJavaList(Seq(newColumn("cats", 4L),
-                                newColumn("dogs", 1L)))
+        b("us") -> asJavaList(Seq(cc("cats", 2L),
+                                cc("dogs", 9L))),
+        b("jp") -> asJavaList(Seq(cc("cats", 4L),
+                                cc("dogs", 1L)))
       )
 
-      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(new Fulfillment[KeyColumnMap](results))
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
       cf.multigetColumns(Set("us", "jp"), Set("cats", "dogs"))() must equal(asJavaMap(Map(
         "us" -> asJavaMap(Map(
@@ -203,13 +183,13 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   }
 
   describe("adding a column") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs an add") {
       cf.add("key", CounterColumn("cats", 55))
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnParent])
-      val col = newColumn("cats", 55).counter_column
+      val col = cc("cats", 55).counter_column
 
       verify(client).add(matchEq(b("key")), cp.capture, matchEq(col), matchEq(thrift.ConsistencyLevel.ONE))
 
@@ -218,7 +198,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar {
   }
 
   describe("performing a batch mutation") {
-    val (client, cf) = setup
+    val (client, cf) = setupCounters
 
     it("performs a batch_mutate") {
       cf.batch()

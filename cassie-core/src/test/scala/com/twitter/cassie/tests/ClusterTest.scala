@@ -12,9 +12,9 @@ class ClusterTest extends Spec with MustMatchers with MockitoSugar {
     val cluster = new Cluster("nonhost")
 
     it("creates a keyspace with the given name and provider") {
-      val ks = cluster.keyspace("poop").mapHostsEvery(0.minutes).connect()
+      val ks = cluster.keyspace("ks").mapHostsEvery(0.minutes).connect()
 
-      ks.name must equal("poop")
+      ks.name must equal("ks")
     }
   }
 }
