@@ -40,7 +40,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     /**
       * Test Dependencies */
-    val scalaTest =  "org.scalatest" % "scalatest" % "1.2" % "test" intransitive()
+    val scalaTest =  "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test" intransitive()
     val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
     val junitInterface = "com.novocode" % "junit-interface" % "0.5" % "test->default"
 
