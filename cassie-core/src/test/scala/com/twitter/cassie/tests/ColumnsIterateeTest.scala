@@ -88,7 +88,7 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
       val cp = new thrift.ColumnParent(cf.name)
       val inOrder = inOrderVerify(mcc.client)
       inOrder.verify(mcc.client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))
-      inOrder.verify(mcc.client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("", "", 5)), matchEq(cf.readConsistency.level))
+      inOrder.verify(mcc.client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))
 
       verify(mcc.client, atMost(2)).get_slice(any(classOf[ByteBuffer]), any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]), any(classOf[thrift.ConsistencyLevel]))
     }
