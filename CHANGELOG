@@ -1,5 +1,7 @@
-#0.11.0
+# 0.11.0
 * improved iteration (see RowsIteratee or ColumnsIteratee for examples)
+* improved cluster remapping
+* separate retry policies for counters and cluster remapping
 
 # 0.10.2
 * fix bug where ColumnFamily#columnIteratee might never finish
