@@ -50,20 +50,25 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   override def setup(context: ReducerContext) = {
     def conf(key: String) = context.getConfiguration.get(key)
     cluster = new Cluster(conf(HOSTS))
+    cluster = configureCluster(cluster)
     if(conf(MIN_BACKOFF) != null ) minBackoff = Integer.valueOf(conf(MIN_BACKOFF)).intValue
     if(conf(MAX_BACKOFF) != null ) maxBackoff = Integer.valueOf(conf(MAX_BACKOFF)).intValue
     if(conf(IGNORE_FAILURES) != null ) ignoreFailures = conf(IGNORE_FAILURES) == "true"
     if(conf(PAGE_SIZE) != null ) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
 
 
-    keyspace = configure(cluster.keyspace(conf(KEYSPACE))).connect()
+    keyspace = configureKeyspace(cluster.keyspace(conf(KEYSPACE))).connect()
     columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), 
       ByteArrayCodec, ByteArrayCodec, ByteArrayCodec)
     batch = columnFamily.batch
   }
 
-  def configure(c: KeyspaceBuilder): KeyspaceBuilder = {
+  def configureKeyspace(c: KeyspaceBuilder): KeyspaceBuilder = {
     c.retryAttempts(2)
+  }
+
+  def configureCluster(cluster: Cluster): Cluster = {
+    cluster
   }
 
   override def reduce(key: BytesWritable, values: java.lang.Iterable[ColumnWritable], context: ReducerContext) = {

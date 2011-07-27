@@ -31,7 +31,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
   }
 
   def keyspace() = {
-    val keyspace = client.keyspace("foo").mapHostsEvery(0.seconds).connect()
+    val keyspace = client.mapHostsEvery(0.seconds).keyspace("foo").connect()
     connections.append(keyspace)
     keyspace
   }

@@ -15,12 +15,12 @@ public class ClusterTest {
 
   @Before
   public void before() throws Exception {
-    cluster = new Cluster("host1,host2");
+    cluster = new Cluster("host1,host2").mapHostsEvery(new Duration(0));
   }
 
   @Test
   public void test() {
-    Keyspace ks = cluster.keyspace("blah").mapHostsEvery(new Duration(0)).connect();
+    Keyspace ks = cluster.keyspace("blah").connect();
     assertEquals(ks.name(), "blah");
   }
 }

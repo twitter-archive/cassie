@@ -52,8 +52,8 @@ object Fake {
 }
 
 class NonMappingCassieReducer extends CassieReducer {
-  override def configure(ksb: KeyspaceBuilder) = {
-    ksb.mapHostsEvery(0.seconds)
+  override def configureCluster(cluster: Cluster): Cluster = {
+    cluster.mapHostsEvery(0.seconds)
   }
 }
 
@@ -106,7 +106,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       ToolRunner.run(new Configuration(), new TestScript(), Array("hello", "world"))
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1")
-      val ks = cluster.keyspace("ks").mapHostsEvery(0.seconds).connect()
+      val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
       val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
       cf.getRow("0").get().get("default").value must equal("hello")
@@ -121,7 +121,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       ToolRunner.run(new Configuration(), new TestScript(), Array())
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1")
-      val ks = cluster.keyspace("ks").mapHostsEvery(0.seconds).connect()
+      val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
       val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
       fake.stop()

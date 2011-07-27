@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.{CCluster, RetryPolicy, SocketAddressCluster}
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
+import com.twitter.finagle.builder.{Cluster => FCluster}
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.tracing.{Tracer, NullTracer}
 
@@ -13,8 +14,11 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
  * A Cassandra cluster.
  *
  * @param seedHosts list of some hosts in the cluster
- * @param seedPort the port number for '''all''' hosts in the cluster */
-class Cluster(seedHosts: Set[String], seedPort: Int) {
+ * @param seedPort the port number for '''all''' hosts in the cluster
+ * @param mapHostsEvery Cassie will query the cassandra cluster every [[mapHostsEvery]] period
+ *        to refresh its host list. */
+class Cluster(seedHosts: Set[String], seedPort:Int) {
+  private var mapHostsEvery: Duration = 10.minutes
 
   /**
     * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
@@ -29,14 +33,27 @@ class Cluster(seedHosts: Set[String], seedPort: Int) {
   /**
     * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
     * @param name the keyspace's name */
-  def keyspace(name: String): KeyspaceBuilder = KeyspaceBuilder(seedHosts, seedPort, name)
+  def keyspace(name: String): KeyspaceBuilder = {
+    val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
+    val cluster = if (mapHostsEvery > 0)
+      // either map the cluster for this keyspace
+      new ClusterRemapper(name, seedHosts.head, mapHostsEvery)
+    else
+      // or connect directly to the hosts that were given as seeds
+      new SocketAddressCluster(seedAddresses)
+
+    KeyspaceBuilder(name, cluster)
+  }
+
+  def mapHostsEvery(period: Duration): Cluster = {
+    mapHostsEvery = period
+    this
+  }
 }
 
 case class KeyspaceBuilder(
-  seedHosts: Set[String],
-  seedPort: Int,
   _name: String,
-  _mapHostsEvery: Duration = 10.minutes,
+  _cluster: CCluster,
   _retryAttempts: Int = 0,
   _requestTimeoutInMS: Int = 10000,
   _connectionTimeoutInMS: Int = 10000,
@@ -47,29 +64,25 @@ case class KeyspaceBuilder(
   _tracer: Tracer = NullTracer,
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
 
+  _cluster.statsReceiver(_statsReceiver)
+
   /**
     * connect to the cluster with the specified parameters */
   def connect(): Keyspace = {
-    val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
-    val hosts = if (_mapHostsEvery > 0)
-      // either map the cluster for this keyspace
-      new ClusterRemapper(_name, seedAddresses, _mapHostsEvery, statsReceiver = _statsReceiver)
-    else
-      // or connect directly to the hosts that were given as seeds
-      new SocketAddressCluster(seedAddresses)
-
     // TODO: move to builder pattern as well
-    val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts,
-              _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost,
-              _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver, _tracer,
-              _retryPolicy)
+    val ccp = new ClusterClientProvider(_cluster,
+                                        _name,
+                                        _retryAttempts,
+                                        _requestTimeoutInMS,
+                                        _connectionTimeoutInMS,
+                                        _minConnectionsPerHost,
+                                        _maxConnectionsPerHost,
+                                        _removeAfterIdleForMS,
+                                        _statsReceiver,
+                                        _tracer,
+                                        _retryPolicy)
     new Keyspace(_name, ccp)
   }
-
-  /**
-    * @param d Cassie will query the cassandra cluster every [[d]] period
-    *          to refresh its host list. */
-  def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
   def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
   def retryPolicy(r: RetryPolicy): KeyspaceBuilder = copy(_retryPolicy = r)
   /**
@@ -93,4 +106,3 @@ case class KeyspaceBuilder(
    */
   def tracer(t: Tracer) = copy(_tracer = t)
 }
-
