@@ -4,8 +4,6 @@ import scala.collection.JavaConversions._
 import com.twitter.util.{Future, Promise}
 import java.util.{Map => JMap, List => JList, ArrayList => JArrayList}
 import org.apache.cassandra.finagle.thrift
-import com.twitter.cassie.util.ByteBufferUtil
-
 
 /**
   * Async iteration across the columns for a given key.
@@ -20,13 +18,10 @@ import com.twitter.cassie.util.ByteBufferUtil
   * done() // this is a Future[Unit] that will be satisfied when the iteration
   *        //   is done
   */
-case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
-                                             key: Key,
-                                             batchSize: Int,
-                                             buffer: JList[Column[Name, Value]] = Nil: JList[Column[Name, Value]],
-                                             cycled: Boolean = false,
-                                             skip: Option[Name] = None,
-                                             startColumn: Option[Name] = None) {
+  
+trait ColumnsIteratee[Key, Name, Value] {
+  def hasNext(): Boolean
+  def next(): Future[ColumnsIteratee[Key, Name, Value]]
 
   def foreach(f: Column[Name, Value] => Unit): Future[Unit] = {
     val p = new Promise[Unit]
@@ -34,7 +29,53 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
     p
   }
 
-  private def visit(p: Promise[Unit], f: Column[Name, Value] => Unit): Unit = {
+  def visit(p: Promise[Unit], f: Column[Name, Value] => Unit): Unit
+}
+
+object ColumnsIteratee {
+  def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], key: Key, batchSize: Int) = {
+    new InitialColumnsIteratee(cf, key, batchSize)
+  }
+}
+
+private[cassie] class InitialColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], key: Key, batchSize: Int)
+    extends ColumnsIteratee[Key, Name, Value] {
+
+  def hasNext() = true
+
+  def next() = {
+    cf.getOrderedSlice(key, None, None, batchSize).map { buf =>
+      if(buf.size() < batchSize) {
+        new FinalColumnsIteratee(buf)
+      } else {
+        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, buf)
+      }
+    }
+  }
+
+  def visit(p: Promise[Unit], f: Column[Name, Value] => Unit) {
+    throw new UnsupportedOperationException("no need to visit the initial Iteratee")
+  }
+}
+
+private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], 
+    val key: Key, val batchSize: Int, val start: Name, val buffer: JList[Column[Name, Value]])
+    extends ColumnsIteratee[Key, Name, Value] {
+
+  def hasNext = true
+
+  def next() = {
+    cf.getOrderedSlice(key, Some(start), None, batchSize+1).map { buf =>
+      val skipped = buf.subList(1, buf.length)
+      if(skipped.size() < batchSize) {
+        new FinalColumnsIteratee(skipped)
+      } else {
+        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, skipped)
+      }
+    }
+  }
+
+  def visit(p: Promise[Unit], f: Column[Name, Value] => Unit) {
     for (c <- buffer) {
       f(c)
     }
@@ -44,42 +85,17 @@ case class ColumnsIteratee[Key, Name, Value](cf: ColumnFamily[Key, Name, Value],
       p.setValue(Unit)
     }
   }
+}
 
-  /** Copy constructors for next() and end() cases. */
+private[cassie] class FinalColumnsIteratee[Key, Name, Value](val buffer: JList[Column[Name, Value]]) 
+  extends ColumnsIteratee[Key, Name, Value] {
+  def hasNext = false
+  def next    = Future.exception(new UnsupportedOperationException("no next for the final iteratee"))
 
-  private def end(buffer: JList[Column[Name, Value]]) = copy(cycled = true, buffer = buffer)
-  private def next(buffer: JList[Column[Name, Value]],
-                    lastFoundColumn: Name) =
-    copy(startColumn = Some(lastFoundColumn), skip = Some(lastFoundColumn), buffer = buffer)
-
-  private val requestSize = batchSize + skip.size
-
-  /** @return True if calling next() will request another batch of data. */
-  private def hasNext() = {
-    !cycled && buffer.size > 0
-  }
-  /**
-   * If hasNext == true, requests the next batch of data, otherwise throws
-   * UnsupportedOperationException.
-   * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
-   *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
-   */
-  def next(): Future[ColumnsIteratee[Key, Name, Value]] = {
-    if (cycled) throw new UnsupportedOperationException("No more results.")
-
-    requestNextSlice().map { slice =>
-      val buffer = slice.drop(skip.size)
-      if (buffer.size() == 0) {
-        end(Nil: JList[Column[Name, Value]])
-      } else if (buffer.size() < batchSize) {
-        end(buffer)
-      } else {
-        next(buffer, slice.last.name)
-      }
+  def visit(p: Promise[Unit], f: Column[Name, Value] => Unit) {
+    for (c <- buffer) {
+      f(c)
     }
-  }
-
-  private def requestNextSlice(): Future[Seq[Column[Name, Value]]] = {
-    cf.getOrderedSlice(key, startColumn, None, requestSize)
+    p.setValue(Unit)
   }
 }
