@@ -51,6 +51,7 @@ case class ColumnFamily[Key, Name, Value](
     getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
   }
 
+  //TODO make the return value ordered
   def getRowSlice(key: Key,
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
@@ -175,9 +176,13 @@ case class ColumnFamily[Key, Name, Value](
     provider.map { _.batch_mutate(mutations, writeConsistency.level) }
   }
 
+  def rowsIteratee(start: Key, end:Key, batchSize: Int, columnNames: JSet[Name]) = {
+    RowsIteratee(this, start, end, batchSize, sliceRangePredicate(columnNames))
+  }
+
   def rowsIteratee(batchSize: Int): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
-    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    RowsIteratee(this, batchSize, pred)
   }
 
   def rowsIteratee(batchSize: Int,
@@ -186,18 +191,18 @@ case class ColumnFamily[Key, Name, Value](
 
   def rowsIteratee(batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     val pred = sliceRangePredicate(columnNames)
-    new RowsIteratee(this, EMPTY, EMPTY, batchSize, pred, keyCodec, nameCodec, valueCodec)
+    RowsIteratee(this, batchSize, pred)
+  }
+
+  def columnsIteratee(key: Key): ColumnsIteratee[Key, Name, Value] = {
+    columnsIteratee(100, key)
   }
 
   def columnsIteratee(batchSize: Int, key: Key): ColumnsIteratee[Key, Name, Value] = {
     new ColumnsIteratee(
       this,
-      keyCodec.encode(key),
-      batchSize,
-      new thrift.SlicePredicate,
-      keyCodec,
-      nameCodec,
-      valueCodec)
+      key,
+      batchSize)
   }
 
   private[cassie] def getSlice(key: Key,
@@ -215,7 +220,8 @@ case class ColumnFamily[Key, Name, Value](
       }
   }
 
-  private[cassie] def getOrderedSlice(key: Key, pred: thrift.SlicePredicate): Future[Seq[Column[Name, Value]]] = {
+  private[cassie] def getOrderedSlice(key: Key, start: Option[Name], end: Option[Name], size: Int): Future[Seq[Column[Name, Value]]] = {
+    val pred = sliceRangePredicate(start, end, Order.Normal, size)
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
@@ -226,14 +232,28 @@ case class ColumnFamily[Key, Name, Value](
       }
   }
 
-  private[cassie] def getRangeSlice(startKey: ByteBuffer,
-                                    endKey: ByteBuffer,
+  private[cassie] def getRangeSlice(startKey: Key,
+                                    endKey: Key,
                                     count: Int,
                                     predicate: thrift.SlicePredicate) = {
+
     val cp = new thrift.ColumnParent(name)
-    val range = new thrift.KeyRange(count).setStart_key(startKey).setEnd_key(endKey)
+    val range = new thrift.KeyRange(count).setStart_key(keyCodec.encode(startKey)).setEnd_key(keyCodec.encode(endKey))
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
-    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level) }
+    provider.map { _.get_range_slices(cp, predicate, range, readConsistency.level)
+      .map{ slices =>
+        val buf:JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](slices.size)
+        slices.foreach { ks =>
+          val key = keyCodec.decode(ks.key)
+          val cols = new JArrayList[Column[Name, Value]](ks.columns.size)
+          ks.columns.foreach { col =>
+            cols.add(Column.convert(nameCodec, valueCodec, col))
+          }
+          buf.add((key, cols))
+        }
+        buf
+      }
+    }
   }
 
   def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {
