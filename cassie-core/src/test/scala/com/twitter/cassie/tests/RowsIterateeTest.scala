@@ -14,8 +14,10 @@ import scala.collection.JavaConversions._
 import com.twitter.cassie.MockCassandraClient.SimpleProvider
 import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
+import com.twitter.cassie.util.ColumnFamilyTestHelper
 
-class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest {
+
+class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper{
 
   def newCf() = {
     val mcc = new MockCassandraClient
@@ -34,9 +36,9 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
   def b(string: String) = ByteBuffer.wrap(string.getBytes)
 
   describe("iterating through an empty column family") {
-    val (mcc, cf) = newCf
+    val (client, cf) = setup
 
-    when(mcc.client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
+    when(client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
       Future.value(new JArrayList[thrift.KeySlice]())
     )
 
@@ -57,9 +59,9 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
   }
 
   describe("iterating through the columns of a range of keys") {
-    val (mcc, cf) = newCf()
+    val (client, cf) = setup
 
-    when(mcc.client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
+    when(client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
       Future.value(
         asJavaList(List(
           keySlice(cf, "start",  List(c("name", "value", 1), c("name1", "value1", 2))),
