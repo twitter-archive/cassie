@@ -1,13 +1,11 @@
 package com.twitter.cassie.tests
 
 import scala.collection.JavaConversions._
-
 import com.twitter.cassie.codecs.Utf8Codec
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie._
-import com.twitter.cassie.MockCassandraClient.SimpleProvider
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 
 

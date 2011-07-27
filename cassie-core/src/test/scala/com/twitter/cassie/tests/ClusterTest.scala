@@ -4,7 +4,6 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 import com.twitter.cassie.Cluster
 import org.scalatest.mock.MockitoSugar
-import com.twitter.cassie.connection.ClientProvider
 import com.twitter.conversions.time._
 
 class ClusterTest extends Spec with MustMatchers with MockitoSugar {

@@ -1,8 +1,8 @@
 package com.twitter.cassie.tests
 
-import org.scalatest._
+import org.scalatest.{Spec, BeforeAndAfterEach}
 import org.scalatest.matchers.MustMatchers
-import org.mockito.Matchers._
+import org.mockito.Matchers.{anyObject}
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie.codecs.Utf8Codec
@@ -12,7 +12,7 @@ import com.twitter.cassie.Column
 import com.twitter.cassie.clocks.Clock
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import com.twitter.util.Future
-import java.util.{HashMap, Map, List, ArrayList}
+import java.util.{HashMap, Map => JMap, List => JList, ArrayList => JArrayList}
 import java.nio.ByteBuffer
 import org.apache.cassandra.finagle.thrift
 
@@ -64,7 +64,6 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
       a.clock = StaticClock
       b.clock = StaticClock
 
-
       val aBatch = a.batch()
       val bBatch = b.batch()
 
@@ -73,10 +72,9 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
 
       // java.util.Map[ByteBuffer, java.util.Map[String, java.util.List[Mutation]]]
       val expectedMutations = tmp.mutations
-      val tmpMap = new ArrayList[Map[String, List[thrift.Mutation]]](expectedMutations.values).get(0)
-      val col = new ArrayList[List[thrift.Mutation]](tmpMap.values).get(0)
+      val tmpMap = new JArrayList[JMap[String, JList[thrift.Mutation]]](expectedMutations.values).get(0)
+      val col = new JArrayList[JList[thrift.Mutation]](tmpMap.values).get(0)
       tmpMap.put("Dogs", col)
-
 
       aBatch.insert("foo", Column("bar", "baz"))
       bBatch.insert("foo", Column("bar", "baz"))

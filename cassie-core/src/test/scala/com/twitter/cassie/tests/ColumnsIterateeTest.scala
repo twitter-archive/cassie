@@ -1,17 +1,14 @@
 package com.twitter.cassie.tests
 
-import java.nio.ByteBuffer
 import java.util.{List => JList, HashSet => JHashSet, ArrayList => JArrayList}
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
 import com.twitter.cassie._
-import org.mockito.Mockito.{when, inOrder => inOrderVerify, spy, verify, atMost}
-import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
+import org.mockito.Mockito.{when, inOrder => inOrderVerify, verify, atMost}
+import org.mockito.Matchers.{eq => matchEq}
 import org.apache.cassandra.finagle.thrift
-import com.twitter.cassie.codecs.{Utf8Codec}
 import scala.collection.JavaConversions._
-import com.twitter.cassie.MockCassandraClient.SimpleProvider
 import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.util.ColumnFamilyTestHelper
@@ -26,7 +23,7 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
   describe("iterating through an empty row") {
     val (client, cf) = setup
 
-    when(client.get_slice(matchEq(b("foo")), any(classOf[thrift.ColumnParent]) , matchEq(pred("", "", 100)), matchEq(cf.readConsistency.level))).thenReturn(
+    when(client.get_slice(matchEq(b("foo")), anyColumnParent , matchEq(pred("", "", 100)), matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(new JArrayList[thrift.ColumnOrSuperColumn]())
     )
 
@@ -48,12 +45,12 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
 
     val coscs = asJavaList(columns.map{c => cosc(cf, c)})
 
-    when(client.get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]),
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
         matchEq(pred("", "", 4)) , matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(coscs)
     )
 
-    when(client.get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]),
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
         matchEq(pred("fourth", "", 5)) , matchEq(cf.readConsistency.level))).thenReturn(
       Future.value(asJavaList(List(coscs.get(3))))
     )
@@ -72,10 +69,10 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
     it("requests data using the last key as the start key until the end is detected") {
       val cp = new thrift.ColumnParent(cf.name)
       val inOrder = inOrderVerify(client)
-      inOrder.verify(client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))
-      inOrder.verify(client).get_slice(matchEq(b("bar")), any(classOf[thrift.ColumnParent]), matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))
 
-      verify(client, atMost(2)).get_slice(any(classOf[ByteBuffer]), any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]), any(classOf[thrift.ConsistencyLevel]))
+      verify(client, atMost(2)).get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)
     }
   }
 }

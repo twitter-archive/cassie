@@ -16,7 +16,6 @@ trait ColumnFamilyTestHelper {
     new thrift.ColumnOrSuperColumn().setColumn(Column.convert(cf.nameCodec, cf.valueCodec, cf.clock, c))
   }
 
-
   def c(cf: ColumnFamily[String, String, String], name: String, value: String, timestamp: Long) = {
     val cosc = new thrift.ColumnOrSuperColumn
     cosc.setColumn(
@@ -59,6 +58,7 @@ trait ColumnFamilyTestHelper {
   def anyColumn() = any(classOf[thrift.Column])
   def anyConsistencyLevel() = any(classOf[thrift.ConsistencyLevel])
   def anyCounterColumn() = any(classOf[thrift.CounterColumn])
+  def anyKeyRange() = any(classOf[thrift.KeyRange])
 
   def pred(start: String, end: String, count: Int) =
     new thrift.SlicePredicate().setSlice_range(

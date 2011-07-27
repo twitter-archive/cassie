@@ -1,21 +1,17 @@
 package com.twitter.cassie.tests
 
-import java.nio.ByteBuffer
 import java.util.{List => JList, HashSet => JHashSet, ArrayList => JArrayList}
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{OneInstancePerTest, Spec}
 import com.twitter.cassie._
-import org.mockito.Mockito.{when, inOrder => inOrderVerify, spy}
-import org.mockito.Matchers.{eq => matchEq, any, anyString, anyInt}
+import org.mockito.Mockito.{when, inOrder => inOrderVerify}
+import org.mockito.Matchers.{eq => matchEq}
 import org.apache.cassandra.finagle.thrift
-import com.twitter.cassie.codecs.{Utf8Codec}
 import scala.collection.JavaConversions._
-import com.twitter.cassie.MockCassandraClient.SimpleProvider
 import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.util.ColumnFamilyTestHelper
-
 
 class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper{
 
@@ -38,7 +34,7 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
   describe("iterating through an empty column family") {
     val (client, cf) = setup
 
-    when(client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
+    when(client.get_range_slices(anyColumnParent, anySlicePredicate , anyKeyRange, anyConsistencyLevel)).thenReturn(
       Future.value(new JArrayList[thrift.KeySlice]())
     )
 
@@ -53,7 +49,7 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
   describe("iterating through the columns of a range of keys") {
     val (client, cf) = setup
 
-    when(client.get_range_slices(any(classOf[thrift.ColumnParent]), any(classOf[thrift.SlicePredicate]) , any(classOf[thrift.KeyRange]), any(classOf[thrift.ConsistencyLevel]))).thenReturn(
+    when(client.get_range_slices(anyColumnParent, anySlicePredicate , anyKeyRange, anyConsistencyLevel)).thenReturn(
       Future.value(
         asJavaList(List(
           keySlice(cf, "start",  List(co("name", "value", 1), co("name1", "value1", 2))),
@@ -85,8 +81,8 @@ class RowsIterateeTest extends Spec with MustMatchers with MockitoSugar with One
       f()
       val cp = new thrift.ColumnParent(cf.name)
       val inOrder = inOrderVerify(client)
-      inOrder.verify(client).get_range_slices(matchEq(cp), any(classOf[thrift.SlicePredicate]), matchEq(keyRange("start", "end", 5)), any(classOf[thrift.ConsistencyLevel]))
-      inOrder.verify(client).get_range_slices(matchEq(cp), any(classOf[thrift.SlicePredicate]), matchEq(keyRange("start3", "end", 6)), any(classOf[thrift.ConsistencyLevel]))
+      inOrder.verify(client).get_range_slices(matchEq(cp), anySlicePredicate, matchEq(keyRange("start", "end", 5)), anyConsistencyLevel)
+      inOrder.verify(client).get_range_slices(matchEq(cp), anySlicePredicate, matchEq(keyRange("start3", "end", 6)), anyConsistencyLevel)
     }
   }
 }
