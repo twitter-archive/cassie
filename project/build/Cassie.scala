@@ -41,8 +41,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     /**
       * Test Dependencies */
     val scalaTest =  "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test" intransitive()
-    val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
-    val junitInterface = "com.novocode" % "junit-interface" % "0.5" % "test->default"
+    val mockito = "org.mockito" % "mockito-all" % "1.8.5" % "test"
+    val junitInterface = "com.novocode" % "junit-interface" % "0.7" % "test->default"
 
     override def compileOptions = Deprecation :: Unchecked :: super.compileOptions.toList
 
