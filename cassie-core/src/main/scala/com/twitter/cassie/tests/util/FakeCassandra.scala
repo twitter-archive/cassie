@@ -202,7 +202,8 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
 
   def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long,
       consistency_level: ConsistencyLevel) = {
-    val cf = getColumnFamily(column_path).get(key).remove(column_path.BufferForColumn)
+    val row = getColumnFamily(column_path).get(key)
+    if (row != null) row.remove(column_path.BufferForColumn)
   }
 
   def truncate(cfname: String) = throw new UnsupportedOperationException
