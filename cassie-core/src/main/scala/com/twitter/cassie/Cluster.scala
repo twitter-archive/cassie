@@ -37,7 +37,7 @@ class Cluster(seedHosts: Set[String], seedPort:Int) {
     val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
     val cluster = if (mapHostsEvery > 0)
       // either map the cluster for this keyspace
-      new ClusterRemapper(name, seedHosts.head, mapHostsEvery)
+      new ClusterRemapper(name, seedAddresses, mapHostsEvery)
     else
       // or connect directly to the hosts that were given as seeds
       new SocketAddressCluster(seedAddresses)
@@ -70,17 +70,18 @@ case class KeyspaceBuilder(
     * connect to the cluster with the specified parameters */
   def connect(): Keyspace = {
     // TODO: move to builder pattern as well
-    val ccp = new ClusterClientProvider(_cluster,
-                                        _name,
-                                        _retryAttempts,
-                                        _requestTimeoutInMS,
-                                        _connectionTimeoutInMS,
-                                        _minConnectionsPerHost,
-                                        _maxConnectionsPerHost,
-                                        _removeAfterIdleForMS,
-                                        _statsReceiver,
-                                        _tracer,
-                                        _retryPolicy)
+    val ccp = new ClusterClientProvider(
+      _cluster,
+      _name,
+      _retryAttempts,
+      _requestTimeoutInMS,
+      _connectionTimeoutInMS,
+      _minConnectionsPerHost,
+      _maxConnectionsPerHost,
+      _removeAfterIdleForMS,
+      _statsReceiver,
+      _tracer,
+      _retryPolicy)
     new Keyspace(_name, ccp)
   }
   def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
@@ -106,3 +107,4 @@ case class KeyspaceBuilder(
    */
   def tracer(t: Tracer) = copy(_tracer = t)
 }
+

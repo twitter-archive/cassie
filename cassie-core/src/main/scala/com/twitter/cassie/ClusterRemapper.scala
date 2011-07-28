@@ -30,17 +30,11 @@ import com.twitter.finagle.WriteException
 private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160) extends CCluster {
   private val log = Logger.get
   private[cassie] var timer = new Timer(new HashedWheelTimer())
-  private var statsReceiver = NullStatsReceiver
 
   def close = timer.stop()
 
   // For servers, not clients.
   def join(address: SocketAddress) {}
-
-  def statsReceiver(statsReceiver: StatsReceiver): ClusterRemapper = {
-    this.statsReceiver = statsReceiver
-    this
-  }
 
   // Called once to get a Seq-like of ServiceFactories.
   def mkFactories[Req, Rep](mkBroker: (SocketAddress) => ServiceFactory[Req, Rep]) = {
@@ -92,7 +86,7 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
       keyspace,
       retryAttempts = 10 * seeds.size,
       maxConnectionsPerHost = 1,
-      statsReceiver = statsReceiver
+      statsReceiver = this.statsReceiver
     )
     ccp map {
       log.info("Mapping cluster...")
@@ -101,4 +95,6 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
       ccp.close()
     }
   }
+
+
 }
