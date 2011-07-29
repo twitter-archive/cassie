@@ -47,7 +47,7 @@ trait ColumnFamilyTestHelper {
   def setupCounters = {
     val mcc = new MockCassandraClient
     val cf = new CounterColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec.get(), Utf8Codec.get(), ReadConsistency.Quorum)
+        Utf8Codec, Utf8Codec, ReadConsistency.Quorum)
     (mcc.client, cf)
   }
 
