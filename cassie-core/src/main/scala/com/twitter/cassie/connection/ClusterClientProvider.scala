@@ -25,37 +25,14 @@ object RetryPolicy {
   val NonIdempotent = RetryPolicy()
 }
 
-/**
- * Manages connections to the nodes in a Cassandra cluster.
- *
- * @param hosts the cluster to connect to
- * @param keyspace the keyspace to connect to
- * @param retryAttempts the number of times a query should be attempted before
- *                      throwing an exception
- * @param requestTimeoutInMS the amount of time, in milliseconds, the client will
- *                        wait for a response from the server before considering
- *                        the query to have failed
- * @param minConnectionsPerHost the minimum number of connections to maintain to
- *                              the node
- * @param maxConnectionsPerHost the maximum number of connections to maintain to
- *                              the ndoe
- * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
- *                             idle connections should be closed and removed
- *                             from the pool
- * @param statsReceiver where to send the stats
- * @param tracer a finagle tracer
- * @param retryPolicy a policy specifying which exceptions are retryable. some
- *                      cassandra operations are non-idempotent
- */
-
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
-                            val retryAttempts: Int = 5,
-                            val requestTimeoutInMS: Int = 10000,
-                            val connectionTimeoutInMS: Int = 10000,
+                            val retries: Int = 5,
+                            val timeout: Int = 5000,
+                            val requestTimeout: Int = 1000,
+                            val connectTimeout: Int = 1000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
-                            val removeAfterIdleForMS: Int = 60000,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
                             val tracer: Tracer = NullTracer,
                             val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
@@ -66,7 +43,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     def stop() { throw new Exception("illegal use!") }
   }
 
-  private val idempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+  private val idempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retries), statsReceiver) {
     case Throw(ex: WriteException) => {
       statsReceiver.counter("WriteException").incr
       true
@@ -89,7 +66,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     }
   }
 
-  private val nonIdempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+  private val nonIdempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retries), statsReceiver) {
     case Throw(ex: WriteException) => {
       statsReceiver.counter("WriteException").incr
       true
@@ -108,11 +85,10 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
   private var service = ClientBuilder()
       .cluster(hosts)
       .codec(CassandraThriftFramedCodec())
-      .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
-      .tcpConnectTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
+      .requestTimeout(Duration(requestTimeout, TimeUnit.MILLISECONDS))
+      .connectTimeout(Duration(connectTimeout, TimeUnit.MILLISECONDS))
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
-      .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
       .reportTo(statsReceiver)
       .tracer(tracer)
       .build()

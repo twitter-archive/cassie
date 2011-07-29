@@ -84,7 +84,7 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
     val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
-      retryAttempts = 10 * seeds.size,
+      retries = 10 * seeds.size,
       maxConnectionsPerHost = 1,
       statsReceiver = statsReceiver
     )
