@@ -43,6 +43,7 @@ case class KeyspaceBuilder(
   _connectTimeout: Int = 1000,
   _minConnectionsPerHost: Int = 1,
   _maxConnectionsPerHost: Int = 5,
+  _hostConnectionMaxWaiters: Int = 100,
   _statsReceiver: StatsReceiver = NullStatsReceiver,
   _tracer: Tracer = NullTracer,
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
@@ -61,7 +62,7 @@ case class KeyspaceBuilder(
     // TODO: move to builder pattern as well
     val ccp = new ClusterClientProvider(hosts, _name, _retries,
               _timeout, _requestTimeout, _connectTimeout, _minConnectionsPerHost,
-              _maxConnectionsPerHost, _statsReceiver, _tracer,
+              _maxConnectionsPerHost, _hostConnectionMaxWaiters , _statsReceiver, _tracer,
               _retryPolicy)
     new Keyspace(_name, ccp)
   }
@@ -101,5 +102,7 @@ case class KeyspaceBuilder(
 
   /** Set a tracer to collect request traces. */
   def tracer(t: Tracer) = copy(_tracer = t)
+
+  def hostConnectionMaxWaiters(i: Int) = copy(_hostConnectionMaxWaiters = i)
 }
 

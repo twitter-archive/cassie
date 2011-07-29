@@ -33,6 +33,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val connectTimeout: Int = 1000,
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
+                            val hostConnectionMaxWaiters: Int = 100,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
                             val tracer: Tracer = NullTracer,
                             val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
@@ -93,6 +94,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .hostConnectionLimit(maxConnectionsPerHost)
       .reportTo(statsReceiver)
       .tracer(tracer)
+      .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
       .build()
 
   service = timeoutFilter andThen retryFilter andThen service
