@@ -29,8 +29,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     val codecs = "commons-codec" % "commons-codec" % "1.4"
 
-    val finagleVersion = "1.7.3"
-    val utilVersion = "1.10.2"
+    val finagleVersion = "1.7.5"
+    val utilVersion = "1.10.4"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val utilCore = "com.twitter" % "util-core" % utilVersion

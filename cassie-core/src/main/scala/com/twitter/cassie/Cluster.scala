@@ -37,12 +37,13 @@ case class KeyspaceBuilder(
   seedPort: Int,
   _name: String,
   _mapHostsEvery: Duration = 10.minutes,
-  _retryAttempts: Int = 0,
-  _requestTimeoutInMS: Int = 10000,
-  _connectionTimeoutInMS: Int = 10000,
+  _retries: Int = 0,
+  _timeout: Int = 5000,
+  _requestTimeout: Int = 1000,
+  _connectTimeout: Int = 1000,
   _minConnectionsPerHost: Int = 1,
   _maxConnectionsPerHost: Int = 5,
-  _removeAfterIdleForMS: Int = 60000,
+  _hostConnectionMaxWaiters: Int = 100,
   _statsReceiver: StatsReceiver = NullStatsReceiver,
   _tracer: Tracer = NullTracer,
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
@@ -55,14 +56,14 @@ case class KeyspaceBuilder(
       // either map the cluster for this keyspace
       new ClusterRemapper(_name, seedAddresses, _mapHostsEvery, statsReceiver = _statsReceiver)
     else
-      // or connect directly to the hosts that were given as seeds
+      // or connect only to the hosts that were given as seeds
       new SocketAddressCluster(seedAddresses)
 
     // TODO: move to builder pattern as well
-    val ccp = new ClusterClientProvider(hosts, _name, _retryAttempts,
-              _requestTimeoutInMS, _connectionTimeoutInMS, _minConnectionsPerHost,
-              _maxConnectionsPerHost, _removeAfterIdleForMS, _statsReceiver, _tracer,
-              _retryPolicy)
+    val ccp = new ClusterClientProvider(hosts, _name, _retries,
+              _timeout.milliseconds, _requestTimeout.milliseconds, _connectTimeout.milliseconds,
+              _minConnectionsPerHost, _maxConnectionsPerHost, _hostConnectionMaxWaiters,
+              _statsReceiver, _tracer, _retryPolicy)
     new Keyspace(_name, ccp)
   }
 
@@ -70,27 +71,38 @@ case class KeyspaceBuilder(
     * @param d Cassie will query the cassandra cluster every [[d]] period
     *          to refresh its host list. */
   def mapHostsEvery(d: Duration): KeyspaceBuilder = copy(_mapHostsEvery = d)
-  def retryAttempts(r: Int): KeyspaceBuilder = copy(_retryAttempts = r)
+
+  def timeout(t: Int): KeyspaceBuilder = copy(_timeout = t)
+
+  @deprecated("use retries() instead")
+  def retryAttempts(r: Int): KeyspaceBuilder = copy(_retries = r)
+  def retries(r: Int): KeyspaceBuilder = copy(_retries = r)
+
   def retryPolicy(r: RetryPolicy): KeyspaceBuilder = copy(_retryPolicy = r)
+
+  @deprecated("use requestTimeout instead")
+  def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeout = r)
   /**
     * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
-  def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeoutInMS = r)
+  def requestTimeout(r: Int): KeyspaceBuilder = copy(_requestTimeout = r)
+
+  @deprecated("use connectTimeout instead")
+  def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectTimeout = r)
   /**
     * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]*/
-  def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectionTimeoutInMS = r)
+  def connectTimeout(r: Int): KeyspaceBuilder = copy(_connectTimeout = r)
+
   def minConnectionsPerHost(m: Int): KeyspaceBuilder =
     copy(_minConnectionsPerHost = m)
   def maxConnectionsPerHost(m: Int): KeyspaceBuilder =
     copy(_maxConnectionsPerHost = m)
-  def removeAfterIdleForMS(r: Int): KeyspaceBuilder =
-    copy(_removeAfterIdleForMS = r)
-  /**
-    * A finagle stats receiver for reporting. */
+
+  /** A finagle stats receiver for reporting. */
   def reportStatsTo(r: StatsReceiver) = copy(_statsReceiver = r)
 
-  /**
-   * Set a tracer to collect request traces.
-   */
+  /** Set a tracer to collect request traces. */
   def tracer(t: Tracer) = copy(_tracer = t)
+
+  def hostConnectionMaxWaiters(i: Int) = copy(_hostConnectionMaxWaiters = i)
 }
 
