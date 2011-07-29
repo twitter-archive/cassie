@@ -15,7 +15,7 @@ import com.twitter.finagle.{CodecFactory, Codec, ClientCodecConfig}
 import com.twitter.finagle.tracing.{Tracer, NullTracer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
-import com.twitter.finagle.service.{RetryingFilter, Backoff}
+import com.twitter.finagle.service.{RetryingFilter, Backoff, TimeoutFilter}
 import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
 
 sealed case class RetryPolicy()
@@ -77,10 +77,12 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     }
   }
 
-  val filter = retryPolicy match {
+  val retryFilter = retryPolicy match {
     case RetryPolicy.Idempotent => idempotentRetryFilter
     case RetryPolicy.NonIdempotent => nonIdempotentRetryFilter
   }
+  
+  val timeoutFilter = new TimeoutFilter[ThriftClientRequest, Array[Byte]](Duration(timeout, TimeUnit.MILLISECONDS))
 
   private var service = ClientBuilder()
       .cluster(hosts)
@@ -93,7 +95,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .tracer(tracer)
       .build()
 
-  service = filter andThen service
+  service = timeoutFilter andThen retryFilter andThen service
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 
