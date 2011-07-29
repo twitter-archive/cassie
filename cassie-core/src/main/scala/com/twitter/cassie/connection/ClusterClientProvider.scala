@@ -82,7 +82,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     case RetryPolicy.Idempotent => idempotentRetryFilter
     case RetryPolicy.NonIdempotent => nonIdempotentRetryFilter
   }
-  
+
   val timeoutFilter = new TimeoutFilter[ThriftClientRequest, Array[Byte]](Duration(timeout, TimeUnit.MILLISECONDS))
 
   private var service = ClientBuilder()
