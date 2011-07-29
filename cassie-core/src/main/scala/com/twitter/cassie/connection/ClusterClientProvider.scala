@@ -28,9 +28,9 @@ object RetryPolicy {
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
                             val retries: Int = 5,
-                            val timeout: Int = 5000,
-                            val requestTimeout: Int = 1000,
-                            val connectTimeout: Int = 1000,
+                            val timeout: Duration = Duration(5, TimeUnit.SECONDS),
+                            val requestTimeout: Duration = Duration(1, TimeUnit.SECONDS),
+                            val connectTimeout: Duration = Duration(1, TimeUnit.SECONDS),
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
                             val hostConnectionMaxWaiters: Int = 100,
@@ -83,13 +83,14 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     case RetryPolicy.NonIdempotent => nonIdempotentRetryFilter
   }
 
-  val timeoutFilter = new TimeoutFilter[ThriftClientRequest, Array[Byte]](Duration(timeout, TimeUnit.MILLISECONDS))
+  val timeoutFilter = new TimeoutFilter[ThriftClientRequest, Array[Byte]](timeout)
 
   private var service = ClientBuilder()
       .cluster(hosts)
       .codec(CassandraThriftFramedCodec())
-      .requestTimeout(Duration(requestTimeout, TimeUnit.MILLISECONDS))
-      .connectTimeout(Duration(connectTimeout, TimeUnit.MILLISECONDS))
+      // We don' use timeout here, because we add our out TimeoutFilter below.
+      .requestTimeout(requestTimeout)
+      .connectTimeout(connectTimeout)
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
       .reportTo(statsReceiver)

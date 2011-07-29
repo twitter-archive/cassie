@@ -61,9 +61,9 @@ case class KeyspaceBuilder(
 
     // TODO: move to builder pattern as well
     val ccp = new ClusterClientProvider(hosts, _name, _retries,
-              _timeout, _requestTimeout, _connectTimeout, _minConnectionsPerHost,
-              _maxConnectionsPerHost, _hostConnectionMaxWaiters , _statsReceiver, _tracer,
-              _retryPolicy)
+              _timeout.milliseconds, _requestTimeout.milliseconds, _connectTimeout.milliseconds,
+              _minConnectionsPerHost, _maxConnectionsPerHost, _hostConnectionMaxWaiters,
+              _statsReceiver, _tracer, _retryPolicy)
     new Keyspace(_name, ccp)
   }
 
