@@ -54,7 +54,7 @@ case class KeyspaceBuilder(
     val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
     val hosts = if (_mapHostsEvery > 0)
       // either map the cluster for this keyspace
-      new ClusterRemapper(_name, seedAddresses, _mapHostsEvery, statsReceiver = _statsReceiver)
+      new ClusterRemapper(_name, seedAddresses, _mapHostsEvery, statsReceiver = _statsReceiver.scope(_name))
     else
       // or connect only to the hosts that were given as seeds
       new SocketAddressCluster(seedAddresses)

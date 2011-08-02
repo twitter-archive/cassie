@@ -24,7 +24,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
       keyCodec: Codec[Key],
       nameCodec: Codec[Name],
       valueCodec: Codec[Value]) =
-    new ColumnFamily(this.name, name, provider, keyCodec, nameCodec, valueCodec, stats)
+    new ColumnFamily(this.name, name, provider, keyCodec, nameCodec, valueCodec, stats.scope(name))
 
   /**
    * Returns a CounterColumnFamily with the given name and column codecs
@@ -33,7 +33,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
       name: String,
       keyCodec: Codec[Key],
       nameCodec: Codec[Name]) =
-    new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, stats)
+    new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, stats.scope(name))
 
   /**
     * Execute batch mutations across column families. To use this, build a separate BatchMutationBuilder
@@ -64,7 +64,10 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
       }
     }
 
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
+
+    stats.timeFuture("batch_execute") {
+      provider.map { _.batch_mutate(mutations, writeConsistency.level)}
+    }
   }
 
   /**
