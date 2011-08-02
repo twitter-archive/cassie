@@ -9,13 +9,14 @@ import org.junit.Test;
 import org.junit.Before;
 import static junit.framework.Assert.assertEquals;
 import com.twitter.util.Duration;
+import com.twitter.finagle.stats.NullStatsReceiver$;
 
 public class ClusterTest {
   public Cluster cluster;
 
   @Before
   public void before() throws Exception {
-    cluster = new Cluster("host1,host2");
+    cluster = new Cluster("host1,host2", NullStatsReceiver$.MODULE$);
   }
 
   @Test

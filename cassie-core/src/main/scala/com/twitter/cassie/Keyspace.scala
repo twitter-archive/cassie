@@ -14,7 +14,7 @@ import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
  *
  * @param provider a [[com.twitter.cassie.connection.ClientProvider]] instance
  */
-class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsReceiver = NullStatsReceiver) {
+class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsReceiver) {
 
   /**
    * Returns a ColumnFamily with the given name and column/value codecs.

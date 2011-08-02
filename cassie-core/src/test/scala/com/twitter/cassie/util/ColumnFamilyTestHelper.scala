@@ -41,7 +41,7 @@ trait ColumnFamilyTestHelper {
   def setup = {
     val mcc = new MockCassandraClient
     val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec, Utf8Codec, Utf8Codec)
+        Utf8Codec, Utf8Codec, Utf8Codec, NullStatsReceiver)
     (mcc.client, cf)
   }
 

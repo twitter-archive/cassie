@@ -27,7 +27,7 @@ case class ColumnFamily[Key, Name, Value](
     keyCodec: Codec[Key],
     nameCodec: Codec[Name],
     valueCodec: Codec[Value],
-    stats: StatsReceiver = NullStatsReceiver,
+    stats: StatsReceiver,
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.Quorum
   ) extends ColumnFamilyLike[Key, Name, Value] {
