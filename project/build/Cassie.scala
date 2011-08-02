@@ -35,8 +35,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val utilCore = "com.twitter" % "util-core" % utilVersion
     val utilLogging = "com.twitter" % "util-logging" % utilVersion
-    val ostrich = "com.twitter" % "ostrich" % "4.7.3"
-    val finagleOstrich = "com.twitter" % "finagle-ostrich4" % "1.7.5"
+
     val slf4jNop = "org.slf4j" %  "slf4j-nop" % slf4jVersion % "provided"
 
     /**
