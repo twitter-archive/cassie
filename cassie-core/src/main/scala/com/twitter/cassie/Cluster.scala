@@ -15,7 +15,6 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
  *
  * @param seedHosts list of some hosts in the cluster
  * @param seedPort the port number for '''all''' hosts in the cluster
- * @param mapHostsEvery Cassie will query the cassandra cluster every [[mapHostsEvery]] period
  *        to refresh its host list. */
 class Cluster(seedHosts: Set[String], seedPort:Int) {
   private var mapHostsEvery: Duration = 10.minutes
@@ -45,6 +44,7 @@ class Cluster(seedHosts: Set[String], seedPort:Int) {
     KeyspaceBuilder(name, cluster)
   }
 
+  // Cassie will query the cassandra cluster every [[mapHostsEvery]] period
   def mapHostsEvery(period: Duration): Cluster = {
     mapHostsEvery = period
     this

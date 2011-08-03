@@ -16,13 +16,12 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSe
   def close {}
 }
 
-class ServerSetsCluster(zkHost: String, zkPort: Int, zkPath: String, timeoutMillis: Int) {
+class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int) {
   /**
     * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
     * @param name the keyspace's name */
   def keyspace(name: String): KeyspaceBuilder = {
-    val zkAddress = new InetSocketAddress(zkHost, zkPort)
-    val zkClient = new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(List(zkAddress)))
+    val zkClient = new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses))
     val serverSet = new ServerSetImpl(zkClient, zkPath)
     val cluster = new ZookeeperServerSetCCluster(serverSet)
     KeyspaceBuilder(name, cluster)
