@@ -13,7 +13,8 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
  * A Cassandra cluster.
  *
  * @param seedHosts list of some hosts in the cluster
- * @param seedPort the port number for '''all''' hosts in the cluster */
+ * @param seedPort the port number for '''all''' hosts in the cluster
+ * @param stats a finagle stats receiver */
 class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) {
 
   /**
