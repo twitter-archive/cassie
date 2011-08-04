@@ -15,6 +15,7 @@ import com.twitter.util.Future
 import java.util.{HashMap, Map => JMap, List => JList, ArrayList => JArrayList}
 import java.nio.ByteBuffer
 import org.apache.cassandra.finagle.thrift
+import com.twitter.finagle.stats.NullStatsReceiver
 
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -33,7 +34,7 @@ class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeA
   override def beforeEach {
     stc = mock[ServiceToClient]
     provider = DumbClientProvider(stc)
-    keyspace = new Keyspace("MyApp", provider)
+    keyspace = new Keyspace("MyApp", provider, NullStatsReceiver)
   }
 
   describe("a keyspace") {

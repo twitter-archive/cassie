@@ -7,6 +7,7 @@ import org.apache.cassandra.finagle.thrift
 import com.twitter.cassie._
 import java.nio.ByteBuffer
 import org.mockito.Matchers.any
+import com.twitter.finagle.stats.NullStatsReceiver
 
 trait ColumnFamilyTestHelper {
   type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
@@ -40,14 +41,14 @@ trait ColumnFamilyTestHelper {
   def setup = {
     val mcc = new MockCassandraClient
     val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec, Utf8Codec, Utf8Codec)
+        Utf8Codec, Utf8Codec, Utf8Codec, NullStatsReceiver)
     (mcc.client, cf)
   }
 
   def setupCounters = {
     val mcc = new MockCassandraClient
     val cf = new CounterColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec.get(), Utf8Codec.get(), ReadConsistency.Quorum)
+        Utf8Codec, Utf8Codec, NullStatsReceiver)
     (mcc.client, cf)
   }
 
@@ -59,6 +60,7 @@ trait ColumnFamilyTestHelper {
   def anyConsistencyLevel() = any(classOf[thrift.ConsistencyLevel])
   def anyCounterColumn() = any(classOf[thrift.CounterColumn])
   def anyKeyRange() = any(classOf[thrift.KeyRange])
+  def anyInt() = any(classOf[Int])
 
   def pred(start: String, end: String, count: Int) =
     new thrift.SlicePredicate().setSlice_range(

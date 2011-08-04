@@ -14,6 +14,7 @@ import com.twitter.cassie._
 
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 import com.twitter.util.Future
+import java.util.{ArrayList => JArrayList}
 
 class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
@@ -33,6 +34,9 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
     }
 
     it("returns none if the column doesn't exist") {
+      when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
+          anyConsistencyLevel()))
+          .thenReturn(Future.value(new JArrayList[thrift.ColumnOrSuperColumn]()))
       cf.getColumn("key", "name")() must equal(None)
     }
 
