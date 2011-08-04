@@ -71,7 +71,7 @@ case class CounterColumnFamily[Key, Name](
 
   /**
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
-    *   ordering is determined by the server. 
+    *   ordering is determined by the server.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or
     *   [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
@@ -120,7 +120,7 @@ case class CounterColumnFamily[Key, Name](
     * @param the column name */
   def multigetColumn(keys: JSet[Key],
                      columnName: Name): Future[JMap[Key, CounterColumn[Name]]] = {
-    multigetColumns(keys, singletonJSet(columnName)).map { rows => 
+    multigetColumns(keys, singletonJSet(columnName)).map { rows =>
       val cols: JMap[Key, CounterColumn[Name]] = new JHashMap(rows.size)
       for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty) {
@@ -192,7 +192,7 @@ case class CounterColumnFamily[Key, Name](
       cp.setColumn(nameCodec.encode(columnName))
       log.debug("remove_counter(%s, %s, %s, %s)", keyspace, key, cp, writeConsistency.level)
       stats.timeFuture("remove_counter") {
-        provider.map { 
+        provider.map {
           _.remove_counter(keyCodec.encode(key), cp, writeConsistency.level)
         }
       }
