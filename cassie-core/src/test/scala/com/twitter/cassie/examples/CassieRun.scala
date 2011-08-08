@@ -14,17 +14,11 @@ object CassieRun {
     // create a cluster with a single seed from which to map keyspaces
     val cluster = new Cluster("localhost")
 
-    // create a keyspace
-    val keyspace = cluster.keyspace("Keyspace1")
-      .retryAttempts(5)
-      .requestTimeoutInMS(5000)
-      .minConnectionsPerHost(1)
-      .maxConnectionsPerHost(10)
-      .removeAfterIdleForMS(60000)
-      .connect()
+    // create a keyspace object (does nothing on the server)
+    val keyspace = cluster.keyspace("Keyspace1").connect()
 
-    // create a column family
-    val cass = keyspace.columnFamily[String, String, String]("Standard1", Utf8Codec, Utf8Codec, Utf8Codec)
+    // create a column family object (does nothing on the server)
+    val cass = keyspace.columnFamily("Standard1", Utf8Codec, Utf8Codec, Utf8Codec)
 
     log.info("inserting some columns")
     cass.insert("yay for me", Column("name", "Coda")).apply()
@@ -40,35 +34,20 @@ object CassieRun {
     cass.insert("yay for everyone", Column("motto", "Swish!")).apply()
 
     log.info("getting a column: %s", cass.getColumn("yay for me", "name").apply())
-    // Some(Column(name,Coda,1271789761374109))
-
     log.info("getting a column that doesn't exist: %s", cass.getColumn("yay for no one", "name").apply())
-    // None
-
     log.info("getting a column that doesn't exist #2: %s", cass.getColumn("yay for no one", "oink").apply())
-    // None
-
     log.info("getting a set of columns: %s", cass.getColumns("yay for me", Set("name", "motto")).apply())
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
-
     log.info("getting a whole row: %s", cass.getRow("yay for me").apply())
-    // Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109))
-
     log.info("getting a column from a set of keys: %s", cass.multigetColumn(Set("yay for me", "yay for you"), "name").apply())
-    // Map(yay for you -> Column(name,Niki,1271789761390785), yay for me -> Column(name,Coda,1271789761374109))
-
     log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply())
-    // Map(yay for you -> Map(motto -> Column(motto,Told ya.,1271789761391366), name -> Column(name,Niki,1271789761390785)), yay for me -> Map(motto -> Column(motto,Moar lean.,1271789761389735), name -> Column(name,Coda,1271789761374109)))
-
-    // drop some UUID sauce on things
-    cass.insert(LexicalUUID(cass.clock), Column("yay", "boo")).apply()
 
     log.info("Iterating!")
-    for ((key, col) <- cass.rowsIteratee(2)) {
-      log.info("Found: %s", col)
+    val f = cass.rowsIteratee(2).foreach { case(key, cols) =>
+      log.info("Found: %s %s", key, cols)
     }
+    f()
 
-    for ((key, col) <- cass.columnsIteratee(2, "yay for me")) {
+    val f2 = cass.columnsIteratee(2, "yay for me").foreach { col =>
       log.info("Found Columns Iteratee: %s", col)
     }
 

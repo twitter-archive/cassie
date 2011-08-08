@@ -15,42 +15,36 @@ import com.twitter.finagle.{CodecFactory, Codec, ClientCodecConfig}
 import com.twitter.finagle.tracing.{Tracer, NullTracer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
-import com.twitter.finagle.service.{RetryingFilter, Backoff}
+import com.twitter.finagle.service.{RetryingFilter, Backoff, TimeoutFilter}
 import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
-/**
- * Manages connections to the nodes in a Cassandra cluster.
- *
- * @param retryAttempts the number of times a query should be attempted before
- *                      throwing an exception
- * @param requestTimeoutInMS the amount of time, in milliseconds, the client will
- *                        wait for a response from the server before considering
- *                        the query to have failed
- * @param minConnectionsPerHost the minimum number of connections to maintain to
- *                              the node
- * @param maxConnectionsPerHost the maximum number of connections to maintain to
- *                              the ndoe
- * @param removeAfterIdleForMS the amount of time, in milliseconds, after which
- *                             idle connections should be closed and removed
- *                             from the pool
- */
+
+sealed case class RetryPolicy()
+
+object RetryPolicy {
+  val Idempotent = RetryPolicy()
+  val NonIdempotent = RetryPolicy()
+}
 
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val keyspace: String,
-                            val retryAttempts: Int = 5,
-                            val requestTimeoutInMS: Int = 10000,
-                            val connectionTimeoutInMS: Int = 10000,
+                            val retries: Int = 5,
+                            val timeout: Duration = Duration(5, TimeUnit.SECONDS),
+                            val requestTimeout: Duration = Duration(1, TimeUnit.SECONDS),
+                            val connectTimeout: Duration = Duration(1, TimeUnit.SECONDS),
                             val minConnectionsPerHost: Int = 1,
                             val maxConnectionsPerHost: Int = 5,
-                            val removeAfterIdleForMS: Int = 60000,
+                            val hostConnectionMaxWaiters: Int = 100,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
-                            val tracer: Tracer = NullTracer) extends ClientProvider {
+                            val tracer: Tracer = NullTracer,
+                            val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
     def schedule(when: Time)(f: => Unit): TimerTask = throw new Exception("illegal use!")
     def schedule(when: Time, period: Duration)(f: => Unit): TimerTask = throw new Exception("illegal use!")
     def stop() { throw new Exception("illegal use!") }
   }
-  private val filter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retryAttempts), statsReceiver) {
+
+  private val idempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retries), statsReceiver) {
     case Throw(ex: WriteException) => {
       statsReceiver.counter("WriteException").incr
       true
@@ -73,19 +67,38 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
     }
   }
 
+  private val nonIdempotentRetryFilter = RetryingFilter[ThriftClientRequest, Array[Byte]](Backoff.const(Duration(0, TimeUnit.MILLISECONDS)) take (retries), statsReceiver) {
+    case Throw(ex: WriteException) => {
+      statsReceiver.counter("WriteException").incr
+      true
+    }
+    case Throw(ex: UnavailableException) => {
+      statsReceiver.counter("UnavailableException").incr
+      true
+    }
+  }
+
+  val retryFilter = retryPolicy match {
+    case RetryPolicy.Idempotent => idempotentRetryFilter
+    case RetryPolicy.NonIdempotent => nonIdempotentRetryFilter
+  }
+
+  val timeoutFilter = new TimeoutFilter[ThriftClientRequest, Array[Byte]](timeout)
+
   private var service = ClientBuilder()
       .cluster(hosts)
       .codec(CassandraThriftFramedCodec())
-      .requestTimeout(Duration(requestTimeoutInMS, TimeUnit.MILLISECONDS))
-      .connectionTimeout(Duration(connectionTimeoutInMS, TimeUnit.MILLISECONDS))
+      // We don' use timeout here, because we add our out TimeoutFilter below.
+      .requestTimeout(requestTimeout)
+      .connectTimeout(connectTimeout)
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
-      .hostConnectionIdleTime(Duration(removeAfterIdleForMS, TimeUnit.MILLISECONDS))
       .reportTo(statsReceiver)
       .tracer(tracer)
+      .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
       .build()
 
-  service = filter andThen service
+  service = timeoutFilter andThen retryFilter andThen service
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 

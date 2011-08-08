@@ -29,8 +29,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     val codecs = "commons-codec" % "commons-codec" % "1.4"
 
-    val finagleVersion = "1.7.1"
-    val utilVersion = "1.10.1"
+    val finagleVersion = "1.7.5"
+    val utilVersion = "1.10.4"
     val finagle = "com.twitter" % "finagle-core" % finagleVersion
     val finagleThrift = "com.twitter" % "finagle-thrift" % finagleVersion
     val utilCore = "com.twitter" % "util-core" % utilVersion
@@ -40,9 +40,9 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     /**
       * Test Dependencies */
-    val scalaTest =  "org.scalatest" % "scalatest" % "1.2" % "test" intransitive()
-    val mockito = "org.mockito" % "mockito-all" % "1.8.4" % "test"
-    val junitInterface = "com.novocode" % "junit-interface" % "0.5" % "test->default"
+    val scalaTest =  "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test" intransitive()
+    val mockito = "org.mockito" % "mockito-all" % "1.8.5" % "test"
+    val junitInterface = "com.novocode" % "junit-interface" % "0.7" % "test->default"
 
     override def compileOptions = Deprecation :: Unchecked :: super.compileOptions.toList
 

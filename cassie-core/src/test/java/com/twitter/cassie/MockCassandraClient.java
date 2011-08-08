@@ -23,48 +23,10 @@ import static org.mockito.Mockito.*;
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient;
 
 public final class MockCassandraClient {
-  public static ByteBuffer anyByteBuffer() {
-    return any(ByteBuffer.class);
-  }
-  public static ColumnParent anyColumnParent() {
-    return any(ColumnParent.class);
-  }
-  public static ColumnPath anyColumnPath() {
-    return any(ColumnPath.class);
-  }
-  public static SlicePredicate anySlicePredicate() {
-    return any(SlicePredicate.class);
-  }
-  public static org.apache.cassandra.finagle.thrift.Column anyColumn() {
-    return any(org.apache.cassandra.finagle.thrift.Column.class);
-  }
-  public static ConsistencyLevel anyConsistencyLevel() {
-    return any(ConsistencyLevel.class);
-  }
-
-  public static org.apache.cassandra.finagle.thrift.CounterColumn anyCounterColumn() {
-    return any(org.apache.cassandra.finagle.thrift.CounterColumn.class);
-  }
-
   public final ServiceToClient client;
 
   public MockCassandraClient() {
     this.client = mock(ServiceToClient.class);
-    // stub out some standard cases
-    when(client.batch_mutate(anyMap(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(null));
-    when(client.remove(anyByteBuffer(), anyColumnPath(), anyInt(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(null));
-    when(client.insert(anyByteBuffer(), anyColumnParent(), anyColumn(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(null));
-    when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
-        anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(new ArrayList<ColumnOrSuperColumn>()));
-    when(client.multiget_slice(anyListOf(ByteBuffer.class), anyColumnParent(),
-        anySlicePredicate(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(new HashMap<ByteBuffer,List<ColumnOrSuperColumn>>()));
-    when(client.add(anyByteBuffer(), anyColumnParent(), anyCounterColumn(), anyConsistencyLevel()))
-        .thenReturn(new Fulfillment(null));
   }
 
   public static final class SimpleProvider implements ClientProvider {
@@ -80,12 +42,5 @@ public final class MockCassandraClient {
     }
     @Override
     public void close() { closed = true; }
-  }
-
-  public static class Fulfillment<A> extends Promise<A> {
-    public Fulfillment(A result) {
-      super();
-      this.setValue(result);
-    }
   }
 }
