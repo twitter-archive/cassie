@@ -13,6 +13,7 @@ import scala.collection.JavaConversions._
 import com.twitter.conversions.time._
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.connection.CCluster
+import com.twitter.finagle.stats.NullStatsReceiver;
 
 class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   val port = 1359
@@ -27,7 +28,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
     server = factory()
     server.start()
     Thread.sleep(100)
-    client = new Cluster(Set("localhost"), port)
+    client = new Cluster(Set("localhost"), port, NullStatsReceiver)
   }
 
   def keyspace() = {

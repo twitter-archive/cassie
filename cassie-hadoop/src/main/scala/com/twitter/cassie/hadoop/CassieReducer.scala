@@ -64,7 +64,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
   }
 
   def configureKeyspace(c: KeyspaceBuilder): KeyspaceBuilder = {
-    c.retryAttempts(2)
+    c.retries(2)
   }
 
   def configureCluster(cluster: Cluster): Cluster = {

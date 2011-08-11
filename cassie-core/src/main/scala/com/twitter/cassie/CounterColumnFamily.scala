@@ -1,7 +1,7 @@
 package com.twitter.cassie
 
-import codecs.Codec
-import connection.ClientProvider
+import com.twitter.cassie.codecs.Codec
+import com.twitter.cassie.connection.ClientProvider
 
 import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
@@ -14,6 +14,8 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap,
 import scala.collection.JavaConversions._
 
 import com.twitter.util.Future
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+
 
 /**
  * A readable, writable column family with batching capabilities. This is a
@@ -27,6 +29,7 @@ case class CounterColumnFamily[Key, Name](
     provider: ClientProvider,
     keyCodec: Codec[Key],
     nameCodec: Codec[Name],
+    stats: StatsReceiver = NullStatsReceiver,
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.One) {
 
@@ -68,7 +71,7 @@ case class CounterColumnFamily[Key, Name](
 
   /**
     * Get a slice of a single row, starting at `startColumnName` (inclusive) and continuing to `endColumnName` (inclusive).
-    *   ordering is determined by the server. 
+    *   ordering is determined by the server.
     * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
     *   [[org.apache.cassandra.finagle.thrift.UnavailableException]] or
     *   [[org.apache.cassandra.finagle.thrift.InvalidRequestException]].
@@ -117,7 +120,7 @@ case class CounterColumnFamily[Key, Name](
     * @param the column name */
   def multigetColumn(keys: JSet[Key],
                      columnName: Name): Future[JMap[Key, CounterColumn[Name]]] = {
-    multigetColumns(keys, singletonJSet(columnName)).map { rows => 
+    multigetColumns(keys, singletonJSet(columnName)).map { rows =>
       val cols: JMap[Key, CounterColumn[Name]] = new JHashMap(rows.size)
       for (rowEntry <- asScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty) {
@@ -139,19 +142,21 @@ case class CounterColumnFamily[Key, Name](
       val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
       log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
       val encodedKeys = encodeKeys(keys)
-      provider.map {
-        _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
-      }.map { result =>
-        val rows: JMap[Key, JMap[Name, CounterColumn[Name]]] = new JHashMap(result.size)
-        for (rowEntry <- asScalaIterable(result.entrySet)) {
-          val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(rowEntry.getValue.size)
-          for (counter <- asScalaIterable(rowEntry.getValue)) {
-            val col = CounterColumn.convert(nameCodec, counter.getCounter_column)
-            cols.put(col.name, col)
+      stats.timeFuture("multiget_slice") {
+        provider.map {
+          _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
+        }.map { result =>
+          val rows: JMap[Key, JMap[Name, CounterColumn[Name]]] = new JHashMap(result.size)
+          for (rowEntry <- asScalaIterable(result.entrySet)) {
+            val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(rowEntry.getValue.size)
+            for (counter <- asScalaIterable(rowEntry.getValue)) {
+              val col = CounterColumn.convert(nameCodec, counter.getCounter_column)
+              cols.put(col.name, col)
+            }
+            rows.put(keyCodec.decode(rowEntry.getKey), cols)
           }
-          rows.put(keyCodec.decode(rowEntry.getKey), cols)
+          rows
         }
-        rows
       }
     } catch {
       case e => Future.exception(e)
@@ -165,8 +170,10 @@ case class CounterColumnFamily[Key, Name](
       val cp = new thrift.ColumnParent(name)
       val col = CounterColumn.convert(nameCodec, column)
       log.debug("add(%s, %s, %s, %d, %s)", keyspace, key, cp, column.value, writeConsistency.level)
-      provider.map {
-        _.add(keyCodec.encode(key), cp, col, writeConsistency.level)
+      stats.timeFuture("add") {
+        provider.map {
+          _.add(keyCodec.encode(key), cp, col, writeConsistency.level)
+        }
       }
     } catch {
       case e => Future.exception(e)
@@ -184,7 +191,11 @@ case class CounterColumnFamily[Key, Name](
       val cp = new thrift.ColumnPath(name)
       cp.setColumn(nameCodec.encode(columnName))
       log.debug("remove_counter(%s, %s, %s, %s)", keyspace, key, cp, writeConsistency.level)
-      provider.map { _.remove_counter(keyCodec.encode(key), cp, writeConsistency.level) }
+      stats.timeFuture("remove_counter") {
+        provider.map {
+          _.remove_counter(keyCodec.encode(key), cp, writeConsistency.level)
+        }
+      }
     } catch {
       case e => Future.exception(e)
     }
@@ -208,16 +219,21 @@ case class CounterColumnFamily[Key, Name](
   def batch() = new CounterBatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
-    log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
+    log.debug("batch_mutate(%s, %s, %s)", keyspace, mutations, writeConsistency.level)
+    stats.timeFuture("batch_mutate") {
+      provider.map {
+        _.batch_mutate(mutations, writeConsistency.level)
+      }
+    }
   }
 
-  private def getSlice(key: Key,
-                       pred: thrift.SlicePredicate): Future[JMap[Name, CounterColumn[Name]]] = {
+  private def getSlice(key: Key, pred: thrift.SlicePredicate) = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_counter_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    provider.map { _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) }
-      .map { result =>
+    stats.timeFuture("get_slice") {
+      provider.map {
+        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level
+      )} map { result =>
         val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(result.size)
         for (c <- result.iterator) {
           val col = CounterColumn.convert(nameCodec, c.getCounter_column)
@@ -225,6 +241,7 @@ case class CounterColumnFamily[Key, Name](
         }
         cols
       }
+    }
   }
 
   def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {

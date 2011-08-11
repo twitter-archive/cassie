@@ -1,19 +1,20 @@
 package com.twitter.cassie
 
-import codecs.{ThriftCodec, Codec}
-import connection.ClientProvider
+import com.twitter.cassie.codecs.{ThriftCodec, Codec}
+import com.twitter.cassie.connection.ClientProvider
 import com.twitter.util.Future
 import scala.collection.JavaConversions._
 import java.util.{HashMap => JHashMap, Map => JMap, List => JList, ArrayList => JArrayList}
 import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 
 /**
  * A Cassandra keyspace, which maintains a connection pool.
  *
  * @param provider a [[com.twitter.cassie.connection.ClientProvider]] instance
  */
-class Keyspace(val name: String, val provider: ClientProvider) {
+class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsReceiver) {
 
   /**
    * Returns a ColumnFamily with the given name and column/value codecs.
@@ -23,7 +24,7 @@ class Keyspace(val name: String, val provider: ClientProvider) {
       keyCodec: Codec[Key],
       nameCodec: Codec[Name],
       valueCodec: Codec[Value]) =
-    new ColumnFamily(this.name, name, provider, keyCodec, nameCodec, valueCodec)
+    new ColumnFamily(this.name, name, provider, keyCodec, nameCodec, valueCodec, stats.scope(name))
 
   /**
    * Returns a CounterColumnFamily with the given name and column codecs
@@ -32,7 +33,7 @@ class Keyspace(val name: String, val provider: ClientProvider) {
       name: String,
       keyCodec: Codec[Key],
       nameCodec: Codec[Name]) =
-    new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec)
+    new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, stats.scope(name))
 
   /**
     * Execute batch mutations across column families. To use this, build a separate BatchMutationBuilder
@@ -63,7 +64,10 @@ class Keyspace(val name: String, val provider: ClientProvider) {
       }
     }
 
-    provider.map { _.batch_mutate(mutations, writeConsistency.level) }
+
+    stats.timeFuture("batch_execute") {
+      provider.map { _.batch_mutate(mutations, writeConsistency.level)}
+    }
   }
 
   /**

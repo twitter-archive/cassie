@@ -11,6 +11,7 @@ import com.twitter.cassie.codecs.*;
 import com.twitter.util.Function2;
 import com.twitter.util.Function;
 import com.twitter.util.Future;
+import com.twitter.finagle.stats.NullStatsReceiver$;
 
 public final class CassieRun {
   public static <V> HashSet<V> Set(V... values) {
@@ -23,16 +24,10 @@ public final class CassieRun {
 
   public static void main(String[] args) throws Exception {
     // create a cluster with a single seed from which to map keyspaces
-    Cluster cluster = new Cluster("localhost");
+    Cluster cluster = new Cluster("localhost", NullStatsReceiver$.MODULE$);
 
     // create a keyspace
-    Keyspace keyspace = cluster.keyspace("Keyspace1")
-      .retryAttempts(5)
-      .requestTimeoutInMS(5000)
-      .minConnectionsPerHost(1)
-      .maxConnectionsPerHost(10)
-      .removeAfterIdleForMS(60000)
-      .connect();
+    Keyspace keyspace = cluster.keyspace("Keyspace1").connect();
 
     // create a column family
     ColumnFamily<String, String, String> cass = keyspace.columnFamily("Standard1", Utf8Codec.get(), Utf8Codec.get(), Utf8Codec.get());

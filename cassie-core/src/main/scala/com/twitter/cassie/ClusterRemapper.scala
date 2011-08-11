@@ -27,7 +27,7 @@ import com.twitter.finagle.WriteException
  * @param seeds seed node addresses
  * @param port the Thrift port of client nodes
  */
-private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160) extends CCluster {
+private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160, statsReceiver: StatsReceiver = NullStatsReceiver) extends CCluster {
   private val log = Logger.get
   private[cassie] var timer = new Timer(new HashedWheelTimer())
 
@@ -47,7 +47,7 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
 
       timer.schedule(Time.now, remapPeriod) {
         fetchHosts(underlyingMap.keys.toSeq) onSuccess { ring =>
-          log.error("Received: %s", ring)
+          log.debug("Received: %s", ring)
           performChange(ring.flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
             new InetSocketAddress(host, port) } }.toSeq)
         } onFailure { error =>
@@ -84,9 +84,9 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
     val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
-      retryAttempts = 10 * seeds.size,
+      retries = 10 * seeds.size,
       maxConnectionsPerHost = 1,
-      statsReceiver = this.statsReceiver
+      statsReceiver = statsReceiver
     )
     ccp map {
       log.info("Mapping cluster...")

@@ -14,6 +14,7 @@ import com.twitter.cassie._
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 import com.twitter.util.Future
+import java.util.{ArrayList => JArrayList}
 
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
@@ -81,6 +82,10 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
 
     it("returns none if the column doesn't exist") {
+      when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
+          anyConsistencyLevel()))
+          .thenReturn(Future.value(new JArrayList[thrift.ColumnOrSuperColumn]()))
+
       cf.getColumn("key", "name")() must equal(None)
     }
 
@@ -267,6 +272,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     val (client, cf) = setup
 
     it("performs a remove") {
+      when(client.remove(anyByteBuffer(), anyColumnPath(), anyInt(), anyConsistencyLevel()))
+        .thenReturn(Future.void)
+
       cf.removeRowWithTimestamp("key", 55)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])

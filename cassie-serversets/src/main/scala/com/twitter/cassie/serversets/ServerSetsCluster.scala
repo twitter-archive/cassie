@@ -10,13 +10,21 @@ import com.twitter.common.quantity.Time
 import com.twitter.common.zookeeper.ServerSet
 import com.twitter.common.zookeeper.ServerSetImpl
 import com.twitter.common.zookeeper.ZooKeeperClient
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
 
 class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSetCluster(serverSet) with CCluster {
   def close {}
 }
 
-class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int) {
+/**
+ * A Cassandra cluster where nodes are discovered using ServerSets
+ *
+ * @param zkAddersses list of some ZooKeeper hosts
+ * @param zkPath path to node where Cassandra hosts will exist under
+ * @param timeoutMillis timeout for ZooKeeper connection
+ * @param stats a finagle stats receiver */
+class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int, stats: StatsReceiver = NullStatsReceiver) {
   /**
     * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
     * @param name the keyspace's name */
@@ -24,6 +32,6 @@ class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String
     val zkClient = new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses))
     val serverSet = new ServerSetImpl(zkClient, zkPath)
     val cluster = new ZookeeperServerSetCCluster(serverSet)
-    KeyspaceBuilder(name, cluster)
+    KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name))
   }
 }
