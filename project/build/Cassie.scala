@@ -7,7 +7,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
   override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
   val slf4jVersion = "1.5.11"
-  val finagleVersion = "1.7.5"
+  val finagleVersion = "1.8.4"
   val utilVersion = "1.10.4"
 
   val coreProject = project(
