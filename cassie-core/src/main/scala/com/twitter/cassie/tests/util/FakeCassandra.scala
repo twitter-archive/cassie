@@ -231,7 +231,13 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def describe_keyspaces() = throw new UnsupportedOperationException
   def describe_cluster_name() = throw new UnsupportedOperationException
   def describe_version() = throw new UnsupportedOperationException
-  def describe_ring(keyspace: String) = throw new UnsupportedOperationException
+  def describe_ring(keyspace: String) = {
+    val endpoints = new JArrayList[String]()
+    endpoints.add("localhost")
+    val tokenRanges = new JArrayList[TokenRange]()
+    tokenRanges.add(new TokenRange("0", "0", endpoints))
+    tokenRanges
+  }
   def describe_partitioner() = throw new UnsupportedOperationException
   def describe_snitch() = throw new UnsupportedOperationException
   def describe_keyspace(keyspace: String) = throw new UnsupportedOperationException
