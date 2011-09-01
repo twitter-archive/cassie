@@ -1,4 +1,4 @@
-# 0.12.1
+# 0.13.0
 * upgrade to finagle 1.8.4
 * integrated serversets into cassie as a seperate project (cassie-serversets)
     ServerSetsCluster is introduced for discovering hosts via serversets
