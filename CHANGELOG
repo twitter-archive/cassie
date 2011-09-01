@@ -2,6 +2,8 @@
 * integrated serversets into cassie as a seperate project (cassie-serversets)
     ServerSetsCluster is introduced for discovering hosts via serversets
     Changes in the API include: mapHostsEvery() method moved from Keyspace class to Cluster class
+* high level latency and failure counts reported for underlying Cassandra thrift calls:
+    set a StatsReceiver when instantiating a Cluster to collect the stats
 
 # 0.11.0
 * improved iteration (see RowsIteratee or ColumnsIteratee for examples)

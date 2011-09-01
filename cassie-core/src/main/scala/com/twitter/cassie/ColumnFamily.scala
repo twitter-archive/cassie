@@ -3,6 +3,7 @@ package com.twitter.cassie
 import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
 import com.twitter.cassie.codecs.{Codec}
 import com.twitter.cassie.connection.ClientProvider
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
 import com.twitter.logging.Logger
@@ -15,7 +16,7 @@ import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 
 import com.twitter.util.Future
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.finagle.stats.StatsReceiver
 
 /**
  * A readable, writable column family with batching capabilities. This is a
@@ -102,7 +103,7 @@ case class ColumnFamily[Key, Name, Value](
       val cp = new thrift.ColumnParent(name)
       val pred = sliceRangePredicate(columnNames)
       log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-      stats.timeFuture("multiget_slice") {
+      timeFutureWithFailures(stats, "multiget_slice") {
         provider.map {
           _.multiget_slice(encodeKeys(keys), cp, pred, readConsistency.level)
         }.map { result =>
@@ -129,7 +130,7 @@ case class ColumnFamily[Key, Name, Value](
       val col = Column.convert(nameCodec, valueCodec, clock, column)
       log.debug("insert(%s, %s, %s, %s, %d, %s)", keyspace, key, cp, column.value,
         col.timestamp, writeConsistency.level)
-      stats.timeFuture("insert") {
+      timeFutureWithFailures(stats, "insert") {
         provider.map {
           _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
         }
@@ -139,14 +140,14 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  def truncate() = stats.timeFuture("truncate"){provider.map(_.truncate(name))}
+  def truncate() = timeFutureWithFailures(stats, "truncate"){provider.map(_.truncate(name))}
 
   def removeColumn(key: Key, columnName: Name) = {
     try {
       val cp = new thrift.ColumnPath(name).setColumn(nameCodec.encode(columnName))
       val timestamp = clock.timestamp
       log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-      stats.timeFuture("remove") {
+      timeFutureWithFailures(stats, "remove") {
         provider.map {
           _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level)
         }
@@ -175,7 +176,7 @@ case class ColumnFamily[Key, Name, Value](
   def removeRowWithTimestamp(key: Key, timestamp: Long) = {
     val cp = new thrift.ColumnPath(name)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    stats.timeFuture("remove") {
+    timeFutureWithFailures(stats, "remove") {
       provider.map {
         _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level)
       }
@@ -186,7 +187,7 @@ case class ColumnFamily[Key, Name, Value](
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    stats.timeFuture("batch_mutate") {
+    timeFutureWithFailures(stats, "batch_mutate") {
         provider.map {
         _.batch_mutate(mutations, writeConsistency.level)
       }
@@ -223,7 +224,7 @@ case class ColumnFamily[Key, Name, Value](
                           pred: thrift.SlicePredicate): Future[JMap[Name,Column[Name,Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    stats.timeFuture("get_slice") {
+    timeFutureWithFailures(stats, "get_slice") {
       provider.map {
         _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level)
       } map { result =>
@@ -241,7 +242,7 @@ case class ColumnFamily[Key, Name, Value](
     val pred = sliceRangePredicate(start, end, Order.Normal, size)
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    stats.timeFuture("get_slice") {
+    timeFutureWithFailures(stats, "get_slice") {
       provider.map {
         _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) 
       } map { result =>
@@ -260,7 +261,7 @@ case class ColumnFamily[Key, Name, Value](
     val cp = new thrift.ColumnParent(name)
     val range = new thrift.KeyRange(count).setStart_key(keyCodec.encode(startKey)).setEnd_key(keyCodec.encode(endKey))
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
-    stats.timeFuture("get_range_slices") {
+    timeFutureWithFailures(stats, "get_range_slices") {
       provider.map {
         _.get_range_slices(cp, predicate, range, readConsistency.level)
       } map { slices =>
