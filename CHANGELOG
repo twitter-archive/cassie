@@ -1,4 +1,5 @@
 # 0.12.1
+* upgrade to finagle 1.8.4
 * integrated serversets into cassie as a seperate project (cassie-serversets)
     ServerSetsCluster is introduced for discovering hosts via serversets
     Changes in the API include: mapHostsEvery() method moved from Keyspace class to Cluster class
