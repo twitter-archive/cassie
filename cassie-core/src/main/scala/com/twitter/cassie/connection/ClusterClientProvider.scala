@@ -87,6 +87,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
 
   private var service = ClientBuilder()
       .cluster(hosts)
+      .name("cassie")
       .codec(CassandraThriftFramedCodec())
       // We don' use timeout here, because we add our out TimeoutFilter below.
       .requestTimeout(requestTimeout)
