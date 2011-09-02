@@ -138,26 +138,39 @@ case class CounterColumnFamily[Key, Name](
     * @param columnNames the column names */
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
     try {
-      val cp = new thrift.ColumnParent(name)
       val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
-      log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-      val encodedKeys = encodeKeys(keys)
-      stats.timeFuture("multiget_slice") {
-        provider.map {
-          _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
-        }.map { result =>
-          val rows: JMap[Key, JMap[Name, CounterColumn[Name]]] = new JHashMap(result.size)
-          for (rowEntry <- asScalaIterable(result.entrySet)) {
-            val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(rowEntry.getValue.size)
-            for (counter <- asScalaIterable(rowEntry.getValue)) {
-              val col = CounterColumn.convert(nameCodec, counter.getCounter_column)
-              cols.put(col.name, col)
-            }
-            rows.put(keyCodec.decode(rowEntry.getKey), cols)
+      multigetSlice(keys, pred)
+    } catch {
+      case e => Future.exception(e)
+    }
+  }
+
+  private def multigetSlice(keys: JSet[Key], pred: thrift.SlicePredicate): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
+    val cp = new thrift.ColumnParent(name)
+    log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
+    val encodedKeys = encodeKeys(keys)
+    stats.timeFuture("multiget_slice") {
+      provider.map {
+        _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
+      }.map { result =>
+        val rows: JMap[Key, JMap[Name, CounterColumn[Name]]] = new JHashMap(result.size)
+        for (rowEntry <- asScalaIterable(result.entrySet)) {
+          val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(rowEntry.getValue.size)
+          for (counter <- asScalaIterable(rowEntry.getValue)) {
+            val col = CounterColumn.convert(nameCodec, counter.getCounter_column)
+            cols.put(col.name, col)
           }
-          rows
+          rows.put(keyCodec.decode(rowEntry.getKey), cols)
         }
+        rows
       }
+    }
+  }
+
+  def multigetSlices(keys: JSet[Key], start: Name, end: Name): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
+    try {
+      val pred = sliceRangePredicate(Some(start), Some(end), Order.Normal, Int.MaxValue)
+      multigetSlice(keys, pred)
     } catch {
       case e => Future.exception(e)
     }
@@ -242,6 +255,13 @@ case class CounterColumnFamily[Key, Name](
         cols
       }
     }
+  }
+
+  private def sliceRangePredicate(startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {
+    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
+    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
   }
 
   def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {

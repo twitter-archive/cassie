@@ -1,6 +1,8 @@
 package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
+import scala.collection.JavaConversions._
+import java.util.{ArrayList => JArrayList, Set => JSet}
 
 /**
   * A bidirection encoding for column names or values. */
@@ -18,4 +20,11 @@ trait Codec[A] {
     bytes
   }
   def b2b(array: Array[Byte]): ByteBuffer = ByteBuffer.wrap(array)
+
+  def encodeSet(values: JSet[A]) = {
+    val output = new JArrayList[ByteBuffer](values.size)
+    for (value <- asScalaIterable(values))
+      output.add(encode(value))
+    output
+  }
 }
