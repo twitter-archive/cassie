@@ -1,3 +1,6 @@
+# 0.13.1
+* SuperCounterColumnFamily was added, but only for legacy reasons. Don't use it for new projects.
+
 # 0.13.0
 * upgrade to finagle 1.8.4
 * integrated serversets into cassie as a seperate project (cassie-serversets)

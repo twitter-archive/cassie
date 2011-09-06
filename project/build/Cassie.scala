@@ -8,7 +8,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
   val slf4jVersion = "1.5.11"
   val finagleVersion = "1.8.4"
-  val utilVersion = "1.10.4"
+  val utilVersion = "1.11.2"
 
   val coreProject = project(
     "cassie-core", "cassie-core",
