@@ -8,6 +8,7 @@ import java.util.{HashMap => JHashMap, Map => JMap, List => JList, ArrayList => 
 import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 /**
  * A Cassandra keyspace, which maintains a connection pool.
@@ -73,7 +74,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
     }
 
 
-    stats.timeFuture("batch_execute") {
+    timeFutureWithFailures(stats, "batch_execute") {
       provider.map { _.batch_mutate(mutations, writeConsistency.level)}
     }
   }

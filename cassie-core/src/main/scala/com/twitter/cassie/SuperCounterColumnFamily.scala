@@ -16,6 +16,7 @@ import scala.collection.JavaConversions._
 import com.twitter.util.Future
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import scala.collection.mutable.ListBuffer
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 @deprecated("use compound columns instead")
 case class SuperCounterColumnFamily[Key, Name, SubName](
@@ -48,7 +49,7 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
     val cp = new thrift.ColumnParent(name)
     log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
     val encodedKeys = keyCodec.encodeSet(keys)
-    stats.timeFuture("multiget_slice") {
+    timeFutureWithFailures(stats, "multiget_slice") {
       provider.map {
         _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
       }.map { result =>
@@ -74,7 +75,7 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    stats.timeFuture("batch_mutate") {
+    timeFutureWithFailures(stats, "batch_mutate") {
         provider.map {
         _.batch_mutate(mutations, writeConsistency.level)
       }

@@ -1,7 +1,7 @@
 package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions.asScalaIterable
 import java.util.{ArrayList => JArrayList, Set => JSet}
 
 /**
