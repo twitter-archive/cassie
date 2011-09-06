@@ -8,6 +8,7 @@ import java.util.{HashMap => JHashMap, Map => JMap, List => JList, ArrayList => 
 import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 /**
  * A Cassandra keyspace, which maintains a connection pool.
@@ -35,6 +36,14 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
       nameCodec: Codec[Name]) =
     new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, stats.scope(name))
 
+  @deprecated("use compound columns instead")
+  def superCounterColumnFamily[Key, Name, SubName](
+    name: String,
+    keyCodec: Codec[Key],
+    nameCodec: Codec[Name],
+    subNameCodec: Codec[SubName]
+  ) = new SuperCounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, subNameCodec, stats.scope(name))
+
   /**
     * Execute batch mutations across column families. To use this, build a separate BatchMutationBuilder
     *   for each CF, then send them all to this method.
@@ -43,7 +52,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
     * @param batches a Seq of BatchMutationBuilders, each for a different CF. Their mutations will be merged and
     *   sent as one operation
     * @param writeConsistency to write this at */
-  def execute(batches: Seq[BatchMutation], writeConsistency: WriteConsistency): Future[Void] = {
+  def execute(batches: Iterable[BatchMutation], writeConsistency: WriteConsistency): Future[Void] = {
     if(batches.size == 0) return Future.void
 
     val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
@@ -65,7 +74,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
     }
 
 
-    stats.timeFuture("batch_execute") {
+    timeFutureWithFailures(stats, "batch_execute") {
       provider.map { _.batch_mutate(mutations, writeConsistency.level)}
     }
   }
