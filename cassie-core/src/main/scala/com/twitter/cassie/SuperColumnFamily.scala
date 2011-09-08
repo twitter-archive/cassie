@@ -57,6 +57,40 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     }
   }
 
+  def getRow(key: Key): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+    getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
+  }
+
+  def getRowSlice(key: Key,
+                  startColumnName: Option[Name],
+                  endColumnName: Option[Name],
+                  count: Int,
+                  order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+    try {
+      val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
+      getSlice(key, None, None, Int.MaxValue)
+    } catch {
+      case e => Future.exception(e)
+    }
+  }
+
+  private
+  def getSlice(key: Key, start: Option[Name], end: Option[Name], size: Int): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+    val pred = sliceRangePredicate(start, end, Order.Normal, size)
+    val cp = new thrift.ColumnParent(name)
+    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
+    timeFutureWithFailures(stats, "get_slice") {
+      provider.map {
+        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) 
+      } map { result =>
+        result.map { cosc =>
+          val sc = cosc.getSuper_column()
+          (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+        }
+      }
+    }
+  }
+
   def removeRow(key: Key) = {
     val cp = new thrift.ColumnPath(name)
     val ts = clock.timestamp
@@ -66,5 +100,16 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
         _.remove(keyCodec.encode(key), cp, ts, writeConsistency.level)
       }
     }
+  }
+
+  private def sliceRangePredicate(startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {
+    val startBytes = startColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
+    val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
+    val pred = new thrift.SlicePredicate()
+    pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
+  }
+
+  private def sliceRangePredicate(columnNames: JSet[Name]) = {
+    new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
   }
 }

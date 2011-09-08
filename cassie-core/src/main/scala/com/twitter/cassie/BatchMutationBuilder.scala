@@ -88,7 +88,7 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
       case Right(deletions) => {
         val timestamp = deletions.timestamp
         val pred = new thrift.SlicePredicate
-        pred.setColumn_names(cf.encodeNames(deletions.columnNames))
+        pred.setColumn_names(cf.nameCodec.encodeSet(deletions.columnNames))
 
         val deletion = new thrift.Deletion()
         deletion.setTimestamp(timestamp)

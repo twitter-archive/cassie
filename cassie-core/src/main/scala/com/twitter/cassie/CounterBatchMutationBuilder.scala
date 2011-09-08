@@ -66,7 +66,7 @@ class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
       }
       case Right(deletions) => {
         val pred = new thrift.SlicePredicate
-        pred.setColumn_names(cf.encodeNames(deletions.columnNames))
+        pred.setColumn_names(cf.nameCodec.encodeSet(deletions.columnNames))
 
         val deletion = new thrift.Deletion
         deletion.setPredicate(pred)
