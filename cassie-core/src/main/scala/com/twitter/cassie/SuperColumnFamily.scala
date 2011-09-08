@@ -57,5 +57,14 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     }
   }
 
-
+  def removeRow(key: Key) = {
+    val cp = new thrift.ColumnPath(name)
+    val ts = clock.timestamp
+    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, ts, writeConsistency.level)
+    timeFutureWithFailures(stats, "remove") {
+      provider.map {
+        _.remove(keyCodec.encode(key), cp, ts, writeConsistency.level)
+      }
+    }
+  }
 }
