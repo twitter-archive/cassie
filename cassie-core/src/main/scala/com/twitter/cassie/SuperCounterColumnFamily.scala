@@ -20,9 +20,15 @@ import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 @deprecated("use compound columns instead")
 case class SuperCounterColumnFamily[Key, Name, SubName](
-    keyspace: String, name: String, provider: ClientProvider, keyCodec: Codec[Key], 
-    nameCodec: Codec[Name], subNameCodec: Codec[SubName], stats: StatsReceiver,
-    readConsistency: ReadConsistency = ReadConsistency.Quorum, writeConsistency: WriteConsistency = WriteConsistency.One) {
+    keyspace: String,
+    name: String,
+    provider: ClientProvider,
+    keyCodec: Codec[Key],
+    nameCodec: Codec[Name],
+    subNameCodec: Codec[SubName],
+    stats: StatsReceiver,
+    readConsistency: ReadConsistency = ReadConsistency.Quorum,
+    writeConsistency: WriteConsistency = WriteConsistency.One) {
 
   val log: Logger = Logger.get
 

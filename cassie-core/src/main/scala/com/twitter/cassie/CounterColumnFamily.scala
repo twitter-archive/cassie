@@ -106,7 +106,7 @@ case class CounterColumnFamily[Key, Name](
   def getColumns(key: Key,
                  columnNames: JSet[Name]): Future[JMap[Name, CounterColumn[Name]]] = {
     try {
-      val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
+      val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
       getSlice(key, pred)
     } catch {
       case e => Future.exception(e)
@@ -139,7 +139,7 @@ case class CounterColumnFamily[Key, Name](
     * @param columnNames the column names */
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
     try {
-      val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
+      val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
       multigetSlice(keys, pred)
     } catch {
       case e => Future.exception(e)
@@ -149,7 +149,7 @@ case class CounterColumnFamily[Key, Name](
   private def multigetSlice(keys: JSet[Key], pred: thrift.SlicePredicate): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    val encodedKeys = encodeKeys(keys)
+    val encodedKeys = keyCodec.encodeSet(keys)
     timeFutureWithFailures(stats, "multiget_slice") {
       provider.map {
         _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
@@ -263,19 +263,5 @@ case class CounterColumnFamily[Key, Name](
     val endBytes = endColumnName.map { c => nameCodec.encode(c) }.getOrElse(EMPTY)
     val pred = new thrift.SlicePredicate()
     pred.setSlice_range(new thrift.SliceRange(startBytes, endBytes, order.reversed, count))
-  }
-
-  def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {
-    val output = new JArrayList[ByteBuffer](values.size)
-    for (value <- asScalaIterable(values))
-      output.add(nameCodec.encode(value))
-    output
-  }
-
-  def encodeKeys(values: JSet[Key]): JList[ByteBuffer] = {
-    val output = new JArrayList[ByteBuffer](values.size)
-    for (value <- asScalaIterable(values))
-      output.add(keyCodec.encode(value))
-    output
   }
 }

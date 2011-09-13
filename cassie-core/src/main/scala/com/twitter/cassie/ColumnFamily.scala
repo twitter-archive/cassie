@@ -76,12 +76,12 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   private def sliceRangePredicate(columnNames: JSet[Name]) = {
-    new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
+    new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
   }
 
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
     try {
-      val pred = new thrift.SlicePredicate().setColumn_names(encodeNames(columnNames))
+      val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
       getSlice(key, pred)
     }  catch {
       case e => Future.exception(e)
@@ -105,7 +105,7 @@ case class ColumnFamily[Key, Name, Value](
       log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
       timeFutureWithFailures(stats, "multiget_slice") {
         provider.map {
-          _.multiget_slice(encodeKeys(keys), cp, pred, readConsistency.level)
+          _.multiget_slice(keyCodec.encodeSet(keys), cp, pred, readConsistency.level)
         }.map { result =>
           val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
           for (rowEntry <- asScalaIterable(result.entrySet)) {
@@ -277,19 +277,5 @@ case class ColumnFamily[Key, Name, Value](
         buf
       }
     }
-  }
-
-  def encodeNames(values: JSet[Name]): JList[ByteBuffer] = {
-    val output = new JArrayList[ByteBuffer](values.size)
-    for (value <- asScalaIterable(values))
-      output.add(nameCodec.encode(value))
-    output
-  }
-
-  def encodeKeys(values: JSet[Key]): JList[ByteBuffer] = {
-    val output = new JArrayList[ByteBuffer](values.size)
-    for (value <- asScalaIterable(values))
-      output.add(keyCodec.encode(value))
-    output
   }
 }
