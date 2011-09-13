@@ -26,6 +26,21 @@ object Column {
   }
 
   /**
+    * Convert from a thrift CoSC to a Cassie column. */
+  private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], column: thrift.Column): Column[A, B] = {
+    val c = Column(
+      nameCodec.decode(column.name),
+      valueCodec.decode(column.value)
+    ).timestamp(column.timestamp)
+
+    if(column.isSetTtl) {
+      c.ttl(column.getTtl.seconds)
+    } else {
+      c
+    }
+  }
+
+  /**
     * Convert from a cassie Column to a thrift.Column */
   private[cassie] def convert[A, B](nameCodec: Codec[A], valueCodec: Codec[B], clock: Clock, col: Column[A, B]): thrift.Column = {
     val tColumn = new thrift.Column(nameCodec.encode(col.name))
