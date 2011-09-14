@@ -58,7 +58,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     lazy val runExample = runExamplesAction
   }
 
-  class HadoopProject(info: ProjectInfo) extends StandardLibraryProject(info) with SubversionPublisher with AdhocInlines {
+  class HadoopProject(info: ProjectInfo) extends StandardLibraryProject(info) with SubversionPublisher 
+      with AdhocInlines with PublishSite {
     val hadoop    = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
     override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
@@ -66,7 +67,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     override def docSources = sources(mainScalaSourcePath##)
   }
 
-  class ServerSetsProject(info: ProjectInfo) extends StandardLibraryProject(info) with SubversionPublisher with AdhocInlines {
+  class ServerSetsProject(info: ProjectInfo) extends StandardLibraryProject(info) with SubversionPublisher with AdhocInlines 
+      with PublishSite {
     val finagleServerSets = "com.twitter" % "finagle-serversets" % finagleVersion
     override def ivyXML =
       <dependencies>
