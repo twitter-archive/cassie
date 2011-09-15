@@ -93,21 +93,13 @@ case class KeyspaceBuilder(
   }
 
   def timeout(t: Int): KeyspaceBuilder = copy(_timeout = t)
-
-  @deprecated("use retries() instead")
-  def retryAttempts(r: Int): KeyspaceBuilder = copy(_retries = r)
   def retries(r: Int): KeyspaceBuilder = copy(_retries = r)
-
   def retryPolicy(r: RetryPolicy): KeyspaceBuilder = copy(_retryPolicy = r)
 
-  @deprecated("use requestTimeout instead")
-  def requestTimeoutInMS(r: Int): KeyspaceBuilder = copy(_requestTimeout = r)
   /**
     * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
   def requestTimeout(r: Int): KeyspaceBuilder = copy(_requestTimeout = r)
 
-  @deprecated("use connectTimeout instead")
-  def connectionTimeoutInMS(r: Int): KeyspaceBuilder = copy(_connectTimeout = r)
   /**
     * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]*/
   def connectTimeout(r: Int): KeyspaceBuilder = copy(_connectTimeout = r)

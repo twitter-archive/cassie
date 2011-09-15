@@ -31,9 +31,11 @@ package org.apache.thrift.bootleg;
  * Stolen without mercy from https://issues.apache.org/jira/browse/THRIFT-765
  */
 @SuppressWarnings("all")
+@Deprecated
 public final class Utf8Helper {
   private Utf8Helper() {}
 
+  @Deprecated
   public static final int getByteLength(final String s) {
     int byteLength = 0;
     int codePoint;
@@ -61,12 +63,14 @@ public final class Utf8Helper {
     return byteLength;
   }
 
+  @Deprecated
   public static byte[] encode(String s) {
     byte[] buf = new byte[getByteLength(s)];
     encode(s, buf, 0);
     return buf;
   }
 
+  @Deprecated
   public static void encode(final String s, final byte[] buf, final int offset) {
     int nextByte = 0;
     int codePoint;
@@ -104,6 +108,7 @@ public final class Utf8Helper {
     }
   }
 
+  @Deprecated
   public static String decode(byte[] buf) {
     char[] charBuf = new char[buf.length];
     int charsDecoded = decode(buf, 0, buf.length, charBuf);
@@ -120,6 +125,7 @@ public final class Utf8Helper {
   private static final long HALF_SHIFT = 10;
   private static final long HALF_MASK = 0x3FFL;
 
+  @Deprecated
   public static int decode(final byte[] buf, final int offset, final int byteLength, final char[] charBuf) {
     int curByteIdx = offset;
     int endByteIdx = offset + byteLength;

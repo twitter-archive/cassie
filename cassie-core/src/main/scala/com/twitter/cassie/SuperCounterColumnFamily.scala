@@ -18,7 +18,6 @@ import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import scala.collection.mutable.ListBuffer
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
-@deprecated("use compound columns instead")
 case class SuperCounterColumnFamily[Key, Name, SubName](
     keyspace: String,
     name: String,
@@ -90,7 +89,6 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
 
 }
 
-@deprecated("use compound columns instead")
 class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColumnFamily[Key,Name, SubName]) extends BatchMutation {
 
   case class Insert(key: Key, name: Name, column: CounterColumn[SubName])

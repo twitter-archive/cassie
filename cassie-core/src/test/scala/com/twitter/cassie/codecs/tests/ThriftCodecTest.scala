@@ -1,12 +1,11 @@
 package com.twitter.cassie.codecs.tests
 
 import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
-import org.scalatest.Spec
-import org.scalatest.matchers.MustMatchers
-import com.twitter.cassie.codecs._
+import com.twitter.cassie.codecs.ThriftCodec
 import com.twitter.cassie.test.thrift.Person
+import org.scalacheck._
 
-class ThriftCodecTest extends Spec with MustMatchers {
+class ThriftCodecTest extends CodecTest {
   describe("encoding a person") {
     it("must be decodable") {
       val codec = new ThriftCodec(classOf[Person])
@@ -20,4 +19,10 @@ class ThriftCodecTest extends Spec with MustMatchers {
       codec.decode(moreBytes) must equal(another)
     }
   }
+
+  check(Prop.forAll(unicodeString, unicodeString) { (fname: String, lname: String) => 
+    val p = new Person(fname, lname)
+    val codec = new ThriftCodec(classOf[Person])
+    codec.decode(codec.encode(p)) == p
+  })
 }

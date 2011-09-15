@@ -21,7 +21,6 @@ import com.twitter.finagle.stats.StatsReceiver
 /**
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace. */
-@deprecated("use compound columns instead")
 case class SuperColumnFamily[Key, Name, SubName, Value](
     keyspace: String,
     name: String,

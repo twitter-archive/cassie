@@ -36,7 +36,6 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
       nameCodec: Codec[Name]) =
     new CounterColumnFamily(this.name, name, provider, keyCodec, nameCodec, stats.scope(name))
 
-  @deprecated("use compound columns instead")
   def superColumnFamily[Key, Name, SubName, Value](
     name: String,
     keyCodec: Codec[Key],
@@ -45,7 +44,6 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
     valueCodec: Codec[Value]
   ) = new SuperColumnFamily(this.name, name, provider, keyCodec, nameCodec, subNameCodec, valueCodec, stats.scope(name))
 
-  @deprecated("use compound columns instead")
   def superCounterColumnFamily[Key, Name, SubName](
     name: String,
     keyCodec: Codec[Key],
