@@ -17,6 +17,5 @@ class Utf8CodecTest extends CodecTest {
     }
   }
 
-  // FIXME currently broken in some way
   check(Prop.forAll(unicodeString){ i: String => Utf8Codec.decode(Utf8Codec.encode(i)) == i })
 }
