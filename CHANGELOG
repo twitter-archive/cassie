@@ -1,7 +1,9 @@
+# 0.15.0
+* fix Utf8Codec. If you are using the current codec, you may need to use LegacyUtf8Codec for compatibility with your stored data.
+
 # 0.14.0
 * SuperCounterColumnFamily was added
 * regular super column families were also added
-* fix Utf8Codec. If you are using the current codec, you may need to use LegacyUtf8Codec for compatibility with your stored data.
 
 # 0.13.0
 * upgrade to finagle 1.8.4
