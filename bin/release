@@ -1,0 +1,1 @@
+sbt publish-release && sbt 'project cassie-core' publish-to-git && sbt 'project cassie-hadoop' publish-to-git && sbt 'project cassie-serversets' publish-to-git
