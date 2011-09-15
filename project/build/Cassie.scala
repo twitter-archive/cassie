@@ -7,8 +7,8 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
   override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
 
   val slf4jVersion = "1.5.11"
-  val finagleVersion = "1.8.4"
-  val utilVersion = "1.11.2"
+  val finagleVersion = "1.9.0"
+  val utilVersion = "1.11.4"
 
   val coreProject = project(
     "cassie-core", "cassie-core",
@@ -43,9 +43,10 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
     /**
       * Test Dependencies */
-    val scalaTest =  "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test" intransitive()
+    val scalaTest =  "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test"
     val mockito = "org.mockito" % "mockito-all" % "1.8.5" % "test"
     val junitInterface = "com.novocode" % "junit-interface" % "0.7" % "test->default"
+    val scalaCheck = "org.scala-tools.testing" % "scalacheck_2.8.1" % "1.8" % "test"
 
     override def compileOptions = Deprecation :: Unchecked :: super.compileOptions.toList
 
