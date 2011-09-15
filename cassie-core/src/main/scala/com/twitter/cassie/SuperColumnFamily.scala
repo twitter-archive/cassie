@@ -66,16 +66,31 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
                   count: Int,
                   order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
     try {
-      val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
-      getSlice(key, None, None, Int.MaxValue)
+      getSlice(key, startColumnName, endColumnName, count, order)
+    } catch {
+      case e => Future.exception(e)
+    }
+  }
+
+  def multigetRow(keys: JSet[Key]): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
+    multigetRowSlice(keys, None, None, Int.MaxValue, Order.Normal)
+  }
+
+  def multigetRowSlice(keys: JSet[Key],
+                       startColumnName: Option[Name],
+                       endColumnName: Option[Name],
+                       count: Int,
+                       order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
+    try {
+      multigetSlice(keys, startColumnName, endColumnName, count, order)
     } catch {
       case e => Future.exception(e)
     }
   }
 
   private
-  def getSlice(key: Key, start: Option[Name], end: Option[Name], size: Int): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
-    val pred = sliceRangePredicate(start, end, Order.Normal, size)
+  def getSlice(key: Key, start: Option[Name], end: Option[Name], size: Int, order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+    val pred = sliceRangePredicate(start, end, order, size)
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
@@ -85,6 +100,31 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
         result.map { cosc =>
           val sc = cosc.getSuper_column()
           (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+        }
+      }
+    }
+  }
+
+  private
+  def multigetSlice(keys: JSet[Key],
+                    start: Option[Name],
+                    end: Option[Name],
+                    size: Int,
+                    order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
+    val pred = sliceRangePredicate(start, end, order, size)
+    val cp = new thrift.ColumnParent(name)
+    log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
+    timeFutureWithFailures(stats, "multiget_slice") {
+      provider.map {
+        _.multiget_slice(keyCodec.encodeSet(keys), cp, pred, readConsistency.level)
+      } map { result =>
+        val rows: JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]] = new JHashMap(result.size)
+        result.foldLeft(rows) { case (memo, (key, coscList)) =>
+          memo(keyCodec.decode(key)) = coscList.map { cosc =>
+            val sc = cosc.getSuper_column()
+            (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+          }
+          memo
         }
       }
     }
