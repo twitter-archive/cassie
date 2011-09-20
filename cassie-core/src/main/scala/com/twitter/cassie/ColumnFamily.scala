@@ -1,7 +1,7 @@
 package com.twitter.cassie
 
 import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
-import com.twitter.cassie.codecs.{Codec}
+import com.twitter.cassie.codecs.{ThriftCodec, Codec}
 import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
@@ -14,6 +14,7 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList,
   Map => JMap, Set => JSet}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
+import com.twitter.finagle.tracing.Trace
 
 import com.twitter.util.Future
 import com.twitter.finagle.stats.StatsReceiver
@@ -34,6 +35,8 @@ case class ColumnFamily[Key, Name, Value](
   ) extends ColumnFamilyLike[Key, Name, Value] {
 
   private[cassie] var clock: Clock = MicrosecondEpochClock
+  private[cassie] val annPredCodec =
+    new ThriftCodec[thrift.SlicePredicate](classOf[thrift.SlicePredicate])
   val log: Logger = Logger.get
 
   def keysAs[K](codec: Codec[K]): ColumnFamily[K, Name, Value] = copy(keyCodec = codec)
@@ -104,6 +107,10 @@ case class ColumnFamily[Key, Name, Value](
       val pred = sliceRangePredicate(columnNames)
       log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
       timeFutureWithFailures(stats, "multiget_slice") {
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.predicate", annPredCodec.encode(pred))
+        Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
         provider.map {
           _.multiget_slice(keyCodec.encodeSet(keys), cp, pred, readConsistency.level)
         }.map { result =>
@@ -132,7 +139,13 @@ case class ColumnFamily[Key, Name, Value](
         col.timestamp, writeConsistency.level)
       timeFutureWithFailures(stats, "insert") {
         provider.map {
-          _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
+          val keyEncoded = keyCodec.encode(key)
+          Trace.recordBinary("cassie.keyspace", keyspace)
+          Trace.recordBinary("cassie.columnfamily", name)
+          Trace.recordBinary("cassie.key", keyEncoded)
+          Trace.recordBinary("cassie.column", col.name)
+          Trace.recordBinary("cassie.writeconsistency", writeConsistency.level.toString)
+          _.insert(keyEncoded, cp, col, writeConsistency.level)
         }
       }
     }  catch {
@@ -149,7 +162,13 @@ case class ColumnFamily[Key, Name, Value](
       log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
       timeFutureWithFailures(stats, "remove") {
         provider.map {
-          _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level)
+          val keyEncoded = keyCodec.encode(key)
+          Trace.recordBinary("cassie.keyspace", keyspace)
+          Trace.recordBinary("cassie.columnfamily", name)
+          Trace.recordBinary("cassie.key", keyEncoded)
+          Trace.recordBinary("cassie.column", cp.column)
+          Trace.recordBinary("cassie.writeconsistency", writeConsistency.level.toString)
+          _.remove(keyEncoded, cp, timestamp, writeConsistency.level)
         }
       }
     }  catch {
@@ -178,7 +197,13 @@ case class ColumnFamily[Key, Name, Value](
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
     timeFutureWithFailures(stats, "remove") {
       provider.map {
-        _.remove(keyCodec.encode(key), cp, timestamp, writeConsistency.level)
+        val keyEncoded = keyCodec.encode(key)
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.key", keyEncoded)
+        Trace.recordBinary("cassie.timestamp", timestamp.toString)
+        Trace.recordBinary("cassie.writeconsistency", writeConsistency.level.toString)
+        _.remove(keyEncoded, cp, timestamp, writeConsistency.level)
       }
     }
   }
@@ -188,6 +213,9 @@ case class ColumnFamily[Key, Name, Value](
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     timeFutureWithFailures(stats, "batch_mutate") {
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.writeconsistency", writeConsistency.level.toString)
         provider.map {
         _.batch_mutate(mutations, writeConsistency.level)
       }
@@ -226,7 +254,13 @@ case class ColumnFamily[Key, Name, Value](
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
       provider.map {
-        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level)
+        val keyEncoded = keyCodec.encode(key)
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.key", keyEncoded)
+        Trace.recordBinary("cassie.predicate", annPredCodec.encode(pred))
+        Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
+        _.get_slice(keyEncoded, cp, pred, readConsistency.level)
       } map { result =>
         val cols: JMap[Name,Column[Name,Value]] = new JHashMap(result.size)
         for (cosc <- result.iterator) {
@@ -244,7 +278,13 @@ case class ColumnFamily[Key, Name, Value](
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
       provider.map {
-        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) 
+        val keyEncoded = keyCodec.encode(key)
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.key", keyEncoded)
+        Trace.recordBinary("cassie.predicate", annPredCodec.encode(pred))
+        Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
+        _.get_slice(keyEncoded, cp, pred, readConsistency.level)
       } map { result =>
         result.map { cosc =>
           Column.convert(nameCodec, valueCodec, cosc)
@@ -259,10 +299,19 @@ case class ColumnFamily[Key, Name, Value](
                                     predicate: thrift.SlicePredicate) = {
 
     val cp = new thrift.ColumnParent(name)
-    val range = new thrift.KeyRange(count).setStart_key(keyCodec.encode(startKey)).setEnd_key(keyCodec.encode(endKey))
+    val startKeyEncoded = keyCodec.encode(startKey)
+    val endKeyEncoded = keyCodec.encode(endKey)
+    val range = new thrift.KeyRange(count).setStart_key(startKeyEncoded).setEnd_key(endKeyEncoded)
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
     timeFutureWithFailures(stats, "get_range_slices") {
       provider.map {
+        Trace.recordBinary("cassie.keyspace", keyspace)
+        Trace.recordBinary("cassie.columnfamily", name)
+        Trace.recordBinary("cassie.startkey", startKeyEncoded)
+        Trace.recordBinary("cassie.endkey", endKeyEncoded)
+        Trace.recordBinary("cassie.count", count.toString)
+        Trace.recordBinary("cassie.predicate", annPredCodec.encode(predicate))
+        Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
         _.get_range_slices(cp, predicate, range, readConsistency.level)
       } map { slices =>
         val buf:JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](slices.size)
