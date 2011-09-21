@@ -44,7 +44,7 @@ private[cassie] class InitialColumnsIteratee[Key, Name, Value](val cf: ColumnFam
   def hasNext() = true
 
   def next() = {
-    cf.getOrderedSlice(key, None, None, batchSize).map { buf =>
+    cf.getRowSlice(key, None, None, batchSize).map { buf =>
       if(buf.size() < batchSize) {
         new FinalColumnsIteratee(buf)
       } else {
@@ -65,7 +65,7 @@ private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: Column
   def hasNext = true
 
   def next() = {
-    cf.getOrderedSlice(key, Some(start), None, batchSize+1).map { buf =>
+    cf.getRowSlice(key, Some(start), None, batchSize+1).map { buf =>
       val skipped = buf.subList(1, buf.length)
       if(skipped.size() < batchSize) {
         new FinalColumnsIteratee(skipped)

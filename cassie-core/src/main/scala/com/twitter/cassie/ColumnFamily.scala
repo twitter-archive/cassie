@@ -54,15 +54,18 @@ case class ColumnFamily[Key, Name, Value](
   }
 
   def getRow(key: Key): Future[JMap[Name, Column[Name, Value]]] = {
-    getRowSlice(key, None, None, Int.MaxValue, Order.Normal)
+    getRowSlice(key, None, None, Int.MaxValue, Order.Normal).map { columns =>
+      val rv = new JHashMap[Name, Column[Name, Value]]
+      columns.map (col => rv.put(col.name, col))
+      rv
+    }
   }
 
-  //TODO make the return value ordered
   def getRowSlice(key: Key,
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
                   count: Int,
-                  order: Order): Future[JMap[Name, Column[Name, Value]]] = {
+                  order: Order = Order.Normal): Future[JList[Column[Name, Value]]] = {
     try {
       val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
       getSlice(key, pred)
@@ -85,7 +88,11 @@ case class ColumnFamily[Key, Name, Value](
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
     try {
       val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
-      getSlice(key, pred)
+      getSlice(key, pred).map { columns => 
+        val rv = new JHashMap[Name, Column[Name, Value]]
+        columns.map (c => rv.put(c.name, c))
+        rv
+      }
     }  catch {
       case e => Future.exception(e)
     }
@@ -116,7 +123,7 @@ case class ColumnFamily[Key, Name, Value](
         }.map { result =>
           val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
           for (rowEntry <- asScalaIterable(result.entrySet)) {
-            val cols: JMap[Name, Column[Name, Value]] = new JHashMap(rowEntry.getValue.size)
+            val cols = new JHashMap[Name, Column[Name, Value]](rowEntry.getValue.size)
             for (cosc <- asScalaIterable(rowEntry.getValue)) {
               val col = Column.convert(nameCodec, valueCodec, cosc)
               cols.put(col.name, col)
@@ -248,8 +255,7 @@ case class ColumnFamily[Key, Name, Value](
     ColumnsIteratee(this, key, batchSize)
   }
 
-  private[cassie] def getSlice(key: Key,
-                          pred: thrift.SlicePredicate): Future[JMap[Name,Column[Name,Value]]] = {
+  private[cassie] def getSlice(key: Key, pred: thrift.SlicePredicate): Future[JList[Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
@@ -262,33 +268,11 @@ case class ColumnFamily[Key, Name, Value](
         Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
         _.get_slice(keyEncoded, cp, pred, readConsistency.level)
       } map { result =>
-        val cols: JMap[Name,Column[Name,Value]] = new JHashMap(result.size)
-        for (cosc <- result.iterator) {
-          val col = Column.convert(nameCodec, valueCodec, cosc)
-          cols.put(col.name, col)
-        }
-        cols
-      }
-    }
-  }
-
-  private[cassie] def getOrderedSlice(key: Key, start: Option[Name], end: Option[Name], size: Int): Future[Seq[Column[Name, Value]]] = {
-    val pred = sliceRangePredicate(start, end, Order.Normal, size)
-    val cp = new thrift.ColumnParent(name)
-    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    timeFutureWithFailures(stats, "get_slice") {
-      provider.map {
-        val keyEncoded = keyCodec.encode(key)
-        Trace.recordBinary("cassie.keyspace", keyspace)
-        Trace.recordBinary("cassie.columnfamily", name)
-        Trace.recordBinary("cassie.key", keyEncoded)
-        Trace.recordBinary("cassie.predicate", annPredCodec.encode(pred))
-        Trace.recordBinary("cassie.readconsistency", readConsistency.level.toString)
-        _.get_slice(keyEncoded, cp, pred, readConsistency.level)
-      } map { result =>
+        val list = new JArrayList[Column[Name, Value]](result.size)
         result.map { cosc =>
-          Column.convert(nameCodec, valueCodec, cosc)
+          list.add(Column.convert(nameCodec, valueCodec, cosc))
         }
+        list
       }
     }
   }

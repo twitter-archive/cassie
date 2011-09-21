@@ -1,7 +1,7 @@
 package com.twitter.cassie
 
 import codecs.Codec
-import java.util.{Map => JMap, Set => JSet}
+import java.util.{Map => JMap, Set => JSet, List => JList}
 import com.twitter.util.Future
 import java.nio.ByteBuffer
 
@@ -68,7 +68,7 @@ trait ColumnFamilyLike[Key, Name, Value] {
                   startColumnName: Option[Name],
                   endColumnName: Option[Name],
                   count: Int,
-                  order: Order): Future[JMap[Name, Column[Name, Value]]]
+                  order: Order): Future[JList[Column[Name, Value]]]
 
   /**
     * Get a selection of columns from a single row.

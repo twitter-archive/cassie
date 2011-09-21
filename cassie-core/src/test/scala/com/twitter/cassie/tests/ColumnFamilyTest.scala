@@ -113,7 +113,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       verify(client).get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)
     }
 
-    it("returns a map of column names to columns") {
+    it("returns a map of columns") {
       val columns = Seq(c(cf, "name", "Coda", 2292L),
                         c(cf, "age", "old", 11919L))
 

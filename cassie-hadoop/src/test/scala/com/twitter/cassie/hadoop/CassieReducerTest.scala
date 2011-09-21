@@ -101,17 +101,19 @@ class CassieReducerTest extends Spec with MustMatchers{
   describe("CassieReducer") {
     it("should go through a lifecycle") {
       val fake = new FakeCassandra(9160)
-      fake.start()
-      Thread.sleep(1000)
-      ToolRunner.run(new Configuration(), new TestScript(), Array("hello", "world"))
-      implicit val keyCodec = Utf8Codec
-      val cluster = new Cluster("127.0.0.1")
-      val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
-      val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
+      try {
+        fake.start()
+        Thread.sleep(1000)
+        ToolRunner.run(new Configuration(), new TestScript(), Array("hello", "world"))
+        implicit val keyCodec = Utf8Codec
+        val cluster = new Cluster("127.0.0.1")
+        val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
+        val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
-      cf.getRow("0").get().get("default").value must equal("hello")
-
-      fake.stop()
+        cf.getRow("0")().get("default").value must equal("hello")
+      } finally {
+        fake.stop()
+      }
     }
 
     it("should not blow up when empty input data") {
