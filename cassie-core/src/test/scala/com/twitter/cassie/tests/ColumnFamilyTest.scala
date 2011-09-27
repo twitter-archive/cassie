@@ -98,34 +98,34 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
   }
 
-  describe("getting a row") {
-    val (client, cf) = setup
-
-    it("performs a get_slice with a maxed-out count") {
-      cf.getRow("key")
-
-      val cp = new thrift.ColumnParent("cf")
-
-      val range = new thrift.SliceRange(b(""), b(""), false, Int.MaxValue)
-      val pred = new thrift.SlicePredicate()
-      pred.setSlice_range(range)
-
-      verify(client).get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)
-    }
-
-    it("returns a map of columns") {
-      val columns = Seq(c(cf, "name", "Coda", 2292L),
-                        c(cf, "age", "old", 11919L))
-
-      when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
-
-      cf.getRow("key")() must equal(asJavaMap(Map(
-        "name" -> Column("name", "Coda").timestamp(2292L),
-        "age" -> Column("age", "old").timestamp(11919L)
-      )))
-    }
-  }
-
+  // describe("getting a row") {
+  //   val (client, cf) = setup
+  // 
+  //   it("performs a get_slice with a maxed-out count") {
+  //     cf.getRow("key")
+  // 
+  //     val cp = new thrift.ColumnParent("cf")
+  // 
+  //     val range = new thrift.SliceRange(b(""), b(""), false, Int.MaxValue)
+  //     val pred = new thrift.SlicePredicate()
+  //     pred.setSlice_range(range)
+  // 
+  //     verify(client).get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)
+  //   }
+  // 
+  //   it("returns a map of columns") {
+  //     val columns = Seq(c(cf, "name", "Coda", 2292L),
+  //                       c(cf, "age", "old", 11919L))
+  // 
+  //     when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
+  // 
+  //     cf.getRow("key")() must equal(asJavaMap(Map(
+  //       "name" -> Column("name", "Coda").timestamp(2292L),
+  //       "age" -> Column("age", "old").timestamp(11919L)
+  //     )))
+  //   }
+  // }
+  // 
   describe("getting a row slice") {
     val (client, cf) = setup
 

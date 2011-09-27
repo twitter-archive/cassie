@@ -112,11 +112,8 @@ case class ColumnFamily[Key, Name, Value](
    * @param key the row's key
    */
   def getRow(key: Key): Future[JMap[Name, Column[Name, Value]]] = {
-    getRowSlice(key, None, None, Int.MaxValue, Order.Normal).map { columns =>
-      val rv = new JHashMap[Name, Column[Name, Value]]
-      columns.map (col => rv.put(col.name, col))
-      rv
-    }
+    val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
+    getMapSlice(key, pred)
   }
 
   /**
@@ -135,10 +132,10 @@ case class ColumnFamily[Key, Name, Value](
     startColumnName: Option[Name],
     endColumnName: Option[Name],
     count: Int,
-    order: Order): Future[JMap[Name, Column[Name, Value]]] = {
+    order: Order = Order.Normal): Future[Seq[Column[Name, Value]]] = {
     try {
       val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
-      getSlice(key, pred)
+      getOrderedSlice(key, pred)
     } catch {
       case e => Future.exception(e)
     }
@@ -156,7 +153,7 @@ case class ColumnFamily[Key, Name, Value](
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
     try {
       val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
-      getSlice(key, pred)
+      getMapSlice(key, pred)
     } catch {
       case e => Future.exception(e)
     }
@@ -446,7 +443,7 @@ case class ColumnFamily[Key, Name, Value](
     ColumnsIteratee(this, key, batchSize)
   }
 
-  private[cassie] def getSlice(key: Key,
+  private[cassie] def getMapSlice(key: Key,
     pred: thrift.SlicePredicate): Future[JMap[Name, Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
@@ -470,8 +467,7 @@ case class ColumnFamily[Key, Name, Value](
     }
   }
 
-  private[cassie] def getOrderedSlice(key: Key, start: Option[Name], end: Option[Name], size: Int): Future[Seq[Column[Name, Value]]] = {
-    val pred = sliceRangePredicate(start, end, Order.Normal, size)
+  private[cassie] def getOrderedSlice(key: Key, pred: thrift.SlicePredicate): Future[Seq[Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
@@ -485,9 +481,8 @@ case class ColumnFamily[Key, Name, Value](
         _.get_slice(keyEncoded, cp, pred, readConsistency.level)
       } map { result =>
         result.map { cosc =>
-          list.add(Column.convert(nameCodec, valueCodec, cosc))
+          Column.convert(nameCodec, valueCodec, cosc)
         }
-        list
       }
     }
   }
