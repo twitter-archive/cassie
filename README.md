@@ -10,7 +10,7 @@ Requirements
 
 * Java SE 6
 * Scala 2.8
-* Cassandra 0.8
+* Cassandra 0.8 or later
 
 Note that Cassie *is* usable from Java. Its not super easy, but we're working
 to make it easier.
@@ -22,17 +22,17 @@ In your [simple-build-tool](http://code.google.com/p/simple-build-tool/) project
 file, add Cassie as a dependency:
 
     val twttr = "Twitter's Repository" at "http://maven.twttr.com/"
-    val cassie = "com.twitter" % "cassie" % "0.6.0"
+    val cassie = "com.twitter" % "cassie" % "0.16.0"
 
 
 Connecting To Your Cassandra Cluster
 ------------------------------------
 
 First create a cluster object, passing in a list of seed hosts. By default, when
-creating a connection to a Keyspace, the seed hosts will be queried for a full
-list of nodes in the cluster.
+creating a connection to a Keyspace, the given hosts will be queried for a full
+list of nodes in the cluster. If you don't want to report stats use NullStatsReceiver.
 
-    val cluster = new Cluster("host1,host2")
+    val cluster = new Cluster("host1,host2", OstrichStatsReceiver)
 
 Then create a `Keyspace` instance which will use Finagle to maintain per-node
 connection pools and do retries:
@@ -43,11 +43,7 @@ connection pools and do retries:
 (If you have some nodes with dramatically different latency—e.g., in another
 data center–or if you have a huge cluster, you can disable keyspace mapping
 via "mapHostsEvery(0.minutes)" in which case clients will connect directly to
-the seed hosts passed to "new Cluster".) Alternative host discovery methods,
-like
-[ServerSets](https://github.com/twitter/commons/blob/master/src/java/com/twitter/common/zookeeper/ServerSetImpl.java),
-are TODO.
-
+the seed hosts passed to "new Cluster".)
 
 A Quick Note On Timestamps
 --------------------------

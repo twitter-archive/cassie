@@ -10,7 +10,7 @@ import com.twitter.common.quantity.Time
 import com.twitter.common.zookeeper.ServerSet
 import com.twitter.common.zookeeper.ServerSetImpl
 import com.twitter.common.zookeeper.ZooKeeperClient
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
 
 class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSetCluster(serverSet) with CCluster {
@@ -18,16 +18,31 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSe
 }
 
 /**
- * A Cassandra cluster where nodes are discovered using ServerSets
+ * A Cassandra cluster where nodes are discovered using ServerSets.
+ *
+ *  import com.twitter.conversions.time._
+ *  val clusterName = "cluster"
+ *  val keyspace = "KeyspaceName"
+ *  val zkPath = "/twitter/service/cassandra/%s".format(clusterName)
+ *  val zkHosts = Seq(new InetSocketAddress("zookeeper.local.twitter.com", 2181))
+ *  val timeoutMillis = 1.minute.inMilliseconds.toInt
+ *  val stats = NullStatsReceiver // or OstrichStatsReciever or whatever
+ *
+ *  val cluster = new ServerSetsCluster(zkHosts, zkPath, timeoutMillis, stats)
+ *  val keyspace = cluster.keyspace(keyspace).connect()
+ *
  *
  * @param zkAddersses list of some ZooKeeper hosts
  * @param zkPath path to node where Cassandra hosts will exist under
  * @param timeoutMillis timeout for ZooKeeper connection
- * @param stats a finagle stats receiver */
-class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int, stats: StatsReceiver = NullStatsReceiver) {
+ * @param stats a finagle stats receiver
+ */
+class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis:
+  Int, stats: StatsReceiver = NullStatsReceiver) {
   /**
-    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
-    * @param name the keyspace's name */
+   * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
+   * @param name the keyspace's name
+   */
   def keyspace(name: String): KeyspaceBuilder = {
     val zkClient = new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses))
     val serverSet = new ServerSetImpl(zkClient, zkPath)
