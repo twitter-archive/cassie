@@ -114,11 +114,20 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
   }
 
-  def get_slice(key: ByteBuffer, column_parent: ColumnParent, 
-      predicate: SlicePredicate, consistency_level: ConsistencyLevel): JList[ColumnOrSuperColumn] = 
+  def multiget_slice(keys: JList[ByteBuffer], column_parent: ColumnParent,
+      predicate: SlicePredicate, consistency_level: ConsistencyLevel) = {
+    val map = new JTreeMap[ByteBuffer, JList[ColumnOrSuperColumn]]
+    keys.foreach { key =>
+      map.put(key, get_slice(key, column_parent, predicate, consistency_level))
+    }
+    map
+  }
+
+  def get_slice(key: ByteBuffer, column_parent: ColumnParent,
+      predicate: SlicePredicate, consistency_level: ConsistencyLevel): JList[ColumnOrSuperColumn] =
     get_slice(key, column_parent, predicate, consistency_level, System.currentTimeMillis, false)
 
-  def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate, 
+  def get_slice(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate,
       consistency_level: ConsistencyLevel, asOf: Long, andDelete: Boolean): JList[ColumnOrSuperColumn] = {
     val cf = getColumnFamily(column_parent)
     var row = cf.get(key)
@@ -186,19 +195,15 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def get_count(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate,
       consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
 
-  def multiget_slice(keys: JList[ByteBuffer], column_parent: ColumnParent,
-      predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
-    throw new UnsupportedOperationException
-
   def multiget_count(keys: JList[ByteBuffer], column_parent: ColumnParent,
       predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
     throw new UnsupportedOperationException
 
-  def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate, 
+  def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate,
       range: KeyRange, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
 
   def get_indexed_slices(column_parent: ColumnParent, index_clause: IndexClause,
-      column_predicate: SlicePredicate, consistency_level: ConsistencyLevel) = 
+      column_predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
     throw new UnsupportedOperationException
 
   def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long,
@@ -242,7 +247,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   def describe_snitch() = throw new UnsupportedOperationException
   def describe_keyspace(keyspace: String) = throw new UnsupportedOperationException
 
-  def describe_splits(cfName: String, start_token: String, end_token: String, 
+  def describe_splits(cfName: String, start_token: String, end_token: String,
       keys_per_split: Int) = throw new UnsupportedOperationException
 
   def system_add_column_family(cf_def: CfDef) = throw new UnsupportedOperationException

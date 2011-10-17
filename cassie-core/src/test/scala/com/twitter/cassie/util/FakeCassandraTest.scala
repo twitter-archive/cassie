@@ -4,6 +4,7 @@ import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest._
 import java.net.{SocketAddress, InetSocketAddress}
+import java.util.HashSet
 import org.apache.cassandra.finagle.thrift
 
 import com.twitter.cassie._
@@ -53,6 +54,26 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       cf.getRow("k").get().size must equal(1)
       cf.getColumn("k", "b").get().size must equal(1)
     }
+
+    it("should be able to multiget_slice") {
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+      var batch = cf.batch
+      batch.insert("a", Column("b", "c"))
+      batch.insert("a", Column("d", "e"))
+      batch.insert("b", Column("d", "e"))
+      batch.insert("c", Column("d", "e"))
+      batch.execute().get()
+
+      val keys = new HashSet[String]
+      keys.add("a")
+      keys.add("b")
+      val columnNames = new HashSet[String]
+      columnNames.add("d")
+
+      val response = cf.multigetColumns(keys, columnNames).get()
+      response.size() must equal(2)
+    }
+
 
     it("should be able to batch mutate") {
       val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec,Utf8Codec, Utf8Codec)
