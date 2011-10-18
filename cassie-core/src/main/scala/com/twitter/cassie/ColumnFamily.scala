@@ -39,6 +39,11 @@ case class ColumnFamily[Key, Name, Value](
   readConsistency: ReadConsistency = ReadConsistency.Quorum,
   writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
 
+  /**
+   * This is necessary to create cglib proxies of column families.
+   */
+  protected def this() = this(null, null, null, null, null, null, null)
+
   private[cassie] var clock: Clock = MicrosecondEpochClock
   private[cassie] val annPredCodec =
     new ThriftCodec[thrift.SlicePredicate](classOf[thrift.SlicePredicate])
