@@ -6,7 +6,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
   with DefaultRepos
   with SubversionPublisher {
 
-  override def subversionRepository = Some("http://svn.local.twitter.com/maven/")
+  override def subversionRepository = Some("http://svn.twitter.biz/maven/")
 
   val slf4jVersion = "1.5.8"
 
