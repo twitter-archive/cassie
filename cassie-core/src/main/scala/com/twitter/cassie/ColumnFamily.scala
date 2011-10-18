@@ -440,7 +440,21 @@ case class ColumnFamily[Key, Name, Value](
    * @param key the row key to walk
    */
   def columnsIteratee(batchSize: Int, key: Key): ColumnsIteratee[Key, Name, Value] = {
-    ColumnsIteratee(this, key, batchSize)
+    ColumnsIteratee(this, key, None, None, batchSize)
+  }
+
+  /**
+   * Start asynchronous iteration over a range of the columns in a row.
+   *
+   * @return ColumnsIteratee
+   * @param batchSize the number of columns to load at once
+   * @param key the row key to walk
+   * @param start start walking at this column in the row
+   * @param end end walk at this column in the row
+   */
+  def columnsIteratee(batchSize: Int, key: Key, start: Option[Name],
+                      end: Option[Name]): ColumnsIteratee[Key, Name, Value] = {
+    ColumnsIteratee(this, key, start, end, batchSize)
   }
 
   private[cassie] def getMapSlice(key: Key,

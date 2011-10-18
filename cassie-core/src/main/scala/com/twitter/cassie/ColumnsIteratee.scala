@@ -33,22 +33,24 @@ trait ColumnsIteratee[Key, Name, Value] {
 }
 
 object ColumnsIteratee {
-  def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], key: Key, batchSize: Int) = {
-    new InitialColumnsIteratee(cf, key, batchSize)
+  def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], key: Key,
+                              start: Option[Name], end: Option[Name], batchSize: Int) = {
+    new InitialColumnsIteratee(cf, key, start, end, batchSize)
   }
 }
 
-private[cassie] class InitialColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], key: Key, batchSize: Int)
-    extends ColumnsIteratee[Key, Name, Value] {
+private[cassie] class InitialColumnsIteratee[Key, Name, Value](
+  val cf: ColumnFamily[Key, Name, Value], key: Key, start: Option[Name], end: Option[Name],
+  batchSize: Int) extends ColumnsIteratee[Key, Name, Value] {
 
   def hasNext() = true
 
   def next() = {
-    cf.getRowSlice(key, None, None, batchSize).map { buf =>
+    cf.getRowSlice(key, start, end, batchSize).map { buf =>
       if(buf.size() < batchSize) {
         new FinalColumnsIteratee(buf)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, buf)
+        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, end, buf)
       }
     }
   }
@@ -59,18 +61,19 @@ private[cassie] class InitialColumnsIteratee[Key, Name, Value](val cf: ColumnFam
 }
 
 private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], 
-    val key: Key, val batchSize: Int, val start: Name, val buffer: JList[Column[Name, Value]])
+    val key: Key, val batchSize: Int, val start: Name, val end: Option[Name],
+    val buffer: JList[Column[Name, Value]])
     extends ColumnsIteratee[Key, Name, Value] {
 
   def hasNext = true
 
   def next() = {
-    cf.getRowSlice(key, Some(start), None, batchSize+1).map { buf =>
+    cf.getRowSlice(key, Some(start), end, batchSize+1).map { buf =>
       val skipped = buf.subList(1, buf.length)
       if(skipped.size() < batchSize) {
         new FinalColumnsIteratee(skipped)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, skipped)
+        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, end, skipped)
       }
     }
   }
