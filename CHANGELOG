@@ -1,3 +1,6 @@
+# 0.16.1
+* fix multigetslice for FakeCassandra
+
 # 0.16.0
 * add multigetRowSlice for regular super column families
 
