@@ -75,4 +75,62 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
       verify(client, atMost(2)).get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)
     }
   }
+
+  describe("iterating through the columns of a row, skipping anything outside start and end") {
+    val (client, cf) = setup
+
+    val columns1 = asJavaList(List(
+      co("first",  "1", 1),
+      co("second", "2", 2)
+    ))
+    val columns2 = asJavaList(List(
+      co("second", "2", 2),
+      co("third",  "3", 3),
+      co("fourth", "4", 4)
+    ))
+    val expectedColumns = List(
+      co("first",  "1", 1),
+      co("second", "2", 2),
+      co("third",  "3", 3),
+      co("fourth", "4", 4)
+    )
+
+    val coscs1 = asJavaList(columns1.map{c => cosc(cf, c)})
+    val coscs2 = asJavaList(columns2.map{c => cosc(cf, c)})
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+        matchEq(pred("first", "fourth", 2)) , matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(coscs1)
+    )
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+        matchEq(pred("second", "fourth", 3)) , matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(coscs2)
+    )
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+        matchEq(pred("fourth", "fourth", 3)) , matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(asJavaList(List(coscs2.get(2))))
+    )
+
+    val data2 = new ListBuffer[Column[String, String]]()
+
+    val f = cf.columnsIteratee(2, "bar", Some("first"), Some("fourth")).foreach{ column =>
+      data2 += column
+    }
+    f()
+
+    it("does a buffered iteration over the columns in the rows in the range") {
+      data2 must equal(expectedColumns)
+    }
+
+    it("requests data using the last key as the start key until the end is detected") {
+      val inOrder = inOrderVerify(client)
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("first", "fourth", 2)), matchEq(cf.readConsistency.level))
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("second", "fourth", 3)), matchEq(cf.readConsistency.level))
+      inOrder.verify(client).get_slice(matchEq(b("bar")), anyColumnParent, matchEq(pred("fourth", "fourth", 3)), matchEq(cf.readConsistency.level))
+
+      verify(client, atMost(3)).get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)
+    }
+  }
 }
