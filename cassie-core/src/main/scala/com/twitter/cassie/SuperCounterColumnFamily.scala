@@ -116,7 +116,9 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
     ops.map { insert =>
       val cosc = new thrift.ColumnOrSuperColumn()
       val counterColumn = new thrift.CounterColumn(cf.subNameCodec.encode(insert.column.name), insert.column.value)
-      val sc = new thrift.CounterSuperColumn(cf.nameCodec.encode(insert.name), new JArrayList[thrift.CounterColumn](){counterColumn})
+      val columns = new JArrayList[thrift.CounterColumn]()
+      columns.add(counterColumn)
+      val sc = new thrift.CounterSuperColumn(cf.nameCodec.encode(insert.name), columns)
       cosc.setCounter_super_column(sc)
       val mutation = new thrift.Mutation
       mutation.setColumn_or_supercolumn(cosc)
