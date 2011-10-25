@@ -16,7 +16,7 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
 import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
 
 import com.twitter.finagle.service.{RetryingFilter, Backoff, TimeoutFilter}
-import com.twitter.finagle.{WriteException, TimedoutRequestException, ChannelException}
+import com.twitter.finagle.{WriteException, RequestTimeoutException, ChannelException}
 
 sealed case class RetryPolicy()
 
@@ -49,8 +49,8 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       statsReceiver.counter("WriteException").incr
       true
     }
-    case Throw(ex: TimedoutRequestException) => {
-      statsReceiver.counter("TimedoutRequestException").incr
+    case Throw(ex: RequestTimeoutException) => {
+      statsReceiver.counter("RequestTimeoutException").incr
       true
     }
     case Throw(ex: ChannelException) => {
