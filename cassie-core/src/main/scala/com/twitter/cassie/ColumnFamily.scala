@@ -192,9 +192,30 @@ case class ColumnFamily[Key, Name, Value](
    * @param columnNames the column names
    */
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
+    val pred = sliceRangePredicate(columnNames)
+    multiget(keys, pred)
+  }
+
+
+  /**
+   * Get multiple whole rows.
+   *
+   * @return a future that can contain [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+   *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+   * @param keys the row keys
+   * @param startColumnName An optional starting column. If None it starts at the first column.
+   * @param endColumnName An optional ending column. If None it ends at the last column.
+   * @param count Like LIMIT in SQL. Note that all of start..end will be loaded into memory serverside.
+   * @param order sort forward or reverse (by column name)
+   */
+  def multigetRows(keys: JSet[Key], startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {
+    val pred = sliceRangePredicate(startColumnName, endColumnName, order, count)
+    multiget(keys, pred)
+  }
+
+  private[cassie] def multiget(keys: JSet[Key], pred: thrift.SlicePredicate) = {
     try {
       val cp = new thrift.ColumnParent(name)
-      val pred = sliceRangePredicate(columnNames)
       log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
       timeFutureWithFailures(stats, "multiget_slice") {
         Trace.recordBinary("cassie.keyspace", keyspace)

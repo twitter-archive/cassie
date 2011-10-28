@@ -254,6 +254,32 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
   }
 
+  describe("getting all columns for a set of keys") {
+    val (client, cf) = setup
+
+    it("returns a map of keys to a map of column names to columns") {
+      val results = Map(
+        b("key1") -> asJavaList(Seq(c(cf, "name", "Coda", 2292L),
+                                c(cf, "age", "old", 11919L))),
+        b("key2") -> asJavaList(Seq(c(cf, "name", "Niki", 422L),
+                                c(cf, "age", "lithe", 129L)))
+      )
+
+      when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
+
+      cf.multigetRows(Set("key1", "key2"), None, None, Order.Normal, 100)() must equal(asJavaMap(Map(
+        "key1" -> asJavaMap(Map(
+          "name" -> Column("name", "Coda").timestamp(2292L),
+          "age" -> Column("age", "old").timestamp(11919L)
+        )),
+        "key2" -> asJavaMap(Map(
+          "name" -> Column("name", "Niki").timestamp(422L),
+          "age" -> Column("age", "lithe").timestamp(129L)
+        ))
+      )))
+    }
+  }
+
   describe("inserting a column") {
     val (client, cf) = setup
 
