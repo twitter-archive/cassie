@@ -36,7 +36,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion withSources() intransitive()
     val slf4jBindings = "org.slf4j" % "slf4j-jdk14" % slf4jVersion withSources() intransitive()
     val slf4jNop = "org.slf4j" %  "slf4j-nop" % slf4jVersion % "provided"
-    val codecs = "commons-codec" % "commons-codec" % "1.4"
+    val codecs = "commons-codec" % "commons-codec" % "1.5"
 
     /**
       * Test Dependencies */
