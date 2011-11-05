@@ -69,7 +69,7 @@ case class KeyspaceBuilder(
   _minConnectionsPerHost: Int = 1,
   _maxConnectionsPerHost: Int = 5,
   _hostConnectionMaxWaiters: Int = 100,
-  _tracer: Tracer = NullTracer,
+  _tracerFactory: Tracer.Factory = NullTracer.factory,
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
 
   /**
@@ -87,7 +87,7 @@ case class KeyspaceBuilder(
       _maxConnectionsPerHost,
       _hostConnectionMaxWaiters,
       stats,
-      _tracer,
+      _tracerFactory,
       _retryPolicy)
     new Keyspace(name, ccp, stats)
   }
@@ -113,7 +113,7 @@ case class KeyspaceBuilder(
   def reportStatsTo(r: StatsReceiver) = copy(stats = r)
 
   /** Set a tracer to collect request traces. */
-  def tracer(t: Tracer) = copy(_tracer = t)
+  def tracerFactory(t: Tracer.Factory) = copy(_tracerFactory = t)
 
   def hostConnectionMaxWaiters(i: Int) = copy(_hostConnectionMaxWaiters = i)
 }

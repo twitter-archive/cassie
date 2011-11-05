@@ -35,7 +35,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
                             val maxConnectionsPerHost: Int = 5,
                             val hostConnectionMaxWaiters: Int = 100,
                             val statsReceiver: StatsReceiver = NullStatsReceiver,
-                            val tracer: Tracer = NullTracer,
+                            val tracerFactory: Tracer.Factory = NullTracer.factory,
                             val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
@@ -95,7 +95,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
       .hostConnectionCoresize(minConnectionsPerHost)
       .hostConnectionLimit(maxConnectionsPerHost)
       .reportTo(statsReceiver)
-      .tracer(tracer)
+      .tracerFactory(tracerFactory)
       .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
       .build()
 
