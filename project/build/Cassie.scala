@@ -25,7 +25,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
 
   class CoreProject(info: ProjectInfo) extends StandardLibraryProject(info)
     with SubversionPublisher with CompileThriftFinagle with PublishSite
-    with NoisyDependencies with ProjectDependencies {
+    with NoisyDependencies with ProjectDependencies with DefaultRepos {
 
     projectDependencies(
       "finagle" ~ "finagle-core",
@@ -68,7 +68,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
   }
 
   class ServerSetsProject(info: ProjectInfo) extends StandardLibraryProject(info) with SubversionPublisher
-      with PublishSite with ProjectDependencies {
+      with PublishSite with ProjectDependencies with DefaultRepos {
 
     projectDependencies("finagle" ~ "finagle-serversets")
 
