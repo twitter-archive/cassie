@@ -12,11 +12,13 @@ import java.util.{HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSo
   TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap}
 import java.util.Comparator
 import scala.math.min
+import java.net.ServerSocket
 
 object FakeCassandra {
   class ServerThread(cassandra: Cassandra.Iface, port: Int) extends Thread {
     setDaemon(true)
-    val serverTransport = new TServerSocket(port)
+    val serverSocket = new ServerSocket(port) // so we can extract port if picked by server socket
+    val serverTransport = new TServerSocket(serverSocket)
     val protFactory = new TBinaryProtocol.Factory(true, true)
     val transportFactory = new TFramedTransport.Factory()
     val processor = new Cassandra.Processor(cassandra)
