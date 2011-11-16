@@ -1,3 +1,16 @@
+# 0.17.0
+* update to latest finagle, etc.
+* switch tracers to factories
+
+# 0.16.4
+* ?
+
+# 0.16.3
+* fixed a bug in SuperCounterColumnFamilyBatchMutationBuilder where we weren't actually doing anything, ever.
+
+# 0.16.2
+* add a zero-arg constructor to ColumnFamily so that kyle can mock it in his tests
+
 # 0.16.1
 * fix multigetslice for FakeCassandra
 
