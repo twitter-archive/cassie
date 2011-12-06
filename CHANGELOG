@@ -1,3 +1,8 @@
+# 0.17.1
+* fix bug in FakeCassandra that would cause port collisions
+* upgrade to util 1.12.7
+* upgrade to finagle 1.9.10
+
 # 0.17.0
 * update to latest finagle, etc.
 * switch tracers to factories
