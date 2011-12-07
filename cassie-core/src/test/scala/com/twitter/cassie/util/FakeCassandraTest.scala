@@ -17,8 +17,7 @@ import com.twitter.cassie.connection.CCluster
 import com.twitter.finagle.stats.NullStatsReceiver;
 
 class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
-  val port = 1359
-  def factory() = new FakeCassandra(port)
+  def factory() = new FakeCassandra
   var server: FakeCassandra = null
   var client: Cluster = null
   var connections = new ListBuffer[Keyspace]
@@ -29,7 +28,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
     server = factory()
     server.start()
     Thread.sleep(100)
-    client = new Cluster(Set("localhost"), port, NullStatsReceiver)
+    client = new Cluster(Set("localhost"), server.port.get, NullStatsReceiver)
   }
 
   def keyspace() = {
@@ -48,6 +47,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
   }
 
   describe("a fake cassandra") {
+
     it("should be able to connect to an arbitrary columnfamily and read and write") {
       val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
       cf.insert("k", Column("b", "c")).get()

@@ -14,6 +14,7 @@ import scala.collection.JavaConversions._
 import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import java.io._
+import java.net._
 import java.util._
 import com.twitter.cassie.tests.util._
 
@@ -100,13 +101,12 @@ class CassieReducerTest extends Spec with MustMatchers{
 
   describe("CassieReducer") {
     it("should go through a lifecycle") {
-      val fake = new FakeCassandra(9160)
+      val fake = new FakeCassandra
       try {
         fake.start()
-        Thread.sleep(1000)
         ToolRunner.run(new Configuration(), new TestScript(), Array("hello", "world"))
         implicit val keyCodec = Utf8Codec
-        val cluster = new Cluster("127.0.0.1")
+        val cluster = new Cluster("127.0.0.1", fake.port.get)
         val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
         val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 
@@ -117,12 +117,12 @@ class CassieReducerTest extends Spec with MustMatchers{
     }
 
     it("should not blow up when empty input data") {
-      val fake = new FakeCassandra(9160)
+      val fake = new FakeCassandra
       fake.start()
       Thread.sleep(1000)
       ToolRunner.run(new Configuration(), new TestScript(), Array())
       implicit val keyCodec = Utf8Codec
-      val cluster = new Cluster("127.0.0.1")
+      val cluster = new Cluster("127.0.0.1", fake.port.get)
       val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
       val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
 

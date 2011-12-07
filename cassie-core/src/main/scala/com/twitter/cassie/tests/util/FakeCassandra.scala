@@ -15,15 +15,17 @@ import scala.math.min
 import java.net.ServerSocket
 
 object FakeCassandra {
-  class ServerThread(cassandra: Cassandra.Iface, port: Int) extends Thread {
+  class ServerThread(cassandra: Cassandra.Iface) extends Thread {
     setDaemon(true)
-    val serverSocket = new ServerSocket(port) // so we can extract port if picked by server socket
+    val serverSocket = new ServerSocket(0) // so we can extract port if picked by server socket
     val serverTransport = new TServerSocket(serverSocket)
     val protFactory = new TBinaryProtocol.Factory(true, true)
     val transportFactory = new TFramedTransport.Factory()
     val processor = new Cassandra.Processor(cassandra)
     val server = new TThreadPoolServer(processor, serverTransport, transportFactory, protFactory)
     val latch = new CountDownLatch(1)
+
+    val port = serverSocket.getLocalPort
 
     override def run {
       latch.countDown()
@@ -37,7 +39,7 @@ object FakeCassandra {
  * You don't have to create keyspaces or column families; this happens implicitly.  We
  * support a limited and expanding subset of the cassandra api.
  */
-class FakeCassandra(val port: Int) extends Cassandra.Iface {
+class FakeCassandra extends Cassandra.Iface {
   // Taken from cassandra ByteBufferUtil#compareUnsigned
   // Questionable style because it's as straight a port as possible
   // replace this with a straight copy of the java or split the fake out into a subproject and depend on cassandra
@@ -71,11 +73,13 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
   var thread: FakeCassandra.ServerThread = null
   var currentKeyspace = "default"
 
+  def port: Option[Int] = if (thread != null) Some(thread.port) else None
+
   //                     keyspace        CF              row         column
   val data = new JTreeMap[String, JTreeMap[String, JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]]]]
 
   def start() = {
-    thread = new FakeCassandra.ServerThread(this, port)
+    thread = new FakeCassandra.ServerThread(this)
     thread.start()
     thread.latch.await()
   }
@@ -99,6 +103,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
 
   def stop() = {
     thread.server.stop()
+    thread.serverSocket.close()
     reset()
   }
 
@@ -189,7 +194,7 @@ class FakeCassandra(val port: Int) extends Cassandra.Iface {
     }
   }
 
-  def login(auth_request: AuthenticationRequest ) = throw new UnsupportedOperationException
+  def login(auth_request: AuthenticationRequest) = throw new UnsupportedOperationException
 
   def get(key: ByteBuffer, column_path: ColumnPath, consistency_level: ConsistencyLevel) =
     throw new UnsupportedOperationException

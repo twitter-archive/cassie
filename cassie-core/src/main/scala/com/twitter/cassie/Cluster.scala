@@ -28,6 +28,13 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) {
     this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, 9160, stats)
 
   /**
+    * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
+    *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
+    */
+  def this(seedHosts: String, port: Int) =
+    this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, port, NullStatsReceiver)
+
+  /**
     * @param seedHosts A collection of seed host addresses. The port number is assumed to be 9160 */
   def this(seedHosts: java.util.Collection[String]) =
     this(asScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver)
