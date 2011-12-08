@@ -47,7 +47,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) {
     val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
     val cluster = if (mapHostsEvery > 0)
       // either map the cluster for this keyspace
-      new ClusterRemapper(name, seedAddresses, mapHostsEvery, statsReceiver = stats.scope("remapper"))
+      new ClusterRemapper(name, seedAddresses, mapHostsEvery, seedPort, statsReceiver = stats.scope("remapper"))
     else
       // or connect directly to the hosts that were given as seeds
       new SocketAddressCluster(seedAddresses)
