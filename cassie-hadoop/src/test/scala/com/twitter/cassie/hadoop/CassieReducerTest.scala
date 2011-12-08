@@ -58,7 +58,7 @@ class NonMappingCassieReducer extends CassieReducer {
   }
 }
 
-class TestScript extends Configured with Tool {
+class TestScript(port: Int) extends Configured with Tool {
 
   def run(args: Array[String]): Int = {
     val path = "/tmp/cassie-test"
@@ -73,6 +73,7 @@ class TestScript extends Configured with Tool {
     val jc = job.getConfiguration()
 
     jc.set(HOSTS, "127.0.0.1")
+    jc.set(PORT, port.toString)
     jc.set(KEYSPACE, "ks")
     jc.set(COLUMN_FAMILY, "cf")
 
@@ -104,7 +105,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       val fake = new FakeCassandra
       try {
         fake.start()
-        ToolRunner.run(new Configuration(), new TestScript(), Array("hello", "world"))
+        ToolRunner.run(new Configuration(), new TestScript(fake.port.get), Array("hello", "world"))
         implicit val keyCodec = Utf8Codec
         val cluster = new Cluster("127.0.0.1", fake.port.get)
         val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
@@ -120,7 +121,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       val fake = new FakeCassandra
       fake.start()
       Thread.sleep(1000)
-      ToolRunner.run(new Configuration(), new TestScript(), Array())
+      ToolRunner.run(new Configuration(), new TestScript(fake.port.get), Array())
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1", fake.port.get)
       val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()

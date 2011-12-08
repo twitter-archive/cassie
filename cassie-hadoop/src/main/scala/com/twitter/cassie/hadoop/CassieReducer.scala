@@ -21,6 +21,7 @@ object CassieReducer {
   val KEYSPACE = "keyspace"
   val COLUMN_FAMILY = "column_family"
   val HOSTS = "hosts"
+  val PORT = "port"
   val MIN_BACKOFF = "min_backoff"
   val MAX_BACKOFF = "max_backoff"
   val IGNORE_FAILURES = "ignore_failures"
@@ -49,7 +50,8 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
 
   override def setup(context: ReducerContext) = {
     def conf(key: String) = context.getConfiguration.get(key)
-    cluster = new Cluster(conf(HOSTS))
+    val port = if (conf(PORT) == null) 9160 else conf(PORT).toInt
+    cluster = new Cluster(conf(HOSTS), port)
     cluster = configureCluster(cluster)
     if(conf(MIN_BACKOFF) != null ) minBackoff = Integer.valueOf(conf(MIN_BACKOFF)).intValue
     if(conf(MAX_BACKOFF) != null ) maxBackoff = Integer.valueOf(conf(MAX_BACKOFF)).intValue
@@ -58,7 +60,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
 
 
     keyspace = configureKeyspace(cluster.keyspace(conf(KEYSPACE))).connect()
-    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY), 
+    columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY),
       ByteArrayCodec, ByteArrayCodec, ByteArrayCodec)
     batch = columnFamily.batch
   }
