@@ -62,9 +62,9 @@ trait ColumnFamilyTestHelper {
   def anyKeyRange() = any(classOf[thrift.KeyRange])
   def anyInt() = any(classOf[Int])
 
-  def pred(start: String, end: String, count: Int) =
+  def pred(start: String, end: String, count: Int, order: Order = Order.Normal) =
     new thrift.SlicePredicate().setSlice_range(
       new thrift.SliceRange().setStart(b(start)).setFinish(b(end))
-        .setReversed(false).setCount(count))
+        .setReversed(order.reversed).setCount(count))
 
 }

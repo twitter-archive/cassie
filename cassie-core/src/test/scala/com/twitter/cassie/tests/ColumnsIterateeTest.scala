@@ -76,6 +76,45 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
     }
   }
 
+  describe("iterating through the columns of a row, with a limit and reversed order") {
+    val (client, cf) = setup
+
+    val columns = asJavaList(List(
+      co("first",  "1", 1),
+      co("second", "2", 2),
+      co("third",  "3", 3),
+      co("fourth", "4", 4)
+    ))
+
+    val expectedColumns = asJavaList(List(
+      co("third",  "3", 3),
+      co("second", "2", 2)
+    ))
+
+    val coscs = asJavaList(columns.map{c => cosc(cf, c)})
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+        matchEq(pred("third", "", 1, Order.Reversed)) , matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(asJavaList(List(coscs.get(2))))
+    )
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+        matchEq(pred("third", "", 2, Order.Reversed)) , matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(asJavaList(List(coscs.get(2), coscs.get(1))))
+    )
+
+    val data2 = new ListBuffer[Column[String, String]]()
+
+    val f = cf.columnsIteratee(1, "bar", Some("third"), None, 2, Order.Reversed).foreach{ column =>
+      data2 += column
+    }
+    f()
+
+    it("does a buffered iteration over the columns in the rows in the range") {
+      asJavaList(data2) must equal(expectedColumns)
+    }
+  }
+
   describe("iterating through the columns of a row, skipping anything outside start and end") {
     val (client, cf) = setup
 

@@ -34,23 +34,27 @@ trait ColumnsIteratee[Key, Name, Value] {
 
 object ColumnsIteratee {
   def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], key: Key,
-                              start: Option[Name], end: Option[Name], batchSize: Int) = {
-    new InitialColumnsIteratee(cf, key, start, end, batchSize)
+                              start: Option[Name], end: Option[Name], batchSize: Int,
+                              limit: Int, order: Order = Order.Normal) = {
+    new InitialColumnsIteratee(cf, key, start, end, batchSize, limit, order)
   }
 }
 
 private[cassie] class InitialColumnsIteratee[Key, Name, Value](
   val cf: ColumnFamily[Key, Name, Value], key: Key, start: Option[Name], end: Option[Name],
-  batchSize: Int) extends ColumnsIteratee[Key, Name, Value] {
+  batchSize: Int, remaining: Int, order: Order) extends ColumnsIteratee[Key, Name, Value] {
 
   def hasNext() = true
 
   def next() = {
-    cf.getRowSlice(key, start, end, batchSize).map { buf =>
-      if(buf.size() < batchSize) {
+    // if limit < batchSize
+    val fetchSize = math.min(batchSize, remaining)
+
+    cf.getRowSlice(key, start, end, fetchSize, order).map { buf =>
+      if(buf.size < batchSize || batchSize == remaining) {
         new FinalColumnsIteratee(buf)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, end, buf)
+        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, end, remaining-buf.size, order, buf)
       }
     }
   }
@@ -62,18 +66,20 @@ private[cassie] class InitialColumnsIteratee[Key, Name, Value](
 
 private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], 
     val key: Key, val batchSize: Int, val start: Name, val end: Option[Name],
-    val buffer: JList[Column[Name, Value]])
+    val remaining: Int, val order: Order, val buffer: JList[Column[Name, Value]])
     extends ColumnsIteratee[Key, Name, Value] {
 
   def hasNext = true
 
   def next() = {
-    cf.getRowSlice(key, Some(start), end, batchSize+1).map { buf =>
+    val fetchSize = math.min(batchSize+1, remaining+1)
+
+    cf.getRowSlice(key, Some(start), end, fetchSize, order).map { buf =>
       val skipped = buf.subList(1, buf.length)
-      if(skipped.size() < batchSize) {
+      if(skipped.size() < batchSize || batchSize == remaining) {
         new FinalColumnsIteratee(skipped)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, end, skipped)
+        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, end, remaining-skipped.size, order, skipped)
       }
     }
   }
