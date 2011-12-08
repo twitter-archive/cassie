@@ -3,7 +3,6 @@ package com.twitter.cassie.tests
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterAll, Spec}
-import com.twitter.cassie.tests.util.MockCassandraServer
 import java.net.{SocketAddress, InetSocketAddress}
 import org.apache.cassandra.finagle.thrift
 
