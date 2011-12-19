@@ -2,13 +2,14 @@ package com.twitter.cassie.tests.examples
 
 import com.twitter.cassie._
 import com.twitter.cassie.codecs.Utf8Codec
-import com.twitter.logging.Logger
 import types.LexicalUUID
 // TODO: unfortunate
 import scala.collection.JavaConversions._
 
+import com.twitter.logging.Logger
+
 object CassieRun {
-  val log = Logger.get
+  private val log = Logger.get(this.getClass)
 
   def main(args: Array[String]) {
     // create a cluster with a single seed from which to map keyspaces

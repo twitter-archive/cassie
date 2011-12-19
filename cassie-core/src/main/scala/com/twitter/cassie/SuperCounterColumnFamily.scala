@@ -2,22 +2,25 @@ package com.twitter.cassie
 
 import com.twitter.cassie.codecs.Codec
 import com.twitter.cassie.connection.ClientProvider
+import com.twitter.cassie.util.ByteBufferUtil.EMPTY
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
-import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
-import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap,
     Iterator => JIterator, List => JList, Map => JMap, Set => JSet}
 import scala.collection.JavaConversions._
-
-import com.twitter.util.Future
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
 import scala.collection.mutable.ListBuffer
-import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
+import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.logging.Logger
+import com.twitter.util.Future
+
+object SuperCounterColumnFamily {
+  private val log = Logger.get(this.getClass)
+}
 case class SuperCounterColumnFamily[Key, Name, SubName](
     keyspace: String,
     name: String,
@@ -29,7 +32,7 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.One) {
 
-  val log: Logger = Logger.get
+  import SuperCounterColumnFamily._
 
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)

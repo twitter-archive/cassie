@@ -2,9 +2,9 @@ package com.twitter.cassie
 
 import com.twitter.cassie.codecs.Codec
 import com.twitter.cassie.connection.ClientProvider
+import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
-import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
@@ -13,9 +13,9 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap,
     Iterator => JIterator, List => JList, Map => JMap, Set => JSet}
 import scala.collection.JavaConversions._
 
-import com.twitter.util.Future
 import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
-import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
+import com.twitter.logging.Logger
+import com.twitter.util.Future
 
 
 /**
@@ -24,6 +24,9 @@ import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
  *
  * TODO: figure out how to get rid of code duplication vs non counter columns
  */
+object CounterColumnFamily {
+  private val log = Logger.get(this.getClass)
+}
 case class CounterColumnFamily[Key, Name](
     keyspace: String,
     name: String,
@@ -34,7 +37,7 @@ case class CounterColumnFamily[Key, Name](
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.One) {
 
-  val log = Logger.get
+  import CounterColumnFamily._
 
   def keysAs[K](codec: Codec[K]): CounterColumnFamily[K, Name] = copy(keyCodec = codec)
   def namesAs[N](codec: Codec[N]): CounterColumnFamily[Key, N] = copy(nameCodec = codec)

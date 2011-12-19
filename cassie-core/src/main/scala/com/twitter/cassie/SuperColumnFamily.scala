@@ -6,7 +6,6 @@ import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
-import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{singleton => singletonJSet}
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
@@ -15,12 +14,16 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList,
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 
-import com.twitter.util.Future
 import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.logging.Logger
+import com.twitter.util.Future
 
 /**
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace. */
+object SuperColumnFamily {
+  private val log = Logger.get(this.getClass)
+}
 case class SuperColumnFamily[Key, Name, SubName, Value](
     keyspace: String,
     name: String,
@@ -32,10 +35,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     stats: StatsReceiver,
     readConsistency: ReadConsistency = ReadConsistency.Quorum,
     writeConsistency: WriteConsistency = WriteConsistency.Quorum
-  )  {
+  ) {
+
+  import SuperColumnFamily._
 
   private[cassie] var clock: Clock = MicrosecondEpochClock
-  val log: Logger = Logger.get
 
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)

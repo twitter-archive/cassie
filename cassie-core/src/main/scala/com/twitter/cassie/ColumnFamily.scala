@@ -6,7 +6,6 @@ import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
-import com.twitter.logging.Logger
 import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
@@ -20,6 +19,7 @@ import java.util.{
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 import com.twitter.finagle.tracing.Trace
+import com.twitter.logging.Logger
 
 import com.twitter.util.Future
 import com.twitter.finagle.stats.StatsReceiver
@@ -28,6 +28,11 @@ import com.twitter.finagle.stats.StatsReceiver
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
  */
+object ColumnFamily {
+  private val annPredCodec =
+    new ThriftCodec[thrift.SlicePredicate](classOf[thrift.SlicePredicate])
+  private val log = Logger.get(this.getClass)
+}
 case class ColumnFamily[Key, Name, Value](
   keyspace: String,
   name: String,
@@ -39,15 +44,14 @@ case class ColumnFamily[Key, Name, Value](
   readConsistency: ReadConsistency = ReadConsistency.Quorum,
   writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
 
+  import ColumnFamily._
+
   /**
    * This is necessary to create cglib proxies of column families.
    */
   protected def this() = this(null, null, null, null, null, null, null)
 
   private[cassie] var clock: Clock = MicrosecondEpochClock
-  private[cassie] val annPredCodec =
-    new ThriftCodec[thrift.SlicePredicate](classOf[thrift.SlicePredicate])
-  val log: Logger = Logger.get
 
   /**
    * @return a copy of this [[ColumnFamily]] with a different key codec

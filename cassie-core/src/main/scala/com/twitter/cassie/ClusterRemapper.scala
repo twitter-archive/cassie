@@ -27,8 +27,12 @@ import com.twitter.finagle.WriteException
  * @param seeds seed node addresses
  * @param port the Thrift port of client nodes
  */
+object ClusterRemapper {
+  private val log = Logger.get(this.getClass)
+}
 private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160, statsReceiver: StatsReceiver = NullStatsReceiver) extends CCluster {
-  private val log = Logger.get
+  import ClusterRemapper._
+
   private[cassie] var timer = new Timer(new HashedWheelTimer())
 
   def close = timer.stop()
@@ -95,6 +99,4 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
       ccp.close()
     }
   }
-
-
 }
