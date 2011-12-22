@@ -118,7 +118,23 @@ class FakeCassandra extends Cassandra.Iface {
       row = new JTreeMap[ByteBuffer, ColumnOrSuperColumn](comparator)
       cf.put(key, row)
     }
-    row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
+
+    if (column_parent.isSetSuper_column) {
+      val super_column_name = column_parent.BufferForSuper_column
+      var cosc = row.get(super_column_name)
+      if (cosc == null) {
+        cosc = new ColumnOrSuperColumn().setSuper_column(new SuperColumn(super_column_name, new JArrayList()))
+        row.put(super_column_name, cosc)
+      }
+      val sc = cosc.getSuper_column
+      var existing = sc.getColumns.find(_.getName.sameElements(column.getName))
+      existing match {
+        case Some(c) => c.setValue(column.getValue)
+        case None => sc.getColumns.add(column)
+      }
+    } else {
+      row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
+    }
   }
 
   def multiget_slice(keys: JList[ByteBuffer], column_parent: ColumnParent,
@@ -149,7 +165,11 @@ class FakeCassandra extends Cassandra.Iface {
       val sr = predicate.getSlice_range
       if(sr.isSetStart && sr.getStart().length > 0 &&
          sr.isSetFinish && sr.getFinish().length > 0) {
-        list = new JArrayList(row.subMap(sr.BufferForStart, sr.BufferForFinish).values)
+        if (comparator.compare(sr.BufferForStart, sr.BufferForFinish) > 0) {
+          list = new JArrayList(row.subMap(sr.BufferForFinish, sr.BufferForStart).values)
+        } else {
+          list = new JArrayList(row.subMap(sr.BufferForStart, sr.BufferForFinish).values)
+        }
       } else if (sr.isSetStart() && sr.getStart.length > 0) {
         list = new JArrayList(row.tailMap(sr.BufferForStart).values)
       } else if (sr.isSetFinish() && sr.getFinish.length > 0){
@@ -215,8 +235,22 @@ class FakeCassandra extends Cassandra.Iface {
 
   def remove(key: ByteBuffer, column_path: ColumnPath, timestamp: Long,
       consistency_level: ConsistencyLevel) = {
-    val row = getColumnFamily(column_path).get(key)
-    if (row != null) row.remove(column_path.BufferForColumn)
+    val cf = getColumnFamily(column_path)
+    val row = cf.get(key)
+    if (row != null) {
+      (column_path.isSetSuper_column, column_path.isSetColumn) match {
+        case (false, false) => cf.remove(key)                               // remove whole row
+        case (false, true) => row.remove(column_path.BufferForColumn)       // remove column
+        case (true, false) => row.remove(column_path.BufferForSuper_column) // remove whole supercolumn
+        case (true, true) =>
+          // remove single column from supercolumn
+          val cosc = row.get(column_path.BufferForSuper_column)
+          if (cosc != null) {
+            val sc = cosc.getSuper_column
+            sc.setColumns(sc.getColumns.filter(_.getName.sameElements(column_path.getColumn)))
+          }
+      }
+    }
   }
 
   def truncate(cfname: String) = throw new UnsupportedOperationException
