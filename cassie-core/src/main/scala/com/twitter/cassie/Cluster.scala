@@ -17,7 +17,7 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
  * @param seedPort the port number for '''all''' hosts in the cluster
  *        to refresh its host list.
  * @param stats a finagle stats receiver */
-class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) {
+class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) extends ClusterBase {
   private var mapHostsEvery: Duration = 10.minutes
 
   /**
@@ -64,6 +64,13 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) {
   }
 }
 
+trait ClusterBase {
+  /**
+    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
+    * @param name the keyspace's name
+    */
+  def keyspace(name: String): KeyspaceBuilder
+}
 
 case class KeyspaceBuilder(
   cluster: CCluster,

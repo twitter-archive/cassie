@@ -38,7 +38,7 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSe
  * @param stats a finagle stats receiver
  */
 class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis:
-  Int, stats: StatsReceiver = NullStatsReceiver) {
+  Int, stats: StatsReceiver = NullStatsReceiver) extends ClusterBase {
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
    * @param name the keyspace's name
