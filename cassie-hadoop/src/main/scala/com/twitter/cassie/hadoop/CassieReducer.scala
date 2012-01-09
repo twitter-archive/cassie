@@ -95,6 +95,7 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
       t.printStackTrace
       val toSleep = minBackoff * (1 << consecutiveFailures)
       if(toSleep < maxBackoff) {
+        context.progress()
         Thread.sleep(toSleep)
         context.getCounter(CassieCounters.Counters.RETRY).increment(1)
         execute(context)
