@@ -1,3 +1,12 @@
+# 0.18.0
+* make FakeCassandra spin up on random port (@kmx)
+* Allow the column iteratee to take in order and limit. (@skr)
+* Move from RetryingFilter+TimeoutFilter to RetryPolicy (@stuhood)
+* make cassie reducer take an optional port (@kmx)
+* pass port to ClusterRemapper to preserve it across remapping (@zuercher)
+* add super column support to FakeCassandra, handle reversed slice range start/finish (@zuercher)
+* make ClusterBase trait (@skr)
+
 # 0.17.1
 * fix bug in FakeCassandra that would cause port collisions
 * upgrade to util 1.12.7
