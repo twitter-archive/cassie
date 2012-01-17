@@ -45,6 +45,8 @@ class FakeCassandra extends Cassandra.Iface {
   // replace this with a straight copy of the java or split the fake out into a subproject and depend on cassandra
   val comparator = new Comparator[ByteBuffer] {
     def compare(o1: ByteBuffer, o2: ByteBuffer): Int = {
+      // o1.rewind
+      // o2.rewind
       if(o1 eq null) {
         if(o2 eq null) return 0
         else return -1
