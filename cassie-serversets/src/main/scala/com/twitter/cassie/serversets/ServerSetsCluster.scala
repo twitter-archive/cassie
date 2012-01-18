@@ -32,19 +32,29 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSe
  *  val keyspace = cluster.keyspace(keyspace).connect()
  *
  *
- * @param zkAddersses list of some ZooKeeper hosts
+ * @param zkClient existing ZooKeeperClient
  * @param zkPath path to node where Cassandra hosts will exist under
- * @param timeoutMillis timeout for ZooKeeper connection
  * @param stats a finagle stats receiver
  */
-class ServerSetsCluster(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis:
-  Int, stats: StatsReceiver = NullStatsReceiver) extends ClusterBase {
+class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver) extends ClusterBase {
+
+  /**
+   * Convenience constructor that creates a ZooKeeperClient using the specified hosts and timeout.
+   *
+   * @param zkAddresses list of some ZooKeeper hosts
+   * @param zkPath path to node where Cassandra hosts will exist under
+   * @param timeoutMillis timeout for ZooKeeper connection
+   * @param stats a finagle stats receiver
+   */
+  def this(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int,
+      stats: StatsReceiver = NullStatsReceiver) =
+    this(new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats)
+
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
    * @param name the keyspace's name
    */
   def keyspace(name: String): KeyspaceBuilder = {
-    val zkClient = new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses))
     val serverSet = new ServerSetImpl(zkClient, zkPath)
     val cluster = new ZookeeperServerSetCCluster(serverSet)
     KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name))
