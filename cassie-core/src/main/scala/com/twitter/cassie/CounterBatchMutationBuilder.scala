@@ -1,9 +1,14 @@
 package com.twitter.cassie
 
 import java.nio.ByteBuffer
-import java.util.{List => JList, Map => JMap, Set => JSet,
-  ArrayList => JArrayList, HashMap => JHashMap}
-import java.util.Collections.{singleton => singletonJSet}
+import java.util.{
+  List => JList,
+  Map => JMap,
+  Set => JSet,
+  ArrayList => JArrayList,
+  HashMap => JHashMap
+}
+import java.util.Collections.{ singleton => singletonJSet }
 
 import codecs.Codec
 import scala.collection.mutable.ListBuffer
@@ -16,8 +21,8 @@ import com.twitter.util.Future
  *
  * TODO: Port to Java collections.
  */
-class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
-    extends BatchMutation {
+class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
+  extends BatchMutation {
 
   case class Insert(key: Key, column: CounterColumn[Name])
   case class Deletions(key: Key, columnNames: JSet[Name])
@@ -38,7 +43,8 @@ class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
   }
 
   /**
-    * Submits the batch of operations, returning a future to allow blocking for success. */
+   * Submits the batch of operations, returning a future to allow blocking for success.
+   */
   def execute() = {
     try {
       cf.batch(mutations)
@@ -60,8 +66,8 @@ class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
 
         val encodedKey = cf.keyCodec.encode(insert.key)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
+        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
         l.add(mutation)
       }
       case Right(deletions) => {
@@ -76,8 +82,8 @@ class CounterBatchMutationBuilder[Key,Name](cf: CounterColumnFamily[Key,Name])
 
         val encodedKey = cf.keyCodec.encode(deletions.key)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
+        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
         l.add(mutation)
       }
     }

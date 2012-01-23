@@ -20,7 +20,7 @@ class ThriftCodecTest extends CodecTest {
     }
   }
 
-  check(Prop.forAll(unicodeString, unicodeString) { (fname: String, lname: String) => 
+  check(Prop.forAll(unicodeString, unicodeString) { (fname: String, lname: String) =>
     val p = new Person(fname, lname)
     val codec = new ThriftCodec(classOf[Person])
     codec.decode(codec.encode(p)) == p

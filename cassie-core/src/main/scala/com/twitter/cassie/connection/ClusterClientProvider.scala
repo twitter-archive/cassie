@@ -4,19 +4,19 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
-import org.apache.cassandra.finagle.thrift.{UnavailableException, TimedOutException}
-import org.apache.thrift.protocol.{TBinaryProtocol, TProtocolFactory}
+import org.apache.cassandra.finagle.thrift.{ UnavailableException, TimedOutException }
+import org.apache.thrift.protocol.{ TBinaryProtocol, TProtocolFactory }
 
-import com.twitter.finagle.{WriteException, RequestTimeoutException, ChannelException}
+import com.twitter.finagle.{ WriteException, RequestTimeoutException, ChannelException }
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.service.{Backoff, RetryPolicy => FinagleRetryPolicy}
+import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy }
 import com.twitter.finagle.Service
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
-import com.twitter.finagle.thrift.{ThriftClientRequest, ThriftClientFramedCodec}
-import com.twitter.finagle.{CodecFactory, Codec, ClientCodecConfig}
-import com.twitter.finagle.tracing.{Tracer, NullTracer}
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
+import com.twitter.finagle.{ CodecFactory, Codec, ClientCodecConfig }
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import com.twitter.util.Duration
-import com.twitter.util.{Future, Throw, Timer, TimerTask, Time, Try}
+import com.twitter.util.{ Future, Throw, Timer, TimerTask, Time, Try }
 
 sealed case class RetryPolicy()
 
@@ -26,17 +26,17 @@ object RetryPolicy {
 }
 
 private[cassie] class ClusterClientProvider(val hosts: CCluster,
-                            val keyspace: String,
-                            val retries: Int = 5,
-                            val timeout: Duration = Duration(5, TimeUnit.SECONDS),
-                            val requestTimeout: Duration = Duration(1, TimeUnit.SECONDS),
-                            val connectTimeout: Duration = Duration(1, TimeUnit.SECONDS),
-                            val minConnectionsPerHost: Int = 1,
-                            val maxConnectionsPerHost: Int = 5,
-                            val hostConnectionMaxWaiters: Int = 100,
-                            val statsReceiver: StatsReceiver = NullStatsReceiver,
-                            val tracerFactory: Tracer.Factory = NullTracer.factory,
-                            val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
+  val keyspace: String,
+  val retries: Int = 5,
+  val timeout: Duration = Duration(5, TimeUnit.SECONDS),
+  val requestTimeout: Duration = Duration(1, TimeUnit.SECONDS),
+  val connectTimeout: Duration = Duration(1, TimeUnit.SECONDS),
+  val minConnectionsPerHost: Int = 1,
+  val maxConnectionsPerHost: Int = 5,
+  val hostConnectionMaxWaiters: Int = 100,
+  val statsReceiver: StatsReceiver = NullStatsReceiver,
+  val tracerFactory: Tracer.Factory = NullTracer.factory,
+  val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
     def schedule(when: Time)(f: => Unit): TimerTask = throw new Exception("illegal use!")
@@ -72,19 +72,19 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
   }
 
   private var service = ClientBuilder()
-      .cluster(hosts)
-      .name("cassie")
-      .codec(CassandraThriftFramedCodec())
-      .retryPolicy(finagleRetryPolicy)
-      .timeout(timeout)
-      .requestTimeout(requestTimeout)
-      .connectTimeout(connectTimeout)
-      .hostConnectionCoresize(minConnectionsPerHost)
-      .hostConnectionLimit(maxConnectionsPerHost)
-      .reportTo(statsReceiver)
-      .tracerFactory(tracerFactory)
-      .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
-      .build()
+    .cluster(hosts)
+    .name("cassie")
+    .codec(CassandraThriftFramedCodec())
+    .retryPolicy(finagleRetryPolicy)
+    .timeout(timeout)
+    .requestTimeout(requestTimeout)
+    .connectTimeout(connectTimeout)
+    .hostConnectionCoresize(minConnectionsPerHost)
+    .hostConnectionLimit(maxConnectionsPerHost)
+    .reportTo(statsReceiver)
+    .tracerFactory(tracerFactory)
+    .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
+    .build()
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
 
@@ -108,8 +108,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster,
    * Create a CassandraThriftFramedCodec with a BinaryProtocol
    */
   class CassandraThriftFramedCodecFactory
-    extends CodecFactory[ThriftClientRequest, Array[Byte]]#Client
-  {
+    extends CodecFactory[ThriftClientRequest, Array[Byte]]#Client {
     def apply(config: ClientCodecConfig) = {
       new CassandraThriftFramedCodec(new TBinaryProtocol.Factory(), config)
     }

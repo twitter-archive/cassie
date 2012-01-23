@@ -43,8 +43,9 @@ object CassieRun {
     log.info("getting a set of columns from a set of keys: %s", cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply())
 
     log.info("Iterating!")
-    val f = cass.rowsIteratee(2).foreach { case(key, cols) =>
-      log.info("Found: %s %s", key, cols)
+    val f = cass.rowsIteratee(2).foreach {
+      case (key, cols) =>
+        log.info("Found: %s %s", key, cols)
     }
     f()
 

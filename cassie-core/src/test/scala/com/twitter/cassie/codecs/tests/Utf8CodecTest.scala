@@ -17,5 +17,5 @@ class Utf8CodecTest extends CodecTest {
     }
   }
 
-  check(Prop.forAll(unicodeString){ i: String => Utf8Codec.decode(Utf8Codec.encode(i)) == i })
+  check(Prop.forAll(unicodeString) { i: String => Utf8Codec.decode(Utf8Codec.encode(i)) == i })
 }

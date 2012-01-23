@@ -200,7 +200,6 @@ case class ColumnFamily[Key, Name, Value](
     multiget(keys, pred)
   }
 
-
   /**
    * Get multiple whole rows.
    *
@@ -483,7 +482,7 @@ case class ColumnFamily[Key, Name, Value](
    * @param end end walk at this column in the row
    */
   def columnsIteratee(batchSize: Int, key: Key, start: Option[Name],
-                      end: Option[Name]): ColumnsIteratee[Key, Name, Value] = {
+    end: Option[Name]): ColumnsIteratee[Key, Name, Value] = {
     columnsIteratee(batchSize, key, start, end, Int.MaxValue)
   }
 
@@ -499,7 +498,7 @@ case class ColumnFamily[Key, Name, Value](
    * @param order get columns in this order
    */
   def columnsIteratee(batchSize: Int, key: Key, start: Option[Name],
-                      end: Option[Name], limit: Int, order: Order = Order.Normal): ColumnsIteratee[Key, Name, Value] = {
+    end: Option[Name], limit: Int, order: Order = Order.Normal): ColumnsIteratee[Key, Name, Value] = {
     ColumnsIteratee(this, key, start, end, batchSize, limit, order)
   }
 

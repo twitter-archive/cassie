@@ -3,7 +3,8 @@ package com.twitter.cassie.codecs
 import java.nio.ByteBuffer
 
 /**
-  * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays. */
+ * Encodes and decodes 64-bit integers as 8-byte, big-endian byte arrays.
+ */
 object LongCodec extends Codec[Long] {
   private val length = 8
 

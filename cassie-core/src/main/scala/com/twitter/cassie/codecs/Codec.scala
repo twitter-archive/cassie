@@ -2,10 +2,11 @@ package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
 import scala.collection.JavaConversions.asScalaIterable
-import java.util.{ArrayList => JArrayList, Set => JSet}
+import java.util.{ ArrayList => JArrayList, Set => JSet }
 
 /**
-  * A bidirection encoding for column names or values. */
+ * A bidirection encoding for column names or values.
+ */
 trait Codec[A] {
   def encode(obj: A): ByteBuffer
   def decode(ary: ByteBuffer): A

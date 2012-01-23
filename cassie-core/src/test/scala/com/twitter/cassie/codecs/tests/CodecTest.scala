@@ -2,7 +2,7 @@ package com.twitter.cassie.codecs.tests
 
 import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import java.nio.charset.Charset
-import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.{ ByteBuffer, CharBuffer }
 import org.scalacheck._
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.prop.Checkers
@@ -30,10 +30,10 @@ class CodecTest extends Spec with MustMatchers with Checkers {
   val unicodeString = Gen.listOf(unicodeCharacter).map(_.mkString)
 
   val bytesGen: Gen[Byte] = for {
-    b <- Gen.choose(0,255)
+    b <- Gen.choose(0, 255)
   } yield b.toByte
 
-  val randomBuffer = Gen.containerOf[Array, Byte](bytesGen).map (ByteBuffer.wrap(_))
+  val randomBuffer = Gen.containerOf[Array, Byte](bytesGen).map(ByteBuffer.wrap(_))
 
   implicit override val generatorDrivenConfig =
     PropertyCheckConfig(minSuccessful = 10000)

@@ -19,5 +19,5 @@ class ByteArrayCodecTest extends CodecTest {
     }
   }
 
-  check(Prop.forAll(randomBuffer){ i: ByteBuffer => ByteArrayCodec.decode(ByteArrayCodec.encode(i)) == i })
+  check(Prop.forAll(randomBuffer) { i: ByteBuffer => ByteArrayCodec.decode(ByteArrayCodec.encode(i)) == i })
 }

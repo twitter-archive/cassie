@@ -7,7 +7,7 @@ import com.twitter.cassie.clocks.MicrosecondEpochClock
 class MicrosecondEpochClockTest extends Spec with MustMatchers {
   describe("the microseconds clock") {
     it("uses the Java epoch milliseconds clock") {
-      MicrosecondEpochClock.timestamp must be((System.currentTimeMillis * 1000) plusOrMinus(1000))
+      MicrosecondEpochClock.timestamp must be((System.currentTimeMillis * 1000) plusOrMinus (1000))
     }
 
     it("is strictly increasing, even beyond the precision of the clock") {

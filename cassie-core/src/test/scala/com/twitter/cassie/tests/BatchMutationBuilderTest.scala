@@ -8,7 +8,6 @@ import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie._
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 
-
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   val (client, cf) = setup

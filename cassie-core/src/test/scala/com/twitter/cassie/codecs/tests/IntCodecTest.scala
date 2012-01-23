@@ -3,7 +3,6 @@ package com.twitter.cassie.codecs.tests
 import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import com.twitter.cassie.codecs.IntCodec
 
-
 class IntCodecTest extends CodecTest {
   describe("encoding an int") {
     it("produces a variable length zig-zag encoded array of bytes") {

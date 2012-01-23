@@ -3,7 +3,7 @@ package com.twitter.cassie.tests.util
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
 import org.scalatest._
-import java.net.{SocketAddress, InetSocketAddress}
+import java.net.{ SocketAddress, InetSocketAddress }
 import java.util.HashSet
 import org.apache.cassandra.finagle.thrift
 
@@ -74,9 +74,8 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       response.size() must equal(2)
     }
 
-
     it("should be able to batch mutate") {
-      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec,Utf8Codec, Utf8Codec)
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
       var batch = cf.batch
       batch.insert("k", Column("b", "c"))
       batch.insert("k", Column("d", "e"))

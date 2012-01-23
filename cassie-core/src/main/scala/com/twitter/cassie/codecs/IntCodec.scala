@@ -3,7 +3,8 @@ package com.twitter.cassie.codecs
 import java.nio.ByteBuffer
 
 /**
-  * Encodes and decodes 32-bit integers as 4-byte, big-endian byte buffers. */
+ * Encodes and decodes 32-bit integers as 4-byte, big-endian byte buffers.
+ */
 object IntCodec extends Codec[Int] {
   private val length = 4
 

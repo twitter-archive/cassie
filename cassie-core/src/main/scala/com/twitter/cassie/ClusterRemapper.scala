@@ -6,15 +6,15 @@ import com.twitter.cassie.connection.ClusterClientProvider
 import com.twitter.cassie.connection.SocketAddressCluster
 import com.twitter.cassie.connection.CCluster
 import com.twitter.finagle.ServiceFactory
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.util.Timer
 import com.twitter.logging.Logger
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.util.Time
 import java.io.IOException
-import java.net.{InetSocketAddress, SocketAddress}
-import java.net.{SocketAddress, InetSocketAddress}
+import java.net.{ InetSocketAddress, SocketAddress }
+import java.net.{ SocketAddress, InetSocketAddress }
 import org.jboss.netty.util.HashedWheelTimer
 import scala.collection.JavaConversions._
 import scala.util.parsing.json.JSON
@@ -44,7 +44,8 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
   def mkFactories[Req, Rep](mkBroker: (SocketAddress) => ServiceFactory[Req, Rep]) = {
     new SeqProxy[ServiceFactory[Req, Rep]] {
 
-      @volatile private[this] var underlyingMap: Map[SocketAddress, ServiceFactory[Req, Rep]] = Map(seeds map { address =>
+      @volatile
+      private[this] var underlyingMap: Map[SocketAddress, ServiceFactory[Req, Rep]] = Map(seeds map { address =>
         address -> mkBroker(address)
       }: _*)
       def self = underlyingMap.values.toSeq
@@ -52,8 +53,11 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
       timer.schedule(Time.now, remapPeriod) {
         fetchHosts(underlyingMap.keys.toSeq) onSuccess { ring =>
           log.debug("Received: %s", ring)
-          performChange(ring.flatMap{ h => asScalaIterable(h.endpoints).map{ host =>
-            new InetSocketAddress(host, port) } }.toSeq)
+          performChange(ring.flatMap { h =>
+            asScalaIterable(h.endpoints).map { host =>
+              new InetSocketAddress(host, port)
+            }
+          }.toSeq)
         } onFailure { error =>
           log.error(error, "error mapping ring")
           statsReceiver.counter("ClusterRemapFailure." + error.getClass().getName()).incr

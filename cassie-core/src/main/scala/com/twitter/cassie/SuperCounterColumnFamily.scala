@@ -7,14 +7,20 @@ import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
-import java.util.Collections.{singleton => singletonJSet}
+import java.util.Collections.{ singleton => singletonJSet }
 
-import java.util.{ArrayList => JArrayList, HashMap => JHashMap,
-    Iterator => JIterator, List => JList, Map => JMap, Set => JSet}
+import java.util.{
+  ArrayList => JArrayList,
+  HashMap => JHashMap,
+  Iterator => JIterator,
+  List => JList,
+  Map => JMap,
+  Set => JSet
+}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.logging.Logger
 import com.twitter.util.Future
 
@@ -22,15 +28,15 @@ object SuperCounterColumnFamily {
   private val log = Logger.get(this.getClass)
 }
 case class SuperCounterColumnFamily[Key, Name, SubName](
-    keyspace: String,
-    name: String,
-    provider: ClientProvider,
-    keyCodec: Codec[Key],
-    nameCodec: Codec[Name],
-    subNameCodec: Codec[SubName],
-    stats: StatsReceiver,
-    readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.One) {
+  keyspace: String,
+  name: String,
+  provider: ClientProvider,
+  keyCodec: Codec[Key],
+  nameCodec: Codec[Name],
+  subNameCodec: Codec[SubName],
+  stats: StatsReceiver,
+  readConsistency: ReadConsistency = ReadConsistency.Quorum,
+  writeConsistency: WriteConsistency = WriteConsistency.One) {
 
   import SuperCounterColumnFamily._
 
@@ -84,7 +90,7 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
     timeFutureWithFailures(stats, "batch_mutate") {
-        provider.map {
+      provider.map {
         _.batch_mutate(mutations, writeConsistency.level)
       }
     }
@@ -92,7 +98,7 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
 
 }
 
-class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColumnFamily[Key,Name, SubName]) extends BatchMutation {
+class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColumnFamily[Key, Name, SubName]) extends BatchMutation {
 
   case class Insert(key: Key, name: Name, column: CounterColumn[SubName])
 
@@ -104,7 +110,8 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
   }
 
   /**
-    * Submits the batch of operations, returning a future to allow blocking for success. */
+   * Submits the batch of operations, returning a future to allow blocking for success.
+   */
   def execute() = {
     try {
       cf.batch(mutations)
@@ -128,8 +135,8 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
 
       val encodedKey = cf.keyCodec.encode(insert.key)
 
-      val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-      val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+      val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
+      val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
       l.add(mutation)
     }
     mutations

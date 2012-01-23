@@ -10,7 +10,7 @@ abstract class StrictlyIncreasingClock extends Clock {
 
   def timestamp: Long = {
     var newTime: Long = 0
-    while(newTime == 0) {
+    while (newTime == 0) {
       val last = counter.get
       val current = tick
       val next = if (current > last) current else last + 1

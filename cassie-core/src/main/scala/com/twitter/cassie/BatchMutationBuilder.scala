@@ -1,9 +1,14 @@
 package com.twitter.cassie
 
 import java.nio.ByteBuffer
-import java.util.{List => JList, Map => JMap, Set => JSet, ArrayList => JArrayList,
-  HashMap => JHashMap}
-import java.util.Collections.{singleton => singletonJSet}
+import java.util.{
+  List => JList,
+  Map => JMap,
+  Set => JSet,
+  ArrayList => JArrayList,
+  HashMap => JHashMap
+}
+import java.util.Collections.{ singleton => singletonJSet }
 
 import org.apache.cassandra.finagle.thrift
 import scala.collection.mutable.ListBuffer
@@ -19,8 +24,8 @@ trait BatchMutation {
  * TODO: Port to Java collections.
  * TODO: make into a CFLike
  */
-class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[Key,Name,Value])
-    extends BatchMutation{
+class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamily[Key, Name, Value])
+  extends BatchMutation {
 
   private[cassie] case class Insert(key: Key, column: Column[Name, Value])
   private[cassie] case class Deletions(key: Key, columnNames: JSet[Name], timestamp: Long)
@@ -38,20 +43,21 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
   def removeColumn(key: Key, columnName: Name, timestamp: Long) =
     removeColumns(key, singletonJSet(columnName), timestamp)
 
-  def removeColumns(key: Key, columns: JSet[Name]): BatchMutationBuilder[Key,Name,Value] =
+  def removeColumns(key: Key, columns: JSet[Name]): BatchMutationBuilder[Key, Name, Value] =
     removeColumns(key, columns, cf.clock.timestamp)
 
-  def removeColumns(key: Key, columns: JSet[Name], timestamp: Long): BatchMutationBuilder[Key,Name,Value] = synchronized {
+  def removeColumns(key: Key, columns: JSet[Name], timestamp: Long): BatchMutationBuilder[Key, Name, Value] = synchronized {
     ops.append(Right(Deletions(key, columns, timestamp)))
     this
   }
 
   /**
-    * Submits the batch of operations, returning a Future[Void] to allow blocking for success. */
+   * Submits the batch of operations, returning a Future[Void] to allow blocking for success.
+   */
   def execute() = {
     try {
       cf.batch(mutations)
-    }  catch {
+    } catch {
       case e => Future.exception(e)
     }
   }
@@ -81,8 +87,8 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
 
         val encodedKey = cf.keyCodec.encode(insert.key)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
+        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
         l.add(mutation)
       }
       case Right(deletions) => {
@@ -99,8 +105,8 @@ class BatchMutationBuilder[Key,Name,Value](private[cassie] val cf: ColumnFamily[
 
         val encodedKey = cf.keyCodec.encode(deletions.key)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse{val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x}
-        val l = Option(h.get(cf.name)).getOrElse{ val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y}
+        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
+        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
         l.add(mutation)
       }
     }

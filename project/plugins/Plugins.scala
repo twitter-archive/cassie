@@ -17,4 +17,5 @@ class Plugins(info: sbt.ProjectInfo) extends sbt.PluginDefinition(info) {
 
   val defaultProject = "com.twitter" % "standard-project" % "0.12.12"
   val sbtThrift = "com.twitter" % "sbt-thrift" % "1.4.4"
+  val formatter       = "com.github.olim7t" % "sbt-scalariform" % "1.0.3"
 }

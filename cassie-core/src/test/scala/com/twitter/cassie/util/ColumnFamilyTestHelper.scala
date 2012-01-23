@@ -11,7 +11,7 @@ import com.twitter.finagle.stats.NullStatsReceiver
 
 trait ColumnFamilyTestHelper {
   type ColumnList = java.util.List[thrift.ColumnOrSuperColumn]
-  type KeyColumnMap = java.util.Map[java.nio.ByteBuffer,ColumnList]
+  type KeyColumnMap = java.util.Map[java.nio.ByteBuffer, ColumnList]
 
   def cosc(cf: ColumnFamily[String, String, String], c: Column[String, String]) = {
     new thrift.ColumnOrSuperColumn().setColumn(Column.convert(cf.nameCodec, cf.valueCodec, cf.clock, c))
@@ -41,14 +41,14 @@ trait ColumnFamilyTestHelper {
   def setup = {
     val mcc = new MockCassandraClient
     val cf = new ColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec, Utf8Codec, Utf8Codec, NullStatsReceiver)
+      Utf8Codec, Utf8Codec, Utf8Codec, NullStatsReceiver)
     (mcc.client, cf)
   }
 
   def setupCounters = {
     val mcc = new MockCassandraClient
     val cf = new CounterColumnFamily("ks", "cf", new SimpleProvider(mcc.client),
-        Utf8Codec, Utf8Codec, NullStatsReceiver)
+      Utf8Codec, Utf8Codec, NullStatsReceiver)
     (mcc.client, cf)
   }
 

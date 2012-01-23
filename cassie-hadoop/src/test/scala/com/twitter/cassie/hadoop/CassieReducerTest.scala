@@ -23,7 +23,7 @@ import org.apache.hadoop.io._
 import org.apache.hadoop.util._
 import org.apache.hadoop.conf._
 import org.apache.hadoop.mapreduce._
-import org.apache.hadoop.mapreduce.{Mapper, Reducer, Job}
+import org.apache.hadoop.mapreduce.{ Mapper, Reducer, Job }
 import org.apache.hadoop.mapreduce.lib.input._
 import org.apache.hadoop.mapreduce.lib.output._
 import CassieReducer._
@@ -32,7 +32,7 @@ import com.twitter.conversions.time._
 import com.twitter.cassie._
 
 object Fake {
-  class Map extends Mapper[LongWritable, Text, BytesWritable, ColumnWritable]{
+  class Map extends Mapper[LongWritable, Text, BytesWritable, ColumnWritable] {
 
     type MapperContext = Mapper[LongWritable, Text, BytesWritable, ColumnWritable]#Context
 
@@ -63,7 +63,7 @@ class TestScript(port: Int) extends Configured with Tool {
   def run(args: Array[String]): Int = {
     val path = "/tmp/cassie-test"
     val writer = new PrintStream(new File(path))
-    for(arg <- args) writer.println(arg)
+    for (arg <- args) writer.println(arg)
     writer.close
 
     val inputPath = new Path(path)
@@ -88,7 +88,7 @@ class TestScript(port: Int) extends Configured with Tool {
     job.setNumReduceTasks(1)
 
     job.setInputFormatClass(classOf[TextInputFormat])
-    job.setOutputFormatClass(classOf[NullOutputFormat[_,_]])
+    job.setOutputFormatClass(classOf[NullOutputFormat[_, _]])
 
     FileInputFormat.setInputPaths(job, inputPath)
 
@@ -98,7 +98,7 @@ class TestScript(port: Int) extends Configured with Tool {
 
 }
 
-class CassieReducerTest extends Spec with MustMatchers{
+class CassieReducerTest extends Spec with MustMatchers {
 
   describe("CassieReducer") {
     it("should go through a lifecycle") {
@@ -109,7 +109,7 @@ class CassieReducerTest extends Spec with MustMatchers{
         implicit val keyCodec = Utf8Codec
         val cluster = new Cluster("127.0.0.1", fake.port.get)
         val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
-        val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
+        val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec, Utf8Codec, Utf8Codec)
 
         cf.getRow("0")().get("default").value must equal("hello")
       } finally {
@@ -125,7 +125,7 @@ class CassieReducerTest extends Spec with MustMatchers{
       implicit val keyCodec = Utf8Codec
       val cluster = new Cluster("127.0.0.1", fake.port.get)
       val ks = cluster.mapHostsEvery(0.seconds).keyspace("ks").connect()
-      val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec,Utf8Codec, Utf8Codec)
+      val cf = ks.columnFamily[String, String, String]("cf", Utf8Codec, Utf8Codec, Utf8Codec)
 
       fake.stop()
     }

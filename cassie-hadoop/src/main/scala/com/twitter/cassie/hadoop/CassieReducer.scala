@@ -53,11 +53,10 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
     val port = if (conf(PORT) == null) 9160 else conf(PORT).toInt
     cluster = new Cluster(conf(HOSTS), port)
     cluster = configureCluster(cluster)
-    if(conf(MIN_BACKOFF) != null ) minBackoff = Integer.valueOf(conf(MIN_BACKOFF)).intValue
-    if(conf(MAX_BACKOFF) != null ) maxBackoff = Integer.valueOf(conf(MAX_BACKOFF)).intValue
-    if(conf(IGNORE_FAILURES) != null ) ignoreFailures = conf(IGNORE_FAILURES) == "true"
-    if(conf(PAGE_SIZE) != null ) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
-
+    if (conf(MIN_BACKOFF) != null) minBackoff = Integer.valueOf(conf(MIN_BACKOFF)).intValue
+    if (conf(MAX_BACKOFF) != null) maxBackoff = Integer.valueOf(conf(MAX_BACKOFF)).intValue
+    if (conf(IGNORE_FAILURES) != null) ignoreFailures = conf(IGNORE_FAILURES) == "true"
+    if (conf(PAGE_SIZE) != null) page = Integer.valueOf(conf(PAGE_SIZE)).intValue
 
     keyspace = configureKeyspace(cluster.keyspace(conf(KEYSPACE))).connect()
     columnFamily = keyspace.columnFamily[ByteBuffer, ByteBuffer, ByteBuffer](conf(COLUMN_FAMILY),
@@ -94,18 +93,18 @@ class CassieReducer extends Reducer[BytesWritable, ColumnWritable, BytesWritable
     case t: Throwable => {
       t.printStackTrace
       val toSleep = minBackoff * (1 << consecutiveFailures)
-      if(toSleep < maxBackoff) {
+      if (toSleep < maxBackoff) {
         Thread.sleep(toSleep)
         context.getCounter(CassieCounters.Counters.RETRY).increment(1)
         execute(context)
       } else {
         context.getCounter(CassieCounters.Counters.FAILURE).increment(1)
-        if(ignoreFailures) {
+        if (ignoreFailures) {
           System.err.println("Ignoring......")
           t.printStackTrace
           //continue
         } else {
-          throw(t)
+          throw (t)
         }
       }
       consecutiveSuccesses = 0

@@ -1,24 +1,24 @@
 package com.twitter.cassie
 
 import scala.collection.JavaConversions._
-import com.twitter.util.{Future, Promise}
-import java.util.{Map => JMap, List => JList, ArrayList => JArrayList}
+import com.twitter.util.{ Future, Promise }
+import java.util.{ Map => JMap, List => JList, ArrayList => JArrayList }
 import org.apache.cassandra.finagle.thrift
 
 /**
-  * Async iteration across the columns for a given key.
-  *
-  * EXAMPLE
-  * val cf = new Cluster("127.0.0.1").keyspace("foo")
-  *   .connect().columnFamily("bar", Utf8Codec, Utf8Codec, Utf8Codec)
-  *
-  * val done = cf.columnsIteratee.foreach("bam").foreach {col =>
-  *   println(col) // this function is executed asynchronously for each column
-  * }
-  * done() // this is a Future[Unit] that will be satisfied when the iteration
-  *        //   is done
-  */
-  
+ * Async iteration across the columns for a given key.
+ *
+ * EXAMPLE
+ * val cf = new Cluster("127.0.0.1").keyspace("foo")
+ *   .connect().columnFamily("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+ *
+ * val done = cf.columnsIteratee.foreach("bam").foreach {col =>
+ *   println(col) // this function is executed asynchronously for each column
+ * }
+ * done() // this is a Future[Unit] that will be satisfied when the iteration
+ *        //   is done
+ */
+
 trait ColumnsIteratee[Key, Name, Value] {
   def hasNext(): Boolean
   def next(): Future[ColumnsIteratee[Key, Name, Value]]
@@ -34,8 +34,8 @@ trait ColumnsIteratee[Key, Name, Value] {
 
 object ColumnsIteratee {
   def apply[Key, Name, Value](cf: ColumnFamily[Key, Name, Value], key: Key,
-                              start: Option[Name], end: Option[Name], batchSize: Int,
-                              limit: Int, order: Order = Order.Normal) = {
+    start: Option[Name], end: Option[Name], batchSize: Int,
+    limit: Int, order: Order = Order.Normal) = {
     new InitialColumnsIteratee(cf, key, start, end, batchSize, limit, order)
   }
 }
@@ -51,10 +51,10 @@ private[cassie] class InitialColumnsIteratee[Key, Name, Value](
     val fetchSize = math.min(batchSize, remaining)
 
     cf.getRowSlice(key, start, end, fetchSize, order).map { buf =>
-      if(buf.size < batchSize || batchSize == remaining) {
+      if (buf.size < batchSize || batchSize == remaining) {
         new FinalColumnsIteratee(buf)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, end, remaining-buf.size, order, buf)
+        new SubsequentColumnsIteratee(cf, key, batchSize, buf.last.name, end, remaining - buf.size, order, buf)
       }
     }
   }
@@ -64,22 +64,22 @@ private[cassie] class InitialColumnsIteratee[Key, Name, Value](
   }
 }
 
-private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value], 
-    val key: Key, val batchSize: Int, val start: Name, val end: Option[Name],
-    val remaining: Int, val order: Order, val buffer: JList[Column[Name, Value]])
-    extends ColumnsIteratee[Key, Name, Value] {
+private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: ColumnFamily[Key, Name, Value],
+  val key: Key, val batchSize: Int, val start: Name, val end: Option[Name],
+  val remaining: Int, val order: Order, val buffer: JList[Column[Name, Value]])
+  extends ColumnsIteratee[Key, Name, Value] {
 
   def hasNext = true
 
   def next() = {
-    val fetchSize = math.min(batchSize+1, remaining+1)
+    val fetchSize = math.min(batchSize + 1, remaining + 1)
 
     cf.getRowSlice(key, Some(start), end, fetchSize, order).map { buf =>
       val skipped = buf.subList(1, buf.length)
-      if(skipped.size() < batchSize || batchSize == remaining) {
+      if (skipped.size() < batchSize || batchSize == remaining) {
         new FinalColumnsIteratee(skipped)
       } else {
-        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, end, remaining-skipped.size, order, skipped)
+        new SubsequentColumnsIteratee(cf, key, batchSize, skipped.last.name, end, remaining - skipped.size, order, skipped)
       }
     }
   }
@@ -96,10 +96,10 @@ private[cassie] class SubsequentColumnsIteratee[Key, Name, Value](val cf: Column
   }
 }
 
-private[cassie] class FinalColumnsIteratee[Key, Name, Value](val buffer: JList[Column[Name, Value]]) 
+private[cassie] class FinalColumnsIteratee[Key, Name, Value](val buffer: JList[Column[Name, Value]])
   extends ColumnsIteratee[Key, Name, Value] {
   def hasNext = false
-  def next    = Future.exception(new UnsupportedOperationException("no next for the final iteratee"))
+  def next = Future.exception(new UnsupportedOperationException("no next for the final iteratee"))
 
   def visit(p: Promise[Unit], f: Column[Name, Value] => Unit) {
     for (c <- buffer) {

@@ -2,8 +2,8 @@ package com.twitter.cassie.tests
 
 import org.scalatest.matchers.MustMatchers
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterAll, Spec}
-import java.net.{SocketAddress, InetSocketAddress}
+import org.scalatest.{ BeforeAndAfterAll, Spec }
+import java.net.{ SocketAddress, InetSocketAddress }
 import org.apache.cassandra.finagle.thrift
 
 import com.twitter.cassie.ClusterRemapper

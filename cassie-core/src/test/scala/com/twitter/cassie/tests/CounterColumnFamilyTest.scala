@@ -5,8 +5,8 @@ import org.scalatest.Spec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie.codecs.Utf8Codec
-import org.mockito.Mockito.{when, verify}
-import org.mockito.Matchers.{eq => matchEq, anyListOf}
+import org.mockito.Mockito.{ when, verify }
+import org.mockito.Matchers.{ eq => matchEq, anyListOf }
 import org.apache.cassandra.finagle.thrift
 import org.mockito.ArgumentCaptor
 import java.nio.ByteBuffer
@@ -14,7 +14,7 @@ import com.twitter.cassie._
 
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 import com.twitter.util.Future
-import java.util.{ArrayList => JArrayList}
+import java.util.{ ArrayList => JArrayList }
 
 class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
@@ -35,8 +35,8 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("returns none if the column doesn't exist") {
       when(client.get_slice(anyByteBuffer(), anyColumnParent(), anySlicePredicate(),
-          anyConsistencyLevel()))
-          .thenReturn(Future.value(new JArrayList[thrift.ColumnOrSuperColumn]()))
+        anyConsistencyLevel()))
+        .thenReturn(Future.value(new JArrayList[thrift.ColumnOrSuperColumn]()))
       cf.getColumn("key", "name")() must equal(None)
     }
 
@@ -66,7 +66,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("returns a map of column names to columns") {
       val columns = Seq(cc("cats", 2L),
-                        cc("dogs", 4L))
+        cc("dogs", 4L))
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
@@ -94,7 +94,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("returns a map of column names to columns") {
       val columns = Seq(cc("cats", 2L),
-                        cc("dogs", 3L))
+        cc("dogs", 3L))
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
@@ -111,7 +111,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
     it("performs a multiget_counter_slice with a column name") {
       cf.consistency(ReadConsistency.One).multigetColumn(Set("key1", "key2"), "name")
 
-      val keys = List("key1", "key2").map{Utf8Codec.encode(_)}
+      val keys = List("key1", "key2").map { Utf8Codec.encode(_) }
       val cp = new thrift.ColumnParent("cf")
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
@@ -154,7 +154,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
     it("performs a multiget_counter_slice with a set of column names") {
       cf.consistency(ReadConsistency.One).multigetColumns(Set("us", "jp"), Set("cats", "dogs"))
 
-      val keys = List("us", "jp").map{ b(_) }
+      val keys = List("us", "jp").map { b(_) }
       val cp = new thrift.ColumnParent("cf")
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
@@ -166,9 +166,9 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
         b("us") -> asJavaList(Seq(cc("cats", 2L),
-                                cc("dogs", 9L))),
+          cc("dogs", 9L))),
         b("jp") -> asJavaList(Seq(cc("cats", 4L),
-                                cc("dogs", 1L)))
+          cc("dogs", 1L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))

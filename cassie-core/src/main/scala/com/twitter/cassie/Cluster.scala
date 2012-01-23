@@ -3,12 +3,12 @@ package com.twitter.cassie
 import connection._
 import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
-import com.twitter.cassie.connection.{CCluster, RetryPolicy, SocketAddressCluster}
+import com.twitter.cassie.connection.{ CCluster, RetryPolicy, SocketAddressCluster }
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
-import com.twitter.finagle.builder.{Cluster => FCluster}
-import com.twitter.finagle.stats.{StatsReceiver, NullStatsReceiver}
-import com.twitter.finagle.tracing.{Tracer, NullTracer}
+import com.twitter.finagle.builder.{ Cluster => FCluster }
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 
 /**
  * A Cassandra cluster.
@@ -16,35 +16,39 @@ import com.twitter.finagle.tracing.{Tracer, NullTracer}
  * @param seedHosts list of some hosts in the cluster
  * @param seedPort the port number for '''all''' hosts in the cluster
  *        to refresh its host list.
- * @param stats a finagle stats receiver */
+ * @param stats a finagle stats receiver
+ */
 class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) extends ClusterBase {
   private var mapHostsEvery: Duration = 10.minutes
 
   /**
-    * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
-    *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
-    *                  The port number is assumed to be 9160. */
+   * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
+   *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
+   *                  The port number is assumed to be 9160.
+   */
   def this(seedHosts: String, stats: StatsReceiver = NullStatsReceiver) =
-    this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, 9160, stats)
+    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, 9160, stats)
 
   /**
-    * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
-    *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
-    */
+   * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
+   *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
+   */
   def this(seedHosts: String, port: Int) =
-    this(seedHosts.split(',').filter{ !_.isEmpty }.toSet, port, NullStatsReceiver)
+    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, port, NullStatsReceiver)
 
   /**
-    * @param seedHosts A collection of seed host addresses. The port number is assumed to be 9160 */
+   * @param seedHosts A collection of seed host addresses. The port number is assumed to be 9160
+   */
   def this(seedHosts: java.util.Collection[String]) =
     this(asScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver)
 
   /**
-    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
-    * @param name the keyspace's name */
+   * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
+   * @param name the keyspace's name
+   */
   def keyspace(name: String): KeyspaceBuilder = {
     val scopedStats = stats.scope("cassie").scope(name)
-    val seedAddresses = seedHosts.map{ host => new InetSocketAddress(host, seedPort) }.toSeq
+    val seedAddresses = seedHosts.map { host => new InetSocketAddress(host, seedPort) }.toSeq
     val cluster = if (mapHostsEvery > 0)
       // either map the cluster for this keyspace
       new ClusterRemapper(name, seedAddresses, mapHostsEvery, seedPort, statsReceiver = stats.scope("remapper"))
@@ -56,8 +60,9 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) exten
   }
 
   /**
-    * @param d Cassie will query the cassandra cluster every [[period]] period
-    *          to refresh its host list. */
+   * @param d Cassie will query the cassandra cluster every [[period]] period
+   *          to refresh its host list.
+   */
   def mapHostsEvery(period: Duration): Cluster = {
     mapHostsEvery = period
     this
@@ -66,9 +71,9 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) exten
 
 trait ClusterBase {
   /**
-    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
-    * @param name the keyspace's name
-    */
+   * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
+   * @param name the keyspace's name
+   */
   def keyspace(name: String): KeyspaceBuilder
 }
 
@@ -87,7 +92,8 @@ case class KeyspaceBuilder(
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
 
   /**
-    * connect to the cluster with the specified parameters */
+   * connect to the cluster with the specified parameters
+   */
   def connect(): Keyspace = {
     // TODO: move to builder pattern as well
     val ccp = new ClusterClientProvider(
@@ -111,11 +117,13 @@ case class KeyspaceBuilder(
   def retryPolicy(r: RetryPolicy): KeyspaceBuilder = copy(_retryPolicy = r)
 
   /**
-    * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]] */
+   * @see requestTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]
+   */
   def requestTimeout(r: Int): KeyspaceBuilder = copy(_requestTimeout = r)
 
   /**
-    * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]*/
+   * @see connectionTimeout in [[http://twitter.github.com/finagle/finagle-core/target/doc/main/api/com/twitter/finagle/builder/ClientBuilder.html]]
+   */
   def connectTimeout(r: Int): KeyspaceBuilder = copy(_connectTimeout = r)
 
   def minConnectionsPerHost(m: Int): KeyspaceBuilder =

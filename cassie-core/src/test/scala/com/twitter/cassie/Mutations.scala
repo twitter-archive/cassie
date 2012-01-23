@@ -5,5 +5,5 @@ package com.twitter.cassie
  * for its mutations.
  */
 object Mutations {
-  def apply(builder: BatchMutationBuilder[_,_,_]) = builder.mutations
+  def apply(builder: BatchMutationBuilder[_, _, _]) = builder.mutations
 }

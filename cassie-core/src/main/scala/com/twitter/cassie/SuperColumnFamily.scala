@@ -1,16 +1,21 @@
 package com.twitter.cassie
 
-import com.twitter.cassie.clocks.{MicrosecondEpochClock, Clock}
-import com.twitter.cassie.codecs.{Codec}
+import com.twitter.cassie.clocks.{ MicrosecondEpochClock, Clock }
+import com.twitter.cassie.codecs.{ Codec }
 import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 
 import org.apache.cassandra.finagle.thrift
 import java.nio.ByteBuffer
-import java.util.Collections.{singleton => singletonJSet}
+import java.util.Collections.{ singleton => singletonJSet }
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
-import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList,
-  Map => JMap, Set => JSet}
+import java.util.{
+  ArrayList => JArrayList,
+  HashMap => JHashMap,
+  List => JList,
+  Map => JMap,
+  Set => JSet
+}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 
@@ -20,22 +25,22 @@ import com.twitter.util.Future
 
 /**
  * A readable, writable column family with batching capabilities. This is a
- * lightweight object: it inherits a connection pool from the Keyspace. */
+ * lightweight object: it inherits a connection pool from the Keyspace.
+ */
 object SuperColumnFamily {
   private val log = Logger.get(this.getClass)
 }
 case class SuperColumnFamily[Key, Name, SubName, Value](
-    keyspace: String,
-    name: String,
-    provider: ClientProvider,
-    keyCodec: Codec[Key],
-    nameCodec: Codec[Name],
-    subNameCodec: Codec[SubName],
-    valueCodec: Codec[Value],
-    stats: StatsReceiver,
-    readConsistency: ReadConsistency = ReadConsistency.Quorum,
-    writeConsistency: WriteConsistency = WriteConsistency.Quorum
-  ) {
+  keyspace: String,
+  name: String,
+  provider: ClientProvider,
+  keyCodec: Codec[Key],
+  nameCodec: Codec[Name],
+  subNameCodec: Codec[SubName],
+  valueCodec: Codec[Value],
+  stats: StatsReceiver,
+  readConsistency: ReadConsistency = ReadConsistency.Quorum,
+  writeConsistency: WriteConsistency = WriteConsistency.Quorum) {
 
   import SuperColumnFamily._
 
@@ -55,7 +60,7 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
           _.insert(keyCodec.encode(key), cp, col, writeConsistency.level)
         }
       }
-    }  catch {
+    } catch {
       case e => Future.exception(e)
     }
   }
@@ -65,10 +70,10 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
   }
 
   def getRowSlice(key: Key,
-                  startColumnName: Option[Name],
-                  endColumnName: Option[Name],
-                  count: Int,
-                  order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+    startColumnName: Option[Name],
+    endColumnName: Option[Name],
+    count: Int,
+    order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
     try {
       getSlice(key, startColumnName, endColumnName, count, order)
     } catch {
@@ -81,10 +86,10 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
   }
 
   def multigetRowSlice(keys: JSet[Key],
-                       startColumnName: Option[Name],
-                       endColumnName: Option[Name],
-                       count: Int,
-                       order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
+    startColumnName: Option[Name],
+    endColumnName: Option[Name],
+    count: Int,
+    order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
     try {
       multigetSlice(keys, startColumnName, endColumnName, count, order)
     } catch {
@@ -92,14 +97,13 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     }
   }
 
-  private
-  def getSlice(key: Key, start: Option[Name], end: Option[Name], size: Int, order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
+  private def getSlice(key: Key, start: Option[Name], end: Option[Name], size: Int, order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
     val pred = sliceRangePredicate(start, end, order, size)
     val cp = new thrift.ColumnParent(name)
     log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
     timeFutureWithFailures(stats, "get_slice") {
       provider.map {
-        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level) 
+        _.get_slice(keyCodec.encode(key), cp, pred, readConsistency.level)
       } map { result =>
         result.map { cosc =>
           val sc = cosc.getSuper_column()
@@ -109,12 +113,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     }
   }
 
-  private
-  def multigetSlice(keys: JSet[Key],
-                    start: Option[Name],
-                    end: Option[Name],
-                    size: Int,
-                    order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
+  private def multigetSlice(keys: JSet[Key],
+    start: Option[Name],
+    end: Option[Name],
+    size: Int,
+    order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
     val pred = sliceRangePredicate(start, end, order, size)
     val cp = new thrift.ColumnParent(name)
     log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
@@ -123,12 +126,13 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
         _.multiget_slice(keyCodec.encodeSet(keys), cp, pred, readConsistency.level)
       } map { result =>
         val rows: JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]] = new JHashMap(result.size)
-        result.foldLeft(rows) { case (memo, (key, coscList)) =>
-          memo(keyCodec.decode(key)) = coscList.map { cosc =>
-            val sc = cosc.getSuper_column()
-            (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
-          }
-          memo
+        result.foldLeft(rows) {
+          case (memo, (key, coscList)) =>
+            memo(keyCodec.decode(key)) = coscList.map { cosc =>
+              val sc = cosc.getSuper_column()
+              (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+            }
+            memo
         }
       }
     }

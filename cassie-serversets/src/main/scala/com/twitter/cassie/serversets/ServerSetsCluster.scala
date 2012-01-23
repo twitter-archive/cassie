@@ -47,7 +47,7 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
    * @param stats a finagle stats receiver
    */
   def this(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int,
-      stats: StatsReceiver = NullStatsReceiver) =
+    stats: StatsReceiver = NullStatsReceiver) =
     this(new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats)
 
   /**
