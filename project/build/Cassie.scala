@@ -63,7 +63,7 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     def runExamplesAction = task { args => runTask(Some("com.twitter.cassie.jtests.examples.CassieRun"), testClasspath, args) dependsOn(test) }
     lazy val runExample = runExamplesAction
 
-    override def scalariformOptions = Seq(VerboseScalariform, PreserveDanglingCloseParenthesis(true))
+    override def scalariformOptions = Seq(PreserveDanglingCloseParenthesis(true))
   }
 
   class HadoopProject(info: ProjectInfo) extends StandardLibraryProject(info) with Defaults {

@@ -140,11 +140,22 @@ class FakeCassandra extends Cassandra.Iface {
       val sc = cosc.getSuper_column
       var existing = sc.getColumns.find(_.getName.sameElements(column.getName))
       existing match {
-        case Some(c) => c.setValue(column.getValue)
+        case Some(c) => {
+          if (column.timestamp > c.timestamp) {
+            c.setValue(column.getValue)
+          }
+        }
         case None => sc.getColumns.add(column)
       }
     } else {
-      row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
+      val existing = row.get(column.BufferForName)
+      if (existing != null) {
+        if (column.timestamp > existing.getColumn.timestamp) {
+          row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
+        }
+      } else {
+        row.put(column.BufferForName, new ColumnOrSuperColumn().setColumn(column))
+      }
     }
   }
 

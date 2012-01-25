@@ -50,9 +50,9 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
 
     it("should be able to connect to an arbitrary columnfamily and read and write") {
       val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
-      cf.insert("k", Column("b", "c")).get()
-      cf.getRow("k").get().size must equal(1)
-      cf.getColumn("k", "b").get().size must equal(1)
+      cf.insert("k", Column("b", "c"))()
+      cf.getRow("k")().size must equal(1)
+      cf.getColumn("k", "b")().size must equal(1)
     }
 
     it("should be able to multiget_slice") {
@@ -62,7 +62,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       batch.insert("a", Column("d", "e"))
       batch.insert("b", Column("d", "e"))
       batch.insert("c", Column("d", "e"))
-      batch.execute().get()
+      batch.execute()()
 
       val keys = new HashSet[String]
       keys.add("a")
@@ -70,7 +70,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       val columnNames = new HashSet[String]
       columnNames.add("d")
 
-      val response = cf.multigetColumns(keys, columnNames).get()
+      val response = cf.multigetColumns(keys, columnNames)()
       response.size() must equal(2)
     }
 
@@ -79,14 +79,14 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       var batch = cf.batch
       batch.insert("k", Column("b", "c"))
       batch.insert("k", Column("d", "e"))
-      batch.execute().get()
-      cf.getRow("k").get().size() must equal(2)
+      batch.execute()()
+      cf.getRow("k")().size() must equal(2)
 
       batch = cf.batch
       batch.removeColumn("k", "b")
       batch.removeColumn("k", "d")
-      batch.execute().get()
-      cf.getRow("k").get().size() must equal(0)
+      batch.execute()()
+      cf.getRow("k")().size() must equal(0)
     }
 
     it("should handle counters") {
@@ -95,6 +95,31 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 3)))
       cf.add("1", CounterColumn("2", 4))()
       cf.getColumn("1", "2")() must equal(Some(CounterColumn("2", 7)))
+    }
+
+    it("should support out-of-order inserts") {
+      val cf = keyspace().columnFamily[String, String, String]("foo", Utf8Codec, Utf8Codec, Utf8Codec)
+      cf.insert("x", Column("y", "z").timestamp(2))()
+      cf.insert("x", Column("y", "ZZzzz").timestamp(1))()
+
+      cf.getColumn("x", "y").map(_.map(_.value must equal("z")))()
+    }
+
+    it("should support super column families") {
+      val cf = keyspace().superColumnFamily[String, String, String, String]("super", Utf8Codec, Utf8Codec, Utf8Codec, Utf8Codec)
+      cf.insert("a", "b", Column("c", "d").timestamp(1))()
+      val row = cf.getRow("a")()
+      row.size must equal(1)
+      row must equal(Seq(("b", Seq(Column("c", "d").timestamp(1)))))
+    }
+
+    it("should support out-of-order inserts to super column families") {
+      val cf = keyspace().superColumnFamily[String, String, String, String]("super", Utf8Codec, Utf8Codec, Utf8Codec, Utf8Codec)
+      cf.insert("a", "b", Column("c", "d").timestamp(2))()
+      cf.insert("a", "b", Column("c", "D").timestamp(1))()
+      val row = cf.getRow("a")()
+      row.size must equal(1)
+      row must equal(Seq(("b", Seq(Column("c", "d").timestamp(2)))))
     }
   }
 }
