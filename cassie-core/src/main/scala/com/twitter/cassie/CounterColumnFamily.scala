@@ -456,7 +456,7 @@ case class CounterColumnFamily[Key, Name](
     val range = new thrift.KeyRange(count).setStart_key(startKeyEncoded).setEnd_key(endKeyEncoded)
     log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, pred, range, readConsistency.level)
     withConnection("get_range_slices", Map("startkey" -> startKeyEncoded, "endkey" -> endKeyEncoded,
-      "count" -> count.toString, "predicate" -> annPredCodec.encode(predicate),
+      "count" -> count.toString, "predicate" -> annPredCodec.encode(pred),
       "readconsistency" -> readConsistency.level.toString)) {
       _.get_range_slices(cp, pred, range, readConsistency.level)
     } map { slices =>
