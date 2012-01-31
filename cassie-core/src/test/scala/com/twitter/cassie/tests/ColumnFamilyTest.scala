@@ -27,13 +27,12 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       val columns1 = Seq(c(cf, "dj", "Armin van Buuren", 2293L))
 
-      val range1 = new thrift.SliceRange(b(""), b(""), false, 2)
-      val pred1 = new thrift.SlicePredicate()
-      pred1.setSlice_range(range1)
+      val pred1 = pred("", "", 2, Order.Normal)
       when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
 
       val l = new ListBuffer[String]
-      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      val done = cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      done()
       l must equal(List("dj"))
     }
 
@@ -45,23 +44,18 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val columns2 = Seq(c(cf, "name", "Coda", 2292L), c(cf, "radish", "red", 2294L), c(cf, "sofa", "plush", 2298L))
       val columns3 = Seq(c(cf, "sofa", "plush", 2298L), c(cf, "xray", "ow", 2294L))
 
-      val range1 = new thrift.SliceRange(b(""), b(""), false, 2)
-      val pred1 = new thrift.SlicePredicate()
-      pred1.setSlice_range(range1)
+      val pred1 = pred("", "", 2, Order.Normal)
       when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
 
-      val range2 = new thrift.SliceRange(b("name"), b(""), false, 3)
-      val pred2 = new thrift.SlicePredicate()
-      pred2.setSlice_range(range2)
+      val pred2 = pred("name", "", 3, Order.Normal)
       when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns2))
 
-      val range3 = new thrift.SliceRange(b("sofa"), b(""), false, 3)
-      val pred3 = new thrift.SlicePredicate()
-      pred3.setSlice_range(range3)
+      val pred3 = pred("sofa", "", 3, Order.Normal)
       when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns3))
 
       val l = new ListBuffer[String]
-      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      val done = cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      done()
       l must equal(List("cat", "name", "radish", "sofa", "xray"))
     }
   }
@@ -105,11 +99,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val columns = Seq(c(cf, "name", "Coda", 2292L),
         c(cf, "age", "old", 11919L))
       val cp = new thrift.ColumnParent("cf")
-      val range = new thrift.SliceRange(b(""), b(""), false, Int.MaxValue)
-      val pred = new thrift.SlicePredicate()
-      pred.setSlice_range(range)
+      val pred1 = pred("", "", Int.MaxValue, Order.Normal)
 
-      when(client.get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns))
+      when(client.get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns))
 
       cf.getRow("key")
     }
@@ -136,12 +128,9 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       cf.getRowSlice("key", Some(startColumnName), Some(endColumnName), 100, Order.Reversed)
 
       val cp = new thrift.ColumnParent("cf")
+      val pred1 = pred(startColumnName, endColumnName, 100, Order.Reversed)
 
-      val range = new thrift.SliceRange(Utf8Codec.encode(startColumnName), Utf8Codec.encode(endColumnName), true, 100)
-      val pred = new thrift.SlicePredicate()
-      pred.setSlice_range(range)
-
-      verify(client).get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)
+      verify(client).get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.QUORUM)
     }
   }
 

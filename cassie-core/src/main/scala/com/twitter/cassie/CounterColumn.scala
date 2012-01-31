@@ -16,6 +16,17 @@ object CounterColumn {
   }
 
   /**
+   * Convert from a thrift.CounterColumn to a cassie CounterColumn
+   */
+  private[cassie] def convert[A](nameCodec: Codec[A], cosc: thrift.ColumnOrSuperColumn): CounterColumn[A] = {
+    val counter = cosc.getCounter_column
+    CounterColumn(
+      nameCodec.decode(counter.name),
+      counter.value
+    )
+  }
+
+  /**
    * Convert from a cassie CounterColumn to a thrift CounterColumn
    */
   private[cassie] def convert[A](nameCodec: Codec[A], col: CounterColumn[A]): thrift.CounterColumn = {

@@ -4,29 +4,19 @@ import com.twitter.cassie.codecs.Codec
 import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
-
-import org.apache.cassandra.finagle.thrift
-import java.nio.ByteBuffer
-import java.util.Collections.{ singleton => singletonJSet }
-
-import java.util.{
-  ArrayList => JArrayList,
-  HashMap => JHashMap,
-  Iterator => JIterator,
-  List => JList,
-  Map => JMap,
-  Set => JSet
-}
-import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
-
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.logging.Logger
 import com.twitter.util.Future
+import java.nio.ByteBuffer
+import java.util.Collections.{ singleton => singletonJSet }
+import java.util.{ArrayList => JArrayList,HashMap => JHashMap,Iterator => JIterator,List => JList,Map => JMap,Set => JSet}
+import org.apache.cassandra.finagle.thrift
+import scala.collection.JavaConversions._
 
 object SuperCounterColumnFamily {
   private val log = Logger.get(this.getClass)
 }
+
 case class SuperCounterColumnFamily[Key, Name, SubName](
   keyspace: String,
   name: String,
@@ -36,9 +26,11 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
   subNameCodec: Codec[SubName],
   stats: StatsReceiver,
   readConsistency: ReadConsistency = ReadConsistency.Quorum,
-  writeConsistency: WriteConsistency = WriteConsistency.One) {
+  writeConsistency: WriteConsistency = WriteConsistency.One
+) extends BaseColumnFamily(keyspace, name, provider, stats) {
 
   import SuperCounterColumnFamily._
+  import BaseColumnFamily._
 
   def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
   def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
@@ -63,25 +55,24 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
     val cp = new thrift.ColumnParent(name)
     log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
     val encodedKeys = keyCodec.encodeSet(keys)
-    timeFutureWithFailures(stats, "multiget_slice") {
-      provider.map {
-        _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
-      }.map { result =>
-        val rows: JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]] = new JHashMap(result.size)
-        for (rowEntry <- asScalaIterable(result.entrySet)) {
-          val sCols: JMap[Name, JMap[SubName, CounterColumn[SubName]]] = new JHashMap(rowEntry.getValue.size)
-          for (scol <- asScalaIterable(rowEntry.getValue)) {
-            val cols: JMap[SubName, CounterColumn[SubName]] = new JHashMap(scol.getCounter_super_column.columns.size)
-            for (counter <- asScalaIterable(scol.getCounter_super_column().columns)) {
-              val col = CounterColumn.convert(subNameCodec, counter)
-              cols.put(col.name, col)
-            }
-            sCols.put(nameCodec.decode(scol.getCounter_super_column.BufferForName()), cols)
+    withConnection("multiget_slice", Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred),
+      "readconsistency" -> readConsistency.toString)) {
+      _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
+    }.map { result =>
+      val rows: JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]] = new JHashMap(result.size)
+      for (rowEntry <- asScalaIterable(result.entrySet)) {
+        val sCols: JMap[Name, JMap[SubName, CounterColumn[SubName]]] = new JHashMap(rowEntry.getValue.size)
+        for (scol <- asScalaIterable(rowEntry.getValue)) {
+          val cols: JMap[SubName, CounterColumn[SubName]] = new JHashMap(scol.getCounter_super_column.columns.size)
+          for (counter <- asScalaIterable(scol.getCounter_super_column().columns)) {
+            val col = CounterColumn.convert(subNameCodec, counter)
+            cols.put(col.name, col)
           }
-          rows.put(keyCodec.decode(rowEntry.getKey), sCols)
+          sCols.put(nameCodec.decode(scol.getCounter_super_column.BufferForName()), cols)
         }
-        rows
+        rows.put(keyCodec.decode(rowEntry.getKey), sCols)
       }
+      rows
     }
   }
 
@@ -89,56 +80,9 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    timeFutureWithFailures(stats, "batch_mutate") {
-      provider.map {
-        _.batch_mutate(mutations, writeConsistency.level)
-      }
+    withConnection("batch_mutate", Map("writeconsistency" -> writeConsistency.toString)) {
+      _.batch_mutate(mutations, writeConsistency.level)
     }
   }
 
-}
-
-class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColumnFamily[Key, Name, SubName]) extends BatchMutation {
-
-  case class Insert(key: Key, name: Name, column: CounterColumn[SubName])
-
-  private val ops = new ListBuffer[Insert]
-
-  def insert(key: Key, name: Name, column: CounterColumn[SubName]) = synchronized {
-    ops.append(Insert(key, name, column))
-    this
-  }
-
-  /**
-   * Submits the batch of operations, returning a future to allow blocking for success.
-   */
-  def execute() = {
-    try {
-      cf.batch(mutations)
-    } catch {
-      case e => Future.exception(e)
-    }
-  }
-
-  private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
-    val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]()
-
-    ops.map { insert =>
-      val cosc = new thrift.ColumnOrSuperColumn()
-      val counterColumn = new thrift.CounterColumn(cf.subNameCodec.encode(insert.column.name), insert.column.value)
-      val columns = new JArrayList[thrift.CounterColumn]()
-      columns.add(counterColumn)
-      val sc = new thrift.CounterSuperColumn(cf.nameCodec.encode(insert.name), columns)
-      cosc.setCounter_super_column(sc)
-      val mutation = new thrift.Mutation
-      mutation.setColumn_or_supercolumn(cosc)
-
-      val encodedKey = cf.keyCodec.encode(insert.key)
-
-      val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
-      val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
-      l.add(mutation)
-    }
-    mutations
-  }
 }

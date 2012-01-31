@@ -1,20 +1,20 @@
 package com.twitter.cassie.tests
 
-import scala.collection.JavaConversions._
-import org.scalatest.Spec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.mock.MockitoSugar
 import com.twitter.cassie.codecs.Utf8Codec
-import org.mockito.Mockito.{ when, verify }
-import org.mockito.Matchers.{ eq => matchEq, anyListOf }
+import com.twitter.cassie.util.ColumnFamilyTestHelper
+import com.twitter.cassie._
+import com.twitter.util.Future
+import java.nio.ByteBuffer
+import java.util.{ ArrayList => JArrayList }
 import org.apache.cassandra.finagle.thrift
 import org.mockito.ArgumentCaptor
-import java.nio.ByteBuffer
-import com.twitter.cassie._
-
-import com.twitter.cassie.util.ColumnFamilyTestHelper
-import com.twitter.util.Future
-import java.util.{ ArrayList => JArrayList }
+import org.mockito.Matchers.{ eq => matchEq, anyListOf }
+import org.mockito.Mockito.{ when, verify }
+import org.scalatest.matchers.MustMatchers
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.Spec
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
@@ -53,15 +53,14 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
     val (client, cf) = setupCounters
 
     it("performs a get_slice with a maxed-out count") {
-      cf.getRow("key")
-
+      val cols = Seq(cc("a", 1), cc("b", 2))
       val cp = new thrift.ColumnParent("cf")
 
-      val range = new thrift.SliceRange(b(""), b(""), false, Int.MaxValue)
-      val pred = new thrift.SlicePredicate()
-      pred.setSlice_range(range)
+      val pred1 = pred("", "", Int.MaxValue, Order.Normal)
 
-      verify(client).get_slice(b("key"), cp, pred, thrift.ConsistencyLevel.QUORUM)
+      when(client.get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](cols))
+
+      cf.getRow("key")
     }
 
     it("returns a map of column names to columns") {
@@ -220,4 +219,48 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
       col.value must equal(201)
     }
   }
+
+  describe("paging through columns") {
+    val (client, cf) = setupCounters
+
+    it("can return exactly one column") {
+      val key = "trance"
+      val cp = new thrift.ColumnParent("cf")
+
+      val columns1 = Seq(cc("a", 1))
+
+      val range1 = new thrift.SliceRange(b(""), b(""), false, 2)
+      val pred1 = pred("", "", 2, Order.Normal)
+      pred1.setSlice_range(range1)
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
+
+      val l = new ListBuffer[String]
+      cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      l must equal(List("a"))
+    }
+
+    it("fetches multiple slices") {
+      val key = "trance"
+      val cp = new thrift.ColumnParent("cf")
+
+      val columns1 = Seq(cc("cat", 1), cc("name", 1))
+      val columns2 = Seq(cc("name", 1), cc("radish", 1), cc("sofa", 1))
+      val columns3 = Seq(cc("sofa", 1), cc("xray", 1))
+
+      val pred1 = pred("", "", 2, Order.Normal)
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
+
+      val pred2 = pred("name", "", 3, Order.Normal)
+      when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns2))
+
+      val pred3 = pred("sofa", "", 3, Order.Normal)
+      when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns3))
+
+      val l = new ListBuffer[String]
+      val done = cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
+      done()
+      l must equal(List("cat", "name", "radish", "sofa", "xray"))
+    }
+  }
+
 }
