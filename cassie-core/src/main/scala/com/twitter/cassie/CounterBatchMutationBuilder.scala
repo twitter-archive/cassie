@@ -24,20 +24,22 @@ import com.twitter.util.Future
 class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
   extends BatchMutation {
 
+  type This = CounterBatchMutationBuilder[Key, Name]
+
   case class Insert(key: Key, column: CounterColumn[Name])
   case class Deletions(key: Key, columnNames: JSet[Name])
 
   private val ops = new ListBuffer[Either[Insert, Deletions]]
 
-  def insert(key: Key, column: CounterColumn[Name]) = synchronized {
+  def insert(key: Key, column: CounterColumn[Name]): This = synchronized {
     ops.append(Left(Insert(key, column)))
     this
   }
 
-  def removeColumn(key: Key, columnName: Name) =
+  def removeColumn(key: Key, columnName: Name): This =
     removeColumns(key, singletonJSet(columnName))
 
-  def removeColumns(key: Key, columnNames: JSet[Name]) = synchronized {
+  def removeColumns(key: Key, columnNames: JSet[Name]): This = synchronized {
     ops.append(Right(Deletions(key, columnNames)))
     this
   }
@@ -45,7 +47,7 @@ class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
   /**
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
-  def execute() = {
+  def execute(): Future[Void] = {
     try {
       cf.batch(mutations)
     } catch {

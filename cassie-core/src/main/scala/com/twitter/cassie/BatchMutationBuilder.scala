@@ -9,7 +9,6 @@ import java.util.{
   HashMap => JHashMap
 }
 import java.util.Collections.{ singleton => singletonJSet }
-
 import org.apache.cassandra.finagle.thrift
 import scala.collection.mutable.ListBuffer
 import com.twitter.util.Future
@@ -21,32 +20,32 @@ trait BatchMutation {
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
- * TODO: Port to Java collections.
- * TODO: make into a CFLike
  */
 class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamily[Key, Name, Value])
   extends BatchMutation {
+
+  type This = BatchMutationBuilder[Key, Name, Value]
 
   private[cassie] case class Insert(key: Key, column: Column[Name, Value])
   private[cassie] case class Deletions(key: Key, columnNames: JSet[Name], timestamp: Long)
 
   private val ops = new ListBuffer[Either[Insert, Deletions]]
 
-  def insert(key: Key, column: Column[Name, Value]) = synchronized {
+  def insert(key: Key, column: Column[Name, Value]): This = synchronized {
     ops.append(Left(Insert(key, column)))
     this
   }
 
-  def removeColumn(key: Key, columnName: Name) =
+  def removeColumn(key: Key, columnName: Name): This =
     removeColumns(key, singletonJSet(columnName))
 
-  def removeColumn(key: Key, columnName: Name, timestamp: Long) =
+  def removeColumn(key: Key, columnName: Name, timestamp: Long): This =
     removeColumns(key, singletonJSet(columnName), timestamp)
 
-  def removeColumns(key: Key, columns: JSet[Name]): BatchMutationBuilder[Key, Name, Value] =
+  def removeColumns(key: Key, columns: JSet[Name]): This =
     removeColumns(key, columns, cf.clock.timestamp)
 
-  def removeColumns(key: Key, columns: JSet[Name], timestamp: Long): BatchMutationBuilder[Key, Name, Value] = synchronized {
+  def removeColumns(key: Key, columns: JSet[Name], timestamp: Long): This = synchronized {
     ops.append(Right(Deletions(key, columns, timestamp)))
     this
   }
@@ -54,7 +53,7 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
   /**
    * Submits the batch of operations, returning a Future[Void] to allow blocking for success.
    */
-  def execute() = {
+  def execute(): Future[Void] = {
     try {
       cf.batch(mutations)
     } catch {

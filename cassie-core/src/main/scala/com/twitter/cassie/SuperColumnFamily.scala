@@ -17,6 +17,9 @@ import scala.collection.JavaConversions._ // TODO get rid of this
 /**
  * A readable, writable column family with batching capabilities. This is a
  * lightweight object: it inherits a connection pool from the Keyspace.
+ *
+ * Note that this implementation is the minimal set we've needed in production. We've done this
+ * because we hope that SuperColumns can be obsoleted in the future.
  */
 object SuperColumnFamily {
   private val log = Logger.get(this.getClass)
@@ -38,12 +41,14 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
   import SuperColumnFamily._
   import BaseColumnFamily._
 
+  type This = SuperColumnFamily[Key, Name, SubName, Value]
+
   private[cassie] var clock: Clock = MicrosecondEpochClock
 
-  def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
-  def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
+  def consistency(rc: ReadConsistency): This = copy(readConsistency = rc)
+  def consistency(wc: WriteConsistency): This = copy(writeConsistency = wc)
 
-  def insert(key: Key, superColumn: Name, column: Column[SubName, Value]) = {
+  def insert(key: Key, superColumn: Name, column: Column[SubName, Value]): Future[Void] = {
     try {
       val cp = (new thrift.ColumnParent(name)).setSuper_column(nameCodec.encode(superColumn))
       val col = Column.convert(subNameCodec, valueCodec, clock, column)
@@ -124,7 +129,7 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     }
   }
 
-  def removeRow(key: Key) = {
+  def removeRow(key: Key): Future[Void] = {
     val cp = new thrift.ColumnPath(name)
     val ts = clock.timestamp
     val keyEncoded = keyCodec.encode(key)

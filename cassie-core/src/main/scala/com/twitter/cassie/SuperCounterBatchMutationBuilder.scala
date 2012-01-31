@@ -20,7 +20,7 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
   /**
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
-  def execute() = {
+  def execute(): Future[Void] = {
     try {
       cf.batch(mutations)
     } catch {

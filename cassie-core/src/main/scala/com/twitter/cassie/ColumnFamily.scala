@@ -37,6 +37,8 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   import ColumnFamily._
   import BaseColumnFamily._
 
+  type This = ColumnFamily[Key, Name, Value]
+
   /**
    * This is necessary to create cglib proxies of column families.
    */
@@ -66,20 +68,20 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @return a copy of this [[ColumnFamilyLike]] with a different read consistency
    * @param rc the new read consistency level
    */
-  def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
+  def consistency(rc: ReadConsistency): This = copy(readConsistency = rc)
 
   /**
    * @return a copy of this [[ColumnFamilyLike]] with a different write consistency level
    * @param wc the new write consistency level
    */
-  def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
+  def consistency(wc: WriteConsistency): This = copy(writeConsistency = wc)
 
   /**
    * Create a new column for this column family. Useful for java-based users.
    * @param n the column name
    * @param v the column value
    */
-  def newColumn[N, V](n: N, v: V) = Column(n, v)
+  def newColumn[N, V](n: N, v: V): Column[N, V] = Column(n, v)
 
   /**
    * Create a new column for this column family. Useful for java-based users.
@@ -187,7 +189,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param keys the row keys
    * @param columnNames the column names
    */
-  def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]) = {
+  def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]): Future[JMap[Key, JMap[Name, Column[Name, Value]]]] = {
     val pred = sliceRangePredicate(columnNames)
     multiget(keys, pred)
   }
@@ -203,7 +205,8 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param count Like LIMIT in SQL. Note that all of start..end will be loaded into memory serverside.
    * @param order sort forward or reverse (by column name)
    */
-  def multigetRows(keys: JSet[Key], start: Option[Name], end: Option[Name], order: Order, count: Int) = {
+  def multigetRows(keys: JSet[Key], start: Option[Name], end: Option[Name], order: Order,
+    count: Int): Future[JMap[Key, JMap[Name, Column[Name, Value]]]] = {
     val pred = sliceRangePredicate(start, end, order, count)
     multiget(keys, pred)
   }
@@ -242,7 +245,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param key the row key
    * @param column the column
    */
-  def insert(key: Key, column: Column[Name, Value]) = {
+  def insert(key: Key, column: Column[Name, Value]): Future[Void] = {
     try {
       val cp = new thrift.ColumnParent(name)
       val col = Column.convert(nameCodec, valueCodec, clock, column)
@@ -263,9 +266,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @return a Future that can contain [[org.apache.cassandra.finagle.thrift.UnavailableException]]
    *   or [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    */
-  def truncate() = timeFutureWithFailures(stats, "truncate") {
-    withConnection("truncate")(_.truncate(name))
-  }
+  def truncate(): Future[Void] = withConnection("truncate")(_.truncate(name))
 
   /**
    * Remove a single column.
@@ -276,7 +277,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param key the row key
    * @param columnName the column's name
    */
-  def removeColumn(key: Key, columnName: Name) = {
+  def removeColumn(key: Key, columnName: Name): Future[Void] = {
     try {
       val cp = new thrift.ColumnPath(name).setColumn(nameCodec.encode(columnName))
       val timestamp = clock.timestamp
@@ -330,7 +331,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    *  [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
    * @param key the row key to be deleted
    */
-  def removeRow(key: Key) = {
+  def removeRow(key: Key): Future[Void] = {
     removeRowWithTimestamp(key, clock.timestamp)
   }
 
@@ -342,7 +343,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param key the row key to be deleted
    * @param timestamp the time at which the row was deleted
    */
-  def removeRowWithTimestamp(key: Key, timestamp: Long) = {
+  def removeRowWithTimestamp(key: Key, timestamp: Long): Future[Void] = {
     val cp = new thrift.ColumnPath(name)
     val keyEncoded = keyCodec.encode(key)
     log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
@@ -355,7 +356,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   /**
    * Start a batch operation by returning a new BatchMutationBuilder
    */
-  def batch() = new BatchMutationBuilder(this)
+  def batch(): BatchMutationBuilder[Key, Name, Value] = new BatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
@@ -379,7 +380,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param batchSize the number of rows to load at a time
    * @param columnNames the columns to load from each row (like a projection)
    */
-  def rowsIteratee(start: Key, end: Key, batchSize: Int, columnNames: JSet[Name]) = {
+  def rowsIteratee(start: Key, end: Key, batchSize: Int, columnNames: JSet[Name]): RowsIteratee[Key, Name, Value] = {
     RowsIteratee(this, start, end, batchSize, sliceRangePredicate(columnNames))
   }
 
@@ -500,20 +501,16 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     }
   }
 
-  private[cassie] def getRangeSlice(startKey: Key,
-    endKey: Key,
-    count: Int,
-    predicate: thrift.SlicePredicate) = {
-
+  private[cassie] def getRangeSlice(start: Key, end: Key, count: Int, pred: thrift.SlicePredicate) = {
     val cp = new thrift.ColumnParent(name)
-    val startKeyEncoded = keyCodec.encode(startKey)
-    val endKeyEncoded = keyCodec.encode(endKey)
+    val startKeyEncoded = keyCodec.encode(start)
+    val endKeyEncoded = keyCodec.encode(end)
     val range = new thrift.KeyRange(count).setStart_key(startKeyEncoded).setEnd_key(endKeyEncoded)
-    log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, predicate, range, readConsistency.level)
+    log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, pred, range, readConsistency.level)
     withConnection("get_range_slices", Map("startkey" -> startKeyEncoded,"endkey" -> endKeyEncoded,
-      "count" -> count.toString, "predicate" -> annPredCodec.encode(predicate),
+      "count" -> count.toString, "predicate" -> annPredCodec.encode(pred),
       "readconsistency" -> readConsistency.toString)) {
-      _.get_range_slices(cp, predicate, range, readConsistency.level)
+      _.get_range_slices(cp, pred, range, readConsistency.level)
     } map { slices =>
       val buf: JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](slices.size)
       slices.foreach { ks =>

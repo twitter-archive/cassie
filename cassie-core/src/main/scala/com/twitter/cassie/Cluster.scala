@@ -132,11 +132,11 @@ case class KeyspaceBuilder(
     copy(_maxConnectionsPerHost = m)
 
   /** A finagle stats receiver for reporting. */
-  def reportStatsTo(r: StatsReceiver) = copy(stats = r)
+  def reportStatsTo(r: StatsReceiver): KeyspaceBuilder = copy(stats = r)
 
   /** Set a tracer to collect request traces. */
-  def tracerFactory(t: Tracer.Factory) = copy(_tracerFactory = t)
+  def tracerFactory(t: Tracer.Factory): KeyspaceBuilder = copy(_tracerFactory = t)
 
-  def hostConnectionMaxWaiters(i: Int) = copy(_hostConnectionMaxWaiters = i)
+  def hostConnectionMaxWaiters(i: Int): KeyspaceBuilder = copy(_hostConnectionMaxWaiters = i)
 }
 

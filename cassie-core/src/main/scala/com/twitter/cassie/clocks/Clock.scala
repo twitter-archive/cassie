@@ -7,5 +7,5 @@ trait Clock {
   def timestamp: Long
 
   /** To conveniently get the singleton/Object from Java. */
-  def get() = this
+  def get(): Clock = this
 }

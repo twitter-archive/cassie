@@ -17,6 +17,10 @@ object SuperCounterColumnFamily {
   private val log = Logger.get(this.getClass)
 }
 
+/*
+ * Note that this implementation is the minimal set we've needed in production. We've done this
+ * because we hope that SuperColumns can be obsoleted in the future.
+ */
 case class SuperCounterColumnFamily[Key, Name, SubName](
   keyspace: String,
   name: String,
@@ -32,8 +36,10 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
   import SuperCounterColumnFamily._
   import BaseColumnFamily._
 
-  def consistency(rc: ReadConsistency) = copy(readConsistency = rc)
-  def consistency(wc: WriteConsistency) = copy(writeConsistency = wc)
+  type This = SuperCounterColumnFamily[Key, Name, SubName]
+
+  def consistency(rc: ReadConsistency): This = copy(readConsistency = rc)
+  def consistency(wc: WriteConsistency): This = copy(writeConsistency = wc)
 
   def multigetSlices(keys: JSet[Key], start: Name, end: Name): Future[JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]]] = {
     try {
@@ -76,7 +82,8 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
     }
   }
 
-  def batch() = new SuperCounterBatchMutationBuilder[Key, Name, SubName](this)
+  def batch(): SuperCounterBatchMutationBuilder[Key, Name, SubName] =
+    new SuperCounterBatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
     log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
@@ -84,5 +91,4 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
       _.batch_mutate(mutations, writeConsistency.level)
     }
   }
-
 }
