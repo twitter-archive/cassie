@@ -1,0 +1,20 @@
+Herein are a list of known issues and areas for improvement–
+
+# Mixed Java/Scala data structures
+
+We currently use a mix of java and scala data structures. We should really standardize on one,
+then provide wrappers for others. THe plan is to standardize on scala data structures internally and
+then provide wrappers for java compatibility/ease-of-use.
+
+# Code duplication
+
+We've duplicated code across ColumFamily, SuperColumFamily, CounterColumFamily and SuperCounterColumFamily.
+We need to pull this back together in a more sane way. (also Column and CounterColumn)
+
+# Incomplete Cassandra feature support
+
+Not all cassandra operations are supported (we've taken a JIT approach).
+
+# Iteratee code is fragile and complicated
+
+We should move to Finagle Spools.
