@@ -130,18 +130,12 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param count Like LIMIT in SQL. Note that all of start..end will be loaded into memory serverside.
    * @param order sort forward or reverse (by column name)
    */
-  def getRowSlice(
-    key: Key,
-    start: Option[Name],
-    end: Option[Name],
-    count: Int,
+  def getRowSlice(key: Key, start: Option[Name], end: Option[Name], count: Int,
     order: Order = Order.Normal): Future[Seq[Column[Name, Value]]] = {
-    try {
+    Future {
       val pred = sliceRangePredicate(start, end, order, count)
       getOrderedSlice(key, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -154,12 +148,10 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param the column names you want
    */
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, Column[Name, Value]]] = {
-    try {
+    Future {
       val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
       getMapSlice(key, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -212,7 +204,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   }
 
   private[cassie] def multiget(keys: JSet[Key], pred: thrift.SlicePredicate) = {
-    try {
+    Future {
       val cp = new thrift.ColumnParent(name)
       val encodedKeys = keyCodec.encodeSet(keys)
       log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
@@ -231,9 +223,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
         }
         rows
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -246,7 +236,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param column the column
    */
   def insert(key: Key, column: Column[Name, Value]): Future[Void] = {
-    try {
+    Future {
       val cp = new thrift.ColumnParent(name)
       val col = Column.convert(nameCodec, valueCodec, clock, column)
       val keyEncoded = keyCodec.encode(key)
@@ -255,9 +245,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
         "writeconsistency" -> writeConsistency.toString)) {
         _.insert(keyEncoded, cp, col, writeConsistency.level)
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -278,7 +266,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
    * @param columnName the column's name
    */
   def removeColumn(key: Key, columnName: Name): Future[Void] = {
-    try {
+    Future {
       val cp = new thrift.ColumnPath(name).setColumn(nameCodec.encode(columnName))
       val timestamp = clock.timestamp
       val keyEncoded = keyCodec.encode(key)
@@ -287,9 +275,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
         "writeconsistency" -> writeConsistency.toString)) {
         _.remove(keyEncoded, cp, timestamp, writeConsistency.level)
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**

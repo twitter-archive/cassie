@@ -21,11 +21,9 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
   def execute(): Future[Void] = {
-    try {
+    Future {
       cf.batch(mutations)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {

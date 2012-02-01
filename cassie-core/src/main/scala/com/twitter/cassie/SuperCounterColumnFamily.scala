@@ -42,12 +42,10 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
   def consistency(wc: WriteConsistency): This = copy(writeConsistency = wc)
 
   def multigetSlices(keys: JSet[Key], start: Name, end: Name): Future[JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]]] = {
-    try {
+    Future {
       val pred = sliceRangePredicate(Some(start), Some(end), Order.Normal, Int.MaxValue)
       multigetSlice(keys, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private def sliceRangePredicate(startColumnName: Option[Name], endColumnName: Option[Name], order: Order, count: Int) = {

@@ -49,7 +49,7 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
   def consistency(wc: WriteConsistency): This = copy(writeConsistency = wc)
 
   def insert(key: Key, superColumn: Name, column: Column[SubName, Value]): Future[Void] = {
-    try {
+    Future {
       val cp = (new thrift.ColumnParent(name)).setSuper_column(nameCodec.encode(superColumn))
       val col = Column.convert(subNameCodec, valueCodec, clock, column)
       val keyEncoded = keyCodec.encode(key)
@@ -57,9 +57,7 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
       withConnection("insert", Map("key" -> keyEncoded, "col" -> col.name, "writeconsistency" -> writeConsistency.toString)) {
         _.insert(keyEncoded, cp, col, writeConsistency.level)
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   def getRow(key: Key): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
@@ -68,43 +66,38 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
 
   def getRowSlice(key: Key, start: Option[Name], end: Option[Name], count: Int,
     order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
-    try {
+    Future {
       getOrderedSlice(key, start, end, count, order)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   def multigetRow(keys: JSet[Key]): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
     multigetRowSlice(keys, None, None, Int.MaxValue, Order.Normal)
   }
 
-  def multigetRowSlice(keys: JSet[Key],
-    startColumnName: Option[Name],
-    endColumnName: Option[Name],
-    count: Int,
+  def multigetRowSlice(keys: JSet[Key], start: Option[Name], end: Option[Name], count: Int,
     order: Order): Future[JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]]] = {
-    try {
-      multigetSlice(keys, startColumnName, endColumnName, count, order)
-    } catch {
-      case e => Future.exception(e)
-    }
+    Future {
+      multigetSlice(keys, start, end, count, order)
+    }.flatten
   }
 
   private def getOrderedSlice(key: Key, start: Option[Name], end: Option[Name], size: Int, order: Order): Future[Seq[(Name, Seq[Column[SubName, Value]])]] = {
-    val pred = sliceRangePredicate(start, end, order, size)
-    val cp = new thrift.ColumnParent(name)
-    val keyEncoded = keyCodec.encode(key)
-    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    withConnection("get_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
-      _.get_slice(keyEncoded, cp, pred, readConsistency.level)
-    } map { result =>
-      result.map { cosc =>
-        val sc = cosc.getSuper_column()
-        (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+    Future {
+      val pred = sliceRangePredicate(start, end, order, size)
+      val cp = new thrift.ColumnParent(name)
+      val keyEncoded = keyCodec.encode(key)
+      log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
+      withConnection("get_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
+        "readconsistency" -> readConsistency.toString)) {
+        _.get_slice(keyEncoded, cp, pred, readConsistency.level)
+      } map { result =>
+        result.map { cosc =>
+          val sc = cosc.getSuper_column()
+          (nameCodec.decode(sc.name), sc.columns.map(Column.convert(subNameCodec, valueCodec, _)))
+        }
       }
-    }
+    }.flatten
   }
 
   private def multigetSlice(keys: JSet[Key], start: Option[Name], end: Option[Name],size: Int,

@@ -91,12 +91,10 @@ case class CounterColumnFamily[Key, Name](
    */
   def getRowSlice(key: Key, start: Option[Name], end: Option[Name], count: Int,
     order: Order = Order.Normal): Future[Seq[CounterColumn[Name]]] = {
-    try {
+    Future {
       val pred = sliceRangePredicate(start, end, order, count)
       getOrderedSlice(key, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private[cassie] def getOrderedSlice(key: Key, pred: thrift.SlicePredicate) = {
@@ -134,12 +132,10 @@ case class CounterColumnFamily[Key, Name](
    * @param the column names you want
    */
   def getColumns(key: Key, columnNames: JSet[Name]): Future[JMap[Name, CounterColumn[Name]]] = {
-    try {
+    Future {
       val pred = new thrift.SlicePredicate().setColumn_names(nameCodec.encodeSet(columnNames))
       getSlice(key, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -169,12 +165,10 @@ case class CounterColumnFamily[Key, Name](
    * @param columnNames the column names
    */
   def multigetColumns(keys: JSet[Key], columnNames: JSet[Name]): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
-    try {
+    Future {
       val pred = sliceRangePredicate(columnNames)
       multigetSlice(keys, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private def multigetSlice(keys: JSet[Key], pred: thrift.SlicePredicate): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
@@ -217,19 +211,17 @@ case class CounterColumnFamily[Key, Name](
   }
 
   def multigetSlices(keys: JSet[Key], start: Name, end: Name): Future[JMap[Key, JMap[Name, CounterColumn[Name]]]] = {
-    try {
+    Future {
       val pred = sliceRangePredicate(Some(start), Some(end), Order.Normal, Int.MaxValue)
       multigetSlice(keys, pred)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
    * Increments a column.
    */
   def add(key: Key, column: CounterColumn[Name]): Future[Void] = {
-    try {
+    Future {
       val cp = new thrift.ColumnParent(name)
       val col = CounterColumn.convert(nameCodec, column)
       val keyEncoded = keyCodec.encode(key)
@@ -237,9 +229,7 @@ case class CounterColumnFamily[Key, Name](
       withConnection("add", Map("key" -> keyEncoded, "column" -> col.name, "readconsistency" -> writeConsistency.toString)) {
         _.add(keyEncoded, cp, col, writeConsistency.level)
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**
@@ -251,7 +241,7 @@ case class CounterColumnFamily[Key, Name](
    * @param columnName the column's name
    */
   def removeColumn(key: Key, columnName: Name): Future[Void] = {
-    try {
+    Future {
       val cp = new thrift.ColumnPath(name)
       cp.setColumn(nameCodec.encode(columnName))
       val keyEncoded = keyCodec.encode(key)
@@ -259,9 +249,7 @@ case class CounterColumnFamily[Key, Name](
       withConnection("remove_counter", Map("key" -> keyEncoded, "readconsistency" -> readConsistency.toString)) {
         _.remove_counter(keyEncoded, cp, writeConsistency.level)
       }
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   /**

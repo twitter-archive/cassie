@@ -1,20 +1,13 @@
 package com.twitter.cassie
 
-import java.nio.ByteBuffer
-import java.util.{
-  List => JList,
-  Map => JMap,
-  Set => JSet,
-  ArrayList => JArrayList,
-  HashMap => JHashMap
-}
-import java.util.Collections.{ singleton => singletonJSet }
-
 import codecs.Codec
-import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConversions._
-import org.apache.cassandra.finagle.thrift
 import com.twitter.util.Future
+import java.nio.ByteBuffer
+import java.util.Collections.{ singleton => singletonJSet }
+import java.util.{List => JList,Map => JMap, Set => JSet, ArrayList => JArrayList, HashMap => JHashMap}
+import org.apache.cassandra.finagle.thrift
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call for counters.
@@ -48,11 +41,9 @@ class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
   def execute(): Future[Void] = {
-    try {
+    Future {
       cf.batch(mutations)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {

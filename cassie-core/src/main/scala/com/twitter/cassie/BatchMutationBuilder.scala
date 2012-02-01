@@ -54,11 +54,9 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
    * Submits the batch of operations, returning a Future[Void] to allow blocking for success.
    */
   def execute(): Future[Void] = {
-    try {
+    Future {
       cf.batch(mutations)
-    } catch {
-      case e => Future.exception(e)
-    }
+    }.flatten
   }
 
   private[cassie] override def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
