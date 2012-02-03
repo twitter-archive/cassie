@@ -1,5 +1,6 @@
 package com.twitter.cassie.connection
 
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
@@ -12,11 +13,10 @@ import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy 
 import com.twitter.finagle.Service
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
-import com.twitter.finagle.{ CodecFactory, ClientCodecConfig }
+import com.twitter.finagle.{ CodecFactory, Codec, ClientCodecConfig }
 import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import com.twitter.util.Duration
 import com.twitter.util.{ Future, Throw, Timer, TimerTask, Time, Try }
-import java.net.{ SocketAddress }
 
 sealed case class RetryPolicy()
 
@@ -25,7 +25,7 @@ object RetryPolicy {
   val NonIdempotent = RetryPolicy()
 }
 
-private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
+private[cassie] class ClusterClientProvider(val hosts: CCluster,
   val keyspace: String,
   val retries: Int = 5,
   val timeout: Duration = Duration(5, TimeUnit.SECONDS),

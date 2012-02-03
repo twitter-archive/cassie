@@ -1,13 +1,14 @@
 package com.twitter.cassie
 
 import connection._
+import java.net.InetSocketAddress
 import scala.collection.JavaConversions._
 import com.twitter.cassie.connection.{ CCluster, RetryPolicy, SocketAddressCluster }
 import com.twitter.util.Duration
 import com.twitter.conversions.time._
+import com.twitter.finagle.builder.{ Cluster => FCluster }
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.tracing.{ Tracer, NullTracer }
-import java.net.{ SocketAddress, InetSocketAddress }
 
 /**
  * A Cassandra cluster.
@@ -77,7 +78,7 @@ trait ClusterBase {
 }
 
 case class KeyspaceBuilder(
-  cluster: CCluster[SocketAddress],
+  cluster: CCluster,
   name: String,
   stats: StatsReceiver,
   _retries: Int = 0,

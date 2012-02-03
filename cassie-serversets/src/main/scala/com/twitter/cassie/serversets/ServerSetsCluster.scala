@@ -1,5 +1,6 @@
 package com.twitter.cassie
 
+import java.net.InetSocketAddress
 
 import scala.collection.JavaConversions
 
@@ -11,10 +12,8 @@ import com.twitter.common.zookeeper.ServerSetImpl
 import com.twitter.common.zookeeper.ZooKeeperClient
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
-import java.net.{SocketAddress, InetSocketAddress}
 
-class ZookeeperServerSetCCluster(serverSet: ServerSet)
-  extends ZookeeperServerSetCluster(serverSet) with CCluster[SocketAddress] {
+class ZookeeperServerSetCCluster(serverSet: ServerSet) extends ZookeeperServerSetCluster(serverSet) with CCluster {
   def close {}
 }
 
