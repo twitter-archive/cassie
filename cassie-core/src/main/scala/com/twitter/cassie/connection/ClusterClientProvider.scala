@@ -1,22 +1,35 @@
 package com.twitter.cassie.connection
 
-import java.util.concurrent.TimeUnit
+// Copyright 2012 Twitter, Inc.
 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import com.twitter.finagle.builder.ClientBuilder
+import com.twitter.finagle.Service
+import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy }
+import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
+import com.twitter.finagle.{ ChannelException, CodecFactory, Codec, ClientCodecConfig, RequestTimeoutException, WriteException }
+import com.twitter.util.Duration
+import com.twitter.util.{ Duration, Future, Throw, Timer, TimerTask, Time, Try }
+import com.twitter.util.{ Future, Throw, Timer, TimerTask, Time, Try }
+import java.net.InetSocketAddress
+import java.net.{ SocketAddress }
+import java.util.concurrent.TimeUnit
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.apache.cassandra.finagle.thrift.{ UnavailableException, TimedOutException }
 import org.apache.thrift.protocol.{ TBinaryProtocol, TProtocolFactory }
-
-import com.twitter.finagle.{ WriteException, RequestTimeoutException, ChannelException }
-import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy }
-import com.twitter.finagle.Service
-import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
-import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
-import com.twitter.finagle.{ CodecFactory, ClientCodecConfig }
-import com.twitter.finagle.tracing.{ Tracer, NullTracer }
-import com.twitter.util.Duration
-import com.twitter.util.{ Future, Throw, Timer, TimerTask, Time, Try }
-import java.net.{ SocketAddress }
 
 sealed case class RetryPolicy()
 
@@ -57,10 +70,9 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
         case Throw(x: RequestTimeoutException) => recordRetryable(x)
         case Throw(x: ChannelException) => recordRetryable(x)
         case Throw(x: UnavailableException) => recordRetryable(x)
-        // TODO: see http://jira.local.twitter.com/browse/CORESTORAGE-494: if this is a legit
-        // serverside timeout, then we should be careful about retrying, since the serverside
-        // timeout is ideally set to just a smidgeon below our client timeout, and we would
-        // thus wait a lot of extra time
+        // TODO: if this is a legit serverside timeout, then we should be careful about retrying, since the
+        // serverside timeout is ideally set to just a smidgeon below our client timeout, and we would thus
+        // wait a lot of extra time
         case Throw(x: TimedOutException) => recordRetryable(x)
         // TODO: do we need to retry IndividualRequestTimeoutException?
       }

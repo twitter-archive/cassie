@@ -1,25 +1,32 @@
+// Copyright 2012 Twitter, Inc.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.twitter.cassie.tests.util
 
-import org.apache.thrift.transport.{ TServerSocket, TFramedTransport }
+import com.twitter.cassie.codecs.Utf8Codec
+
+import java.net.ServerSocket
+import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
+import java.util.{ HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSortedSet,
+  TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap }
+import java.util.Comparator
+import org.apache.cassandra.finagle.thrift._
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.TThreadPoolServer
-import java.util.concurrent.CountDownLatch
-import org.apache.cassandra.finagle.thrift._
-import java.nio.ByteBuffer
-import com.twitter.cassie.codecs.Utf8Codec
+import org.apache.thrift.transport.{ TServerSocket, TFramedTransport }
 import scala.collection.JavaConversions._
-import java.util.{
-  HashSet => JHashSet,
-  ArrayList => JArrayList,
-  SortedSet => JSortedSet,
-  TreeMap => JTreeMap,
-  List => JList,
-  TreeSet => JTreeSet,
-  Map => JMap
-}
-import java.util.Comparator
 import scala.math.min
-import java.net.ServerSocket
 
 object FakeCassandra {
   class ServerThread(cassandra: Cassandra.Iface) extends Thread {

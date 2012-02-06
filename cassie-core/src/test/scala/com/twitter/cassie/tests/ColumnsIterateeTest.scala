@@ -1,17 +1,31 @@
+// Copyright 2012 Twitter, Inc.
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.twitter.cassie.tests
 
+import com.twitter.cassie.util.ColumnFamilyTestHelper
+import com.twitter.cassie._
+import com.twitter.util.Future
 import java.util.{ List => JList, HashSet => JHashSet, ArrayList => JArrayList }
+import org.apache.cassandra.finagle.thrift
+import org.mockito.Matchers.{ eq => matchEq }
+import org.mockito.Mockito.{ when, inOrder => inOrderVerify, verify, atMost }
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ OneInstancePerTest, Spec }
-import com.twitter.cassie._
-import org.mockito.Mockito.{ when, inOrder => inOrderVerify, verify, atMost }
-import org.mockito.Matchers.{ eq => matchEq }
-import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
-import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
-import com.twitter.cassie.util.ColumnFamilyTestHelper
 
 class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper {
 

@@ -1,17 +1,26 @@
+// Copyright 2012 Twitter, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.twitter.cassie
 
-
-import scala.collection.JavaConversions
-
 import com.twitter.cassie.connection.CCluster
-import com.twitter.common.quantity.Amount
-import com.twitter.common.quantity.Time
-import com.twitter.common.zookeeper.ServerSet
-import com.twitter.common.zookeeper.ServerSetImpl
-import com.twitter.common.zookeeper.ZooKeeperClient
+import com.twitter.common.quantity.{Amount, Time}
+import com.twitter.common.zookeeper.{ServerSet, ServerSetImpl, ZooKeeperClient}
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
 import java.net.{SocketAddress, InetSocketAddress}
+import scala.collection.JavaConversions
 
 class ZookeeperServerSetCCluster(serverSet: ServerSet)
   extends ZookeeperServerSetCluster(serverSet) with CCluster[SocketAddress] {
@@ -25,7 +34,7 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet)
  *  val clusterName = "cluster"
  *  val keyspace = "KeyspaceName"
  *  val zkPath = "/twitter/service/cassandra/%s".format(clusterName)
- *  val zkHosts = Seq(new InetSocketAddress("zookeeper.local.twitter.com", 2181))
+ *  val zkHosts = Seq(new InetSocketAddress("zookeeper.example.com", 2181))
  *  val timeoutMillis = 1.minute.inMilliseconds.toInt
  *  val stats = NullStatsReceiver // or OstrichStatsReciever or whatever
  *
@@ -49,7 +58,8 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
    */
   def this(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int,
     stats: StatsReceiver = NullStatsReceiver) =
-    this(new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS), JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats)
+    this(new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS),
+      JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats)
 
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.

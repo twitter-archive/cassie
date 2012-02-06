@@ -1,18 +1,36 @@
+// Copyright 2012 Twitter, Inc.
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.twitter.cassie
 
-import com.twitter.cassie.connection.ClusterClientProvider
-import com.twitter.cassie.connection.SocketAddressCluster
+import com.google.common.collect.ImmutableSet
 import com.twitter.cassie.connection.CCluster
+import com.twitter.cassie.connection.{ClusterClientProvider, SocketAddressCluster}
+import com.twitter.concurrent.Spool
+import com.twitter.finagle.builder.{Cluster => FCluster}
+import com.twitter.finagle.ServiceFactory
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.util.Timer
+import com.twitter.finagle.WriteException
 import com.twitter.logging.Logger
-import java.net.{ SocketAddress, InetSocketAddress }
+import com.twitter.util.{ Duration, Future, Promise, Return, Time }
+import java.io.IOException
+import java.net.{ InetSocketAddress, SocketAddress }
 import org.jboss.netty.util.HashedWheelTimer
 import scala.collection.JavaConversions._
-import com.twitter.concurrent.Spool
-import com.twitter.util._
-import com.twitter.finagle.builder.{Cluster => FCluster}
-
+import scala.collection.SeqProxy
+import scala.util.parsing.json.JSON
 
 /**
  * Given a seed host and port, returns a set of nodes in the cluster.
