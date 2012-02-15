@@ -72,19 +72,13 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
 
     ops.map {
       case Left(insert) => {
-        val timestamp = cf.clock.timestamp
         val cosc = new thrift.ColumnOrSuperColumn
         cosc.setColumn(
           Column.convert(
             cf.nameCodec,
             cf.valueCodec,
             cf.clock,
-            new Column(
-              insert.column.name,
-              insert.column.value,
-              Some(insert.column.timestamp.getOrElse(timestamp)),
-              None
-            )
+            insert.column
           )
         )
         val mutation = new thrift.Mutation

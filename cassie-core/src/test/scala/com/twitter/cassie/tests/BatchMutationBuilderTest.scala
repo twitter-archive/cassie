@@ -22,6 +22,8 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.Spec
 import scala.collection.JavaConversions._
 
+import com.twitter.conversions.time._
+
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   val (client, cf) = setup
@@ -31,7 +33,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
 
   describe("inserting a column") {
     val builder = setupBuilder()
-    builder.insert("key", Column("name", "value").timestamp(234))
+    builder.insert("key", Column("name", "value").timestamp(234).ttl(999.seconds))
     val mutations = Mutations(builder)
 
     it("adds an insertion mutation") {
@@ -40,6 +42,7 @@ class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar 
       Utf8Codec.decode(col.name) must equal("name")
       Utf8Codec.decode(col.value) must equal("value")
       col.getTimestamp must equal(234)
+      col.ttl must equal(999)
     }
   }
 
