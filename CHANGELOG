@@ -1,3 +1,6 @@
+# 0.19.1
+* finagle 1.11.1
+
 # 0.19.0
 * add a ServerSetsCluster constructor that accepts a ZooKeeperClient instance (matthew billoti)
 * upgrade to util 1.12.12 and finagle 1.10.0
