@@ -185,11 +185,8 @@ class FakeCassandra extends Cassandra.Iface {
     var row = cf.get(key)
     if (row == null)
       return new JArrayList()
-    var list: JArrayList[ColumnOrSuperColumn] = null
+    var list = new JArrayList[ColumnOrSuperColumn]
 
-    if (predicate.isSetSlice_range() && predicate.isSetColumn_names) {
-      //throw
-    }
     if (predicate.isSetSlice_range()) {
       val sr = predicate.getSlice_range
       if (sr.isSetStart && sr.getStart().length > 0 &&
@@ -210,7 +207,10 @@ class FakeCassandra extends Cassandra.Iface {
       list = new JArrayList
       val names = predicate.getColumn_names
       for (name <- names) {
-        list.add(row.get(name))
+        val value = row.get(name)
+        if (value != null) {
+          list.add(value)
+        }
       }
     }
     return list
