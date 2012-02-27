@@ -23,6 +23,10 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
     "cassie-serversets", "cassie-serversets",
     new ServerSetsProject(_), coreProject)
 
+  val stressProject = project(
+    "cassie-stress", "cassie-stress",
+    new StressProject(_), coreProject)
+
   trait Defaults extends StandardLibraryProject with SubversionPublisher with PublishSite
     with NoisyDependencies with ProjectDependencies with DefaultRepos {
 
@@ -80,5 +84,12 @@ class Cassie(info: sbt.ProjectInfo) extends StandardParentProject(info)
         <exclude org="com.sun.jdmk"/>
         <exclude org="com.sun.jmx"/>
       </dependencies>
+  }
+
+  class StressProject(info: ProjectInfo) extends StandardLibraryProject(info) with Defaults {
+    projectDependencies(
+      "finagle" ~ "finagle-ostrich4",
+      "finagle" ~ "finagle-stress"
+    )
   }
 }
