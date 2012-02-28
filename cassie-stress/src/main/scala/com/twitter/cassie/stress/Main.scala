@@ -12,10 +12,11 @@ object Main {
   val row = "foo"
   val data = 0 until 100 toSeq
 
+
   def dispatchLoop(cf: CounterColumnFamily[String, Long]) {
 
     val batch = cf.batch
-    data foreach { case(col) =>
+    data foreach { col =>
       batch.insert(row, CounterColumn(col, 1))
     }
 
