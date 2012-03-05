@@ -16,12 +16,9 @@ package com.twitter.cassie
 
 import com.twitter.cassie.codecs.Codec
 import com.twitter.util.Future
-import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
-import java.util.{List => JList,Map => JMap, Set => JSet, ArrayList => JArrayList, HashMap => JHashMap}
+import java.util.{Set => JSet}
 import org.apache.cassandra.finagle.thrift
-import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
 
 /**
  * A ColumnFamily-alike which batches mutations into a single API call for counters.
@@ -31,13 +28,8 @@ class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
 
   type This = CounterBatchMutationBuilder[Key, Name]
 
-  case class Insert(key: Key, column: CounterColumn[Name])
-  case class Deletions(key: Key, columnNames: JSet[Name])
-
-  private val ops = new ListBuffer[Either[Insert, Deletions]]
-
   def insert(key: Key, column: CounterColumn[Name]): This = synchronized {
-    ops.append(Left(Insert(key, column)))
+    putMutation(cf.keyCodec.encode(key), cf.name, insertMutation(key, column))
     this
   }
 
@@ -45,7 +37,7 @@ class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
     removeColumns(key, singletonJSet(columnName))
 
   def removeColumns(key: Key, columnNames: JSet[Name]): This = synchronized {
-    ops.append(Right(Deletions(key, columnNames)))
+    putMutation(cf.keyCodec.encode(key), cf.name, deleteMutation(key, columnNames))
     this
   }
 
@@ -58,40 +50,22 @@ class CounterBatchMutationBuilder[Key, Name](cf: CounterColumnFamily[Key, Name])
     }.flatten
   }
 
-  private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
-    val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]()
+  private[this] def insertMutation(key: Key, column: CounterColumn[Name]): thrift.Mutation = {
+    val cosc = new thrift.ColumnOrSuperColumn()
+    val counterColumn = new thrift.CounterColumn(cf.nameCodec.encode(column.name), column.value)
+    cosc.setCounter_column(counterColumn)
+    val mutation = new thrift.Mutation
+    mutation.setColumn_or_supercolumn(cosc)
+  }
 
-    ops.map {
-      case Left(insert) => {
-        val cosc = new thrift.ColumnOrSuperColumn()
-        val counterColumn = new thrift.CounterColumn(cf.nameCodec.encode(insert.column.name), insert.column.value)
-        cosc.setCounter_column(counterColumn)
-        val mutation = new thrift.Mutation
-        mutation.setColumn_or_supercolumn(cosc)
+  private[this] def deleteMutation(key: Key, columnNames: JSet[Name]): thrift.Mutation = {
+    val pred = new thrift.SlicePredicate
+    pred.setColumn_names(cf.nameCodec.encodeSet(columnNames))
 
-        val encodedKey = cf.keyCodec.encode(insert.key)
+    val deletion = new thrift.Deletion
+    deletion.setPredicate(pred)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
-        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
-        l.add(mutation)
-      }
-      case Right(deletions) => {
-        val pred = new thrift.SlicePredicate
-        pred.setColumn_names(cf.nameCodec.encodeSet(deletions.columnNames))
-
-        val deletion = new thrift.Deletion
-        deletion.setPredicate(pred)
-
-        val mutation = new thrift.Mutation
-        mutation.setDeletion(deletion)
-
-        val encodedKey = cf.keyCodec.encode(deletions.key)
-
-        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
-        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
-        l.add(mutation)
-      }
-    }
-    mutations
+    val mutation = new thrift.Mutation
+    mutation.setDeletion(deletion)
   }
 }

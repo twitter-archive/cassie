@@ -13,15 +13,11 @@
 // limitations under the License.
 package com.twitter.cassie.stress
 
-object Main {
-  def main(args: Array[String]) {
+trait Stresser {
 
-    val stresser = args.toList match {
-      case "-batchCounters" :: tail => new CounterBatchMutationBuilderStresser()
-      case "-batch" :: tail => new BatchMutationBuilderStresser()
-      case _ => new BatchMutationBuilderStresser()
-    }
+  def dispatchLoop()
 
-    stresser.run(10)
+  def run(concurrency: Int) {
+    0 until concurrency foreach { _ => dispatchLoop() }
   }
 }
