@@ -18,6 +18,7 @@ import com.twitter.cassie.connection.{ CCluster, ClusterClientProvider, RetryPol
 import com.twitter.conversions.time._
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.tracing.{ Tracer, NullTracer }
+import com.twitter.logging.Logger
 import com.twitter.util.Duration
 import java.net.{ SocketAddress, InetSocketAddress }
 import scala.collection.JavaConversions._
@@ -89,6 +90,11 @@ trait ClusterBase {
   def keyspace(name: String): KeyspaceBuilder
 }
 
+object KeyspaceBuilder {
+  private val log = Logger.get(this.getClass)
+}
+
+
 case class KeyspaceBuilder(
   cluster: CCluster[SocketAddress],
   name: String,
@@ -101,13 +107,22 @@ case class KeyspaceBuilder(
   _maxConnectionsPerHost: Int = 5,
   _hostConnectionMaxWaiters: Int = 100,
   _tracerFactory: Tracer.Factory = NullTracer.factory,
-  _retryPolicy: RetryPolicy = RetryPolicy.Idempotent) {
+  _retryPolicy: RetryPolicy = RetryPolicy.Idempotent
+) {
+
+  import KeyspaceBuilder._
 
   /**
    * connect to the cluster with the specified parameters
    */
   def connect(): Keyspace = {
     // TODO: move to builder pattern as well
+    if (_timeout < _requestTimeout)
+      log.error("Timeout (for all requests including retries) is less than the per-request timeout.")
+
+    if (_timeout < _connectTimeout)
+      log.error("Timeout (for all requests including retries) is less than the connection timeout.")
+
     val ccp = new ClusterClientProvider(
       cluster,
       name,

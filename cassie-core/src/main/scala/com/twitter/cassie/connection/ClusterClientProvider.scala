@@ -15,7 +15,7 @@ package com.twitter.cassie.connection
 // limitations under the License.
 
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.Service
+import com.twitter.finagle.{Service, ServiceFactory}
 import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy }
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
@@ -127,11 +127,9 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
   }
 
   class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) {
-    override def prepareService(cs: Service[ThriftClientRequest, Array[Byte]]) = {
-      super.prepareService(cs) flatMap { service =>
-        val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
-        client.set_keyspace(keyspace) map { _ => service }
-      }
+    override def prepareConnFactory(factory: ServiceFactory[ThriftClientRequest, Array[Byte]]) = factory flatMap { service =>
+      val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
+      client.set_keyspace(keyspace) map { _ => service }
     }
   }
 }

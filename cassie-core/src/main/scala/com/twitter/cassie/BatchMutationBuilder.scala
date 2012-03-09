@@ -21,10 +21,6 @@ import java.util.{ List => JList, Map => JMap, Set => JSet, ArrayList => JArrayL
 import org.apache.cassandra.finagle.thrift
 import scala.collection.mutable.ListBuffer
 
-trait BatchMutation {
-  private[cassie] def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
-}
-
 /**
  * A ColumnFamily-alike which batches mutations into a single API call.
  *
@@ -34,13 +30,10 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
 
   type This = BatchMutationBuilder[Key, Name, Value]
 
-  private[cassie] case class Insert(key: Key, column: Column[Name, Value])
-  private[cassie] case class Deletions(key: Key, columnNames: JSet[Name], timestamp: Long)
-
-  private val ops = new ListBuffer[Either[Insert, Deletions]]
-
   def insert(key: Key, column: Column[Name, Value]): This = synchronized {
-    ops.append(Left(Insert(key, column)))
+    val mutation = insertMutation(key, column)
+    val encodedKey = cf.keyCodec.encode(key)
+    putMutation(encodedKey, cf.name, mutation)
     this
   }
 
@@ -53,8 +46,11 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
   def removeColumns(key: Key, columns: JSet[Name]): This =
     removeColumns(key, columns, cf.clock.timestamp)
 
-  def removeColumns(key: Key, columns: JSet[Name], timestamp: Long): This = synchronized {
-    ops.append(Right(Deletions(key, columns, timestamp)))
+  def removeColumns(key: Key, columnNames: JSet[Name], timestamp: Long): This = synchronized {
+    val mutation = deleteMutation(key, columnNames, timestamp)
+    val encodedKey = cf.keyCodec.encode(key)
+
+    putMutation(encodedKey, cf.name, mutation)
     this
   }
 
@@ -67,48 +63,29 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
     }.flatten
   }
 
-  private[cassie] override def mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]] = synchronized {
-    val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]()
+  private[this] def insertMutation(key: Key, column: Column[Name, Value]): thrift.Mutation = {
+    val cosc = new thrift.ColumnOrSuperColumn
+    cosc.setColumn(
+      Column.convert(
+        cf.nameCodec,
+        cf.valueCodec,
+        cf.clock,
+        column
+      )
+    )
+    val mutation = new thrift.Mutation
+    mutation.setColumn_or_supercolumn(cosc)
+  }
 
-    ops.map {
-      case Left(insert) => {
-        val cosc = new thrift.ColumnOrSuperColumn
-        cosc.setColumn(
-          Column.convert(
-            cf.nameCodec,
-            cf.valueCodec,
-            cf.clock,
-            insert.column
-          )
-        )
-        val mutation = new thrift.Mutation
-        mutation.setColumn_or_supercolumn(cosc)
+  private[this] def deleteMutation(key: Key, columnNames: JSet[Name], timestamp: Long): thrift.Mutation = {
+    val pred = new thrift.SlicePredicate
+    pred.setColumn_names(cf.nameCodec.encodeSet(columnNames))
 
-        val encodedKey = cf.keyCodec.encode(insert.key)
+    val deletion = new thrift.Deletion()
+    deletion.setTimestamp(timestamp)
+    deletion.setPredicate(pred)
 
-        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
-        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
-        l.add(mutation)
-      }
-      case Right(deletions) => {
-        val timestamp = deletions.timestamp
-        val pred = new thrift.SlicePredicate
-        pred.setColumn_names(cf.nameCodec.encodeSet(deletions.columnNames))
-
-        val deletion = new thrift.Deletion()
-        deletion.setTimestamp(timestamp)
-        deletion.setPredicate(pred)
-
-        val mutation = new thrift.Mutation
-        mutation.setDeletion(deletion)
-
-        val encodedKey = cf.keyCodec.encode(deletions.key)
-
-        val h = Option(mutations.get(encodedKey)).getOrElse { val x = new JHashMap[String, JList[thrift.Mutation]]; mutations.put(encodedKey, x); x }
-        val l = Option(h.get(cf.name)).getOrElse { val y = new JArrayList[thrift.Mutation]; h.put(cf.name, y); y }
-        l.add(mutation)
-      }
-    }
-    mutations
+    val mutation = new thrift.Mutation
+    mutation.setDeletion(deletion)
   }
 }
