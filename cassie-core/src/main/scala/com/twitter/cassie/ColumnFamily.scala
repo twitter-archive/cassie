@@ -44,8 +44,8 @@ case class ColumnFamily[Key, Name, Value](
   nameCodec: Codec[Name],
   valueCodec: Codec[Value],
   stats: StatsReceiver,
-  readConsistency: ReadConsistency = ReadConsistency.Quorum,
-  writeConsistency: WriteConsistency = WriteConsistency.Quorum)
+  readConsistency: ReadConsistency = ReadConsistency.LocalQuorum,
+  writeConsistency: WriteConsistency = WriteConsistency.LocalQuorum)
 extends BaseColumnFamily(keyspace, name, provider, stats) {
 
   import ColumnFamily._
