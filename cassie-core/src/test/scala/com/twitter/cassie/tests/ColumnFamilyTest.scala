@@ -42,7 +42,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val columns1 = Seq(c(cf, "dj", "Armin van Buuren", 2293L))
 
       val pred1 = pred("", "", 2, Order.Normal)
-      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.LOCAL_QUORUM)).thenReturn(Future.value[ColumnList](columns1))
 
       val l = new ListBuffer[String]
       val done = cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
@@ -59,13 +59,13 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val columns3 = Seq(c(cf, "sofa", "plush", 2298L), c(cf, "xray", "ow", 2294L))
 
       val pred1 = pred("", "", 2, Order.Normal)
-      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.LOCAL_QUORUM)).thenReturn(Future.value[ColumnList](columns1))
 
       val pred2 = pred("name", "", 3, Order.Normal)
-      when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns2))
+      when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.LOCAL_QUORUM)).thenReturn(Future.value[ColumnList](columns2))
 
       val pred3 = pred("sofa", "", 3, Order.Normal)
-      when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns3))
+      when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.LOCAL_QUORUM)).thenReturn(Future.value[ColumnList](columns3))
 
       val l = new ListBuffer[String]
       val done = cf.columnsIteratee(2, key).foreach { c => l.append(c.name) }
@@ -84,7 +84,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
-      verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.LOCAL_QUORUM))
 
       pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name"))
     }
@@ -115,7 +115,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val cp = new thrift.ColumnParent("cf")
       val pred1 = pred("", "", Int.MaxValue, Order.Normal)
 
-      when(client.get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns))
+      when(client.get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.LOCAL_QUORUM)).thenReturn(Future.value[ColumnList](columns))
 
       cf.getRow("key")
     }
@@ -144,7 +144,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val cp = new thrift.ColumnParent("cf")
       val pred1 = pred(startColumnName, endColumnName, 100, Order.Reversed)
 
-      verify(client).get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.QUORUM)
+      verify(client).get_slice(b("key"), cp, pred1, thrift.ConsistencyLevel.LOCAL_QUORUM)
     }
   }
 
@@ -158,7 +158,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       val pred = ArgumentCaptor.forClass(classOf[thrift.SlicePredicate])
 
-      verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).get_slice(matchEq(b("key")), matchEq(cp), pred.capture, matchEq(thrift.ConsistencyLevel.LOCAL_QUORUM))
 
       pred.getValue.getColumn_names.map { Utf8Codec.decode(_) } must equal(List("name", "age"))
     }
@@ -292,7 +292,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnParent])
       val col = c(cf, "name", "Coda", 55).column
 
-      verify(client).insert(matchEq(b("key")), cp.capture, matchEq(col), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).insert(matchEq(b("key")), cp.capture, matchEq(col), matchEq(thrift.ConsistencyLevel.LOCAL_QUORUM))
 
       cp.getValue.getColumn_family must equal("cf")
     }
@@ -308,7 +308,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
       cf.removeRowWithTimestamp("key", 55)
 
       val cp = ArgumentCaptor.forClass(classOf[thrift.ColumnPath])
-      verify(client).remove(matchEq(b("key")), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.QUORUM))
+      verify(client).remove(matchEq(b("key")), cp.capture, matchEq(55L), matchEq(thrift.ConsistencyLevel.LOCAL_QUORUM))
 
       cp.getValue.column_family must equal("cf")
       cp.getValue.column must be(null)
