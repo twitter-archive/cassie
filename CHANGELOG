@@ -1,3 +1,11 @@
+# 0.20.0
+* added cassie-stress for doing micro-benchmarks
+* refactor to batch mutation builders to reduce garbage
+* sanity check on timeouts
+* changed default consistency level to LocalQuorum
+* finagle 3.0.0
+* util 3.0.0
+
 # 0.19.1
 * finagle 1.11.1
 
