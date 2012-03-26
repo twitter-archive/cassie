@@ -24,7 +24,8 @@ import com.twitter.logging.Logger
 import com.twitter.util.Future
 import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
-import java.util.{ ArrayList => JArrayList, HashMap => JHashMap, List => JList, Map => JMap, Set => JSet}
+import java.util.{ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet,
+  List => JList, Map => JMap, Set => JSet}
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._ // TODO get rid of this
 
@@ -238,6 +239,53 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
         rows
       }
     }.flatten
+  }
+
+  /**
+   * Get the column count for a specified row
+   * Note: for Cassandra versions < 1.0 this will load the entire row into memory on the server
+   * 1.0 adds paging support (see: CASSANDRA-2894)
+   *
+   * @return a Future that can contain [[Option[Integer]]] or [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+   *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or
+   *  [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+   * @param key the row to be counted
+   */
+  def getCount(key: Key) = {
+    val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
+    val cp = new thrift.ColumnParent(name)
+    val encodedKey = keyCodec.encode(key)
+    log.debug("get_count(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
+    withConnection("get_count", Map("key" -> encodedKey, "predicate" -> annPredCodec.encode(pred),
+      "readconsistency" -> readConsistency.toString)) {
+      _.get_count(encodedKey, cp, pred, readConsistency.level)
+    }
+  }
+
+  /**
+   * Get the column counts for a specified set of rows
+   * Note: for each row this will load the entire row into memory on the server
+   *
+   * @return a Future that can contain [[Map[Key, Integer]]] or [[org.apache.cassandra.finagle.thrift.TimedOutException]],
+   *  [[org.apache.cassandra.finagle.thrift.UnavailableException]] or
+   *  [[org.apache.cassandra.finagle.thrift.InvalidRequestException]]
+   * @param keys the rows to be counted
+   */
+  def multigetCounts(keys: JSet[Key]) = {
+    val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
+    val cp = new thrift.ColumnParent(name)
+    val encodedKeys = keyCodec.encodeSet(keys)
+    log.debug("multiget_count(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
+    withConnection("multiget_count", Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred),
+      "readconsistency" -> readConsistency.toString)) {
+      _.multiget_count(encodedKeys, cp, pred, readConsistency.level)
+    } map { result =>
+      val counts: JMap[Name, java.lang.Integer] = new JHashMap(result.size)
+      for (key <- asScalaIterable(result.keySet)) {
+        counts.put(nameCodec.decode(key), result.get(key))
+      }
+      counts
+    }
   }
 
   /**

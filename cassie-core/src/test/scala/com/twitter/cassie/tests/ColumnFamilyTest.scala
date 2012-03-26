@@ -283,6 +283,31 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
   }
 
+  describe("getting the number of columns in rows") {
+    type CountsMap = java.util.Map[java.nio.ByteBuffer, java.lang.Integer]
+    val (client, cf) = setup
+
+    it("returns the count for a row") {
+      when(client.get_count(matchEq(b("key1")), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).
+        thenReturn(Future.value[java.lang.Integer](2))
+
+      cf.getCount("key1")() must equal(2)
+    }
+
+    it("returns counts for a set of rows") {
+      val results = asJavaMap(Map[java.nio.ByteBuffer, java.lang.Integer](
+        b("key1") -> 2,
+        b("key2") -> 100))
+
+      when(client.multiget_count(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).
+        thenReturn(Future.value[CountsMap](results))
+
+      cf.multigetCounts(Set("key1", "key2"))() must equal(asJavaMap(Map(
+        "key1" -> 2,
+        "key2" -> 100)))
+    }
+  }
+
   describe("inserting a column") {
     val (client, cf) = setup
 

@@ -249,11 +249,18 @@ class FakeCassandra extends Cassandra.Iface {
     throw new UnsupportedOperationException
 
   def get_count(key: ByteBuffer, column_parent: ColumnParent, predicate: SlicePredicate,
-    consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+    consistency_level: ConsistencyLevel) = {
+    get_slice(key, column_parent, predicate, consistency_level).size
+  }
 
   def multiget_count(keys: JList[ByteBuffer], column_parent: ColumnParent,
-    predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
-    throw new UnsupportedOperationException
+    predicate: SlicePredicate, consistency_level: ConsistencyLevel) = {
+    val map = new JTreeMap[ByteBuffer, java.lang.Integer]
+    multiget_slice(keys, column_parent, predicate, consistency_level).foreach { case (key, slice) =>
+      map.put(key, slice.size)
+    }
+    map
+  }
 
   def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate,
     range: KeyRange, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException

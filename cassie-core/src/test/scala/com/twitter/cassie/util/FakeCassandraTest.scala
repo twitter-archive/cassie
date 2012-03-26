@@ -87,6 +87,34 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       response.size() must equal(2)
     }
 
+    it("should be able to get_count") {
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+      var batch = cf.batch
+      batch.insert("a", Column("b", "c"))
+      batch.insert("a", Column("d", "e"))
+      batch.insert("b", Column("d", "e"))
+      batch.execute()()
+      cf.getCount("a")() must equal(2)
+      cf.getCount("c")() must equal(0)
+    }
+
+    it("should be able to multiget_count") {
+      val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
+      var batch = cf.batch
+      batch.insert("a", Column("b", "c"))
+      batch.insert("a", Column("d", "e"))
+      batch.insert("b", Column("d", "e"))
+      batch.execute()()
+
+      val keys = new HashSet[String]
+      keys.add("a")
+      keys.add("b")
+      keys.add("c")
+      val counts = asJavaMap(Map("a" -> 2, "b" -> 1, "c" -> 0))
+
+      cf.multigetCounts(keys)() must equal(counts)
+    }
+
     it("should be able to batch mutate") {
       val cf = keyspace().columnFamily[String, String, String]("bar", Utf8Codec, Utf8Codec, Utf8Codec)
       var batch = cf.batch
