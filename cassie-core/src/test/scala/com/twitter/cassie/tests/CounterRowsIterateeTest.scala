@@ -21,12 +21,16 @@ import java.util.{ List => JList, HashSet => JHashSet, ArrayList => JArrayList }
 import org.apache.cassandra.finagle.thrift
 import org.mockito.Matchers.{ eq => matchEq }
 import org.mockito.Mockito.{ when, inOrder => inOrderVerify }
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ OneInstancePerTest, Spec }
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
+
+@RunWith(classOf[JUnitRunner])
 class CounterRowsIterateeTest extends Spec with MustMatchers with MockitoSugar
   with OneInstancePerTest with ColumnFamilyTestHelper {
 

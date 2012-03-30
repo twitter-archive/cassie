@@ -16,9 +16,13 @@ package com.twitter.cassie.tests
 
 import com.twitter.cassie.WriteConsistency
 import org.apache.cassandra.finagle.thrift.ConsistencyLevel
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 
+
+@RunWith(classOf[JUnitRunner])
 class WriteConsistencyTest extends Spec with MustMatchers {
   describe("a write consistency of Any") {
     it("is human readable") {

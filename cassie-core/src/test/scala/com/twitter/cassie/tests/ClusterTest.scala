@@ -16,10 +16,13 @@ package com.twitter.cassie.tests
 
 import com.twitter.cassie.Cluster
 import com.twitter.conversions.time._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Spec
 
+@RunWith(classOf[JUnitRunner])
 class ClusterTest extends Spec with MustMatchers with MockitoSugar {
   describe("a cluster") {
     val cluster = new Cluster("nonhost").mapHostsEvery(0.minutes)

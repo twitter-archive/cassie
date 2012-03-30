@@ -18,7 +18,10 @@ import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import com.twitter.cassie.codecs.ThriftCodec
 import com.twitter.cassie.test.thrift.Person
 import org.scalacheck._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class ThriftCodecTest extends CodecTest {
   describe("encoding a person") {
     it("must be decodable") {

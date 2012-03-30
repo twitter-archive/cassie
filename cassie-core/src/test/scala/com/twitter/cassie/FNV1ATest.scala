@@ -14,9 +14,12 @@
 
 package com.twitter.cassie
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 
+@RunWith(classOf[JUnitRunner])
 class FNV1ATest extends Spec with MustMatchers {
   describe("the FNV1A hash function") {
     it("matches up with existing implementations") {

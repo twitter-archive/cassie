@@ -17,7 +17,10 @@ package com.twitter.cassie.codecs.tests
 import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import com.twitter.cassie.codecs.Utf8Codec
 import org.scalacheck.Prop
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class Utf8CodecTest extends CodecTest {
   describe("encoding a string") {
     it("produces a UTF-8 encoded array of bytes") {

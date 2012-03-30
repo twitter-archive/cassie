@@ -27,10 +27,13 @@ import org.apache.cassandra.finagle.thrift
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.mockito.Matchers.{ anyObject }
 import org.mockito.Mockito._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ Spec, BeforeAndAfterEach }
 
+@RunWith(classOf[JUnitRunner])
 class KeyspaceTest extends Spec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
 
   case class DumbClientProvider(stc: ServiceToClient) extends ClientProvider {

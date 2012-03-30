@@ -17,13 +17,15 @@ package com.twitter.cassie.tests
 import com.twitter.cassie.codecs.Utf8Codec
 import com.twitter.cassie.util.ColumnFamilyTestHelper
 import com.twitter.cassie._
+import com.twitter.conversions.time._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Spec
 import scala.collection.JavaConversions._
 
-import com.twitter.conversions.time._
-
+@RunWith(classOf[JUnitRunner])
 class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   val (client, cf) = setup

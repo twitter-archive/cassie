@@ -16,9 +16,12 @@ package com.twitter.cassie.tests
 
 import com.twitter.cassie.Column
 import com.twitter.conversions.time._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 
+@RunWith(classOf[JUnitRunner])
 class ColumnTest extends Spec with MustMatchers {
   describe("a column with an explicit ttl") {
     val col = Column("id", 300).timestamp(400L).ttl(1.minute)

@@ -20,10 +20,13 @@ import com.twitter.logging.Logger
 import java.net.{ SocketAddress, InetSocketAddress }
 import org.apache.cassandra.finagle.thrift
 import org.mockito.Mockito.when
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterAll, Spec }
 import scala.collection.JavaConversions._
 
+@RunWith(classOf[JUnitRunner])
 class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
   // val server = new MockCassandraServer(MockCassandraServer.choosePort())
   // val ring = tr("start", "end", "c1.example.com") ::

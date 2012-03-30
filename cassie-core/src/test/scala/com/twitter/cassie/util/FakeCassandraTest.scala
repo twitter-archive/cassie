@@ -24,11 +24,14 @@ import java.net.{ SocketAddress, InetSocketAddress }
 import java.util.HashSet
 import org.apache.cassandra.finagle.thrift
 import org.mockito.Mockito.when
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
+@RunWith(classOf[JUnitRunner])
 class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   def factory() = new FakeCassandra
   var server: FakeCassandra = null

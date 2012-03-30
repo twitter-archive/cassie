@@ -1,0 +1,21 @@
+<project 
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.twitter</groupId>
+  <artifactId>cassie</artifactId>
+  <packaging>pom</packaging>
+  <version>0.20.1-SNAPSHOT</version>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>artifactory-snapshot</id>
+      <name>Twitter Artifactory Snapshots</name>
+      <url>http://artifactory.local.twitter.com/libs-snapshots-local</url>
+    </snapshotRepository>
+  </distributionManagement>
+  <modules>
+    <module>cassie-core</module>
+    <module>cassie-hadoop</module>
+    <module>cassie-serversets</module>
+    <module>cassie-stress</module>
+  </modules>
+</project>

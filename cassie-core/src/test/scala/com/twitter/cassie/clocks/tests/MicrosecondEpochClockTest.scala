@@ -14,10 +14,13 @@
 
 package com.twitter.cassie.clocks.tests
 
-import org.scalatest.Spec
-import org.scalatest.matchers.MustMatchers
 import com.twitter.cassie.clocks.MicrosecondEpochClock
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.matchers.MustMatchers
+import org.scalatest.Spec
 
+@RunWith(classOf[JUnitRunner])
 class MicrosecondEpochClockTest extends Spec with MustMatchers {
   describe("the microseconds clock") {
     it("uses the Java epoch milliseconds clock") {

@@ -17,13 +17,16 @@ package com.twitter.cassie.codecs.tests
 import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import java.nio.charset.Charset
 import java.nio.{ ByteBuffer, CharBuffer }
+import org.scalacheck.util.Buildable.buildableArray
 import org.scalacheck._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.prop.Checkers
 import org.scalatest.Spec
-import org.scalacheck.util.Buildable.buildableArray
 
 // lifted from http://blog.zilverline.com/2011/04/07/serializing-strings-unicode-and-randomized-testing-using-scalacheck/
+@RunWith(classOf[JUnitRunner])
 class CodecTest extends Spec with MustMatchers with Checkers {
   val UnicodeLeadingSurrogate = '\uD800' to '\uDBFF'
   val UnicodeTrailingSurrogate = '\uDC00' to '\uDFFF'

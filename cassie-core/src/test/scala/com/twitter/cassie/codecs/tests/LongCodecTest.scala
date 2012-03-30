@@ -14,9 +14,12 @@
 
 package com.twitter.cassie.codecs.tests
 
-import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
 import com.twitter.cassie.codecs.LongCodec
+import com.twitter.cassie.codecs.tests.ByteBufferLiteral._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class LongCodecTest extends CodecTest {
   describe("encoding a long") {
     it("produces a variable length zig-zag encoded array of bytes") {

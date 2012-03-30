@@ -24,12 +24,15 @@ import org.apache.cassandra.finagle.thrift
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{ any, eq => matchEq, anyListOf }
 import org.mockito.Mockito.{ when, verify }
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Spec
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
+@RunWith(classOf[JUnitRunner])
 class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   describe("page through columns") {

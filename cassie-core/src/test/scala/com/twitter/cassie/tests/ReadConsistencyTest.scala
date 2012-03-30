@@ -16,9 +16,12 @@ package com.twitter.cassie.tests
 
 import com.twitter.cassie.ReadConsistency
 import org.apache.cassandra.finagle.thrift.ConsistencyLevel
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.Spec
 
+@RunWith(classOf[JUnitRunner])
 class ReadConsistencyTest extends Spec with MustMatchers {
   describe("a read consistency of One") {
     it("is human readable") {
