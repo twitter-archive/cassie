@@ -29,9 +29,13 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
    * Submits the batch of operations, returning a future to allow blocking for success.
    */
   def execute(): Future[Void] = {
-    Future {
-      cf.batch(mutations)
-    }.flatten
+    if (mutations.isEmpty) {
+      Future.void()
+    } else {
+      Future {
+        cf.batch(mutations)
+      }.flatten
+    }
   }
 
   private[this] def insertMutation(key: Key, name: Name, column: CounterColumn[SubName]): thrift.Mutation = {
