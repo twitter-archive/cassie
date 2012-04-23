@@ -43,8 +43,13 @@ private[cassie] abstract class BaseColumnFamily(keyspace: String, cf: String, pr
     name: String,
     traceAnnotations: Map[String, Any] = Map.empty)(f: ServiceToClient => Future[T]): Future[T] = {
     timeFutureWithFailures(stats, name) {
-      trace(traceAnnotations)
-      provider.map(f)
+      // Associate trace annotations with the client span by using a terminal trace id
+      Trace.unwind {
+        Trace.setTerminalId(Trace.nextId)
+
+        trace(traceAnnotations)
+        provider.map(f)
+      }
     }
   }
 }
