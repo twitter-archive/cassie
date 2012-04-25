@@ -91,6 +91,7 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
     .timeout(timeout)
     .requestTimeout(requestTimeout)
     .connectTimeout(connectTimeout)
+    .tcpConnectTimeout(connectTimeout)
     .hostConnectionCoresize(minConnectionsPerHost)
     .hostConnectionLimit(maxConnectionsPerHost)
     .reportTo(statsReceiver)
