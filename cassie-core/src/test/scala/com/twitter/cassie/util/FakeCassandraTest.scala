@@ -14,22 +14,19 @@
 
 package com.twitter.cassie.tests.util
 
+import com.google.common.collect.Iterables
 import com.twitter.cassie.codecs._
-import com.twitter.cassie.connection.CCluster
 import com.twitter.cassie._
 import com.twitter.conversions.time._
 import com.twitter.finagle.stats.NullStatsReceiver
-import com.twitter.logging.Logger
-import java.net.{ SocketAddress, InetSocketAddress }
-import java.util.HashSet
-import org.apache.cassandra.finagle.thrift
-import org.mockito.Mockito.when
+import java.util.{Collections, HashSet}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 @RunWith(classOf[JUnitRunner])
 class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -164,6 +161,39 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       val row = cf.getRow("a")()
       row.size must equal(1)
       row must equal(Seq(("b", Seq(Column("c", "d").timestamp(2)))))
+    }
+
+    it("basic row scans") {
+      val cf = keyspace().columnFamily[String, String, String](
+        "bar", Utf8Codec, Utf8Codec, Utf8Codec)
+
+      val data = Map(
+        ("key1" -> "val1"),
+        ("key2" -> "val2"),
+        ("key3" -> "val3")
+      )
+      data foreach { case (k,v) =>
+        cf.insert(k, Column("columnName", v)).apply()
+      }
+
+      // insert a row from a different column name to test that kind of predicate filtering
+      cf.insert("otherKey", Column("otherColName", "otherValue")).apply()
+
+      val keyValues = mutable.Map[String, String]()
+      val iteratee = cf.rowsIteratee(
+        start = "", end = "", batchSize = 2, columnNames = Collections.singleton("columnName"))
+      val done = iteratee foreach { case (rowId, columns) =>
+        // we should only have one column (columnName)
+        val col: Column[String, String] = Iterables.getOnlyElement(columns)
+        col.name must equal("columnName")
+        keyValues += (rowId -> col.value)
+      }
+      done.apply(5.seconds)
+
+      data.size must equal(keyValues.size)
+      data foreach { case (k,v) =>
+        keyValues(k) must equal(v)
+      }
     }
   }
 }

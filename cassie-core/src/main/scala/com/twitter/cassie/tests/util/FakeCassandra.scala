@@ -18,15 +18,20 @@ import com.twitter.cassie.codecs.Utf8Codec
 import java.net.ServerSocket
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
-import java.util.{ HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSortedSet,
-  TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap }
-import java.util.Comparator
 import org.apache.cassandra.finagle.thrift._
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.{ TServerSocket, TFramedTransport }
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters.asScalaMapConverter
 import scala.math.min
+import org.apache.cassandra.finagle.thrift.ColumnParent
+import org.apache.cassandra.finagle.thrift.SlicePredicate
+import org.apache.cassandra.finagle.thrift.KeyRange
+import org.apache.cassandra.finagle.thrift.ConsistencyLevel
+import org.apache.cassandra.finagle.thrift.KeySlice
+import org.apache.cassandra.finagle.thrift.ColumnOrSuperColumn
+import java.util.{HashSet => JHashSet, ArrayList => JArrayList, SortedSet => JSortedSet, TreeMap => JTreeMap, List => JList, TreeSet => JTreeSet, Map => JMap, Comparator}
 
 object FakeCassandra {
   class ServerThread(cassandra: Cassandra.Iface) extends Thread {
@@ -262,8 +267,54 @@ class FakeCassandra extends Cassandra.Iface {
     map
   }
 
-  def get_range_slices(column_parent: ColumnParent, predicate: SlicePredicate,
-    range: KeyRange, consistency_level: ConsistencyLevel) = throw new UnsupportedOperationException
+  // todo: note this doesn't support SliceRange predicates on SlicePredicate
+  override def get_range_slices(
+    column_parent: ColumnParent,
+    predicate: SlicePredicate,
+    range: KeyRange,
+    consistency_level: ConsistencyLevel
+  ): JList[KeySlice] = {
+    if (predicate.isSetSlice_range()) {
+      throw new IllegalArgumentException("slice range predicates are not supported")
+    }
+
+    val colNamesPredicate: Option[JTreeSet[ByteBuffer]] = if (!predicate.isSetColumn_names()) {
+      None
+    } else {
+      val names = new JTreeSet[ByteBuffer](comparator)
+      names.addAll(predicate.getColumn_names)
+      Some(names)
+    }
+
+    // row id to map of column name to column value
+    val cf: JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]] = getColumnFamily(column_parent)
+
+    val keySlices: JList[KeySlice] = new JArrayList[KeySlice]
+
+    // iterate through and just keep the keys that match the key range
+    cf.asScala.foreach { case (rowId, columns) =>
+      if ((range.start_key.remaining() == 0 || comparator.compare(rowId, range.start_key) >= 0)
+         && (range.end_key.remaining() == 0 || comparator.compare(rowId, range.end_key) < 0))
+      {
+        val filtered = columns.asScala filter { case (k, v) =>
+          colNamesPredicate match {
+            case None =>
+              true
+            case Some(set) =>
+              set.contains(k)
+          }
+        }
+
+        if (filtered.size > 0) {
+          val ks = new KeySlice(
+            rowId,
+            new JArrayList[ColumnOrSuperColumn](filtered.values))
+          keySlices.add(ks)
+        }
+      }
+    }
+    keySlices
+  }
 
   def get_indexed_slices(column_parent: ColumnParent, index_clause: IndexClause,
     column_predicate: SlicePredicate, consistency_level: ConsistencyLevel) =
