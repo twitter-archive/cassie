@@ -172,7 +172,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
         ("key2" -> "val2"),
         ("key3" -> "val3")
       )
-      data foreach { case (k,v) =>
+      data foreach { case (k, v) =>
         cf.insert(k, Column("columnName", v)).apply()
       }
 
@@ -182,7 +182,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       val keyValues = mutable.Map[String, String]()
       val iteratee = cf.rowsIteratee(
         start = "", end = "", batchSize = 2, columnNames = Collections.singleton("columnName"))
-      val done = iteratee foreach { case (rowId, columns) =>
+      val done = iteratee foreach { (rowId, columns) =>
         // we should only have one column (columnName)
         val col: Column[String, String] = Iterables.getOnlyElement(columns)
         col.name must equal("columnName")
@@ -191,9 +191,44 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       done.apply(5.seconds)
 
       data.size must equal(keyValues.size)
-      data foreach { case (k,v) =>
+      data foreach { case (k, v) =>
         keyValues(k) must equal(v)
       }
+    }
+
+    it("should truncate") {
+      val cf = keyspace().columnFamily[String, String, String](
+        "bar", Utf8Codec, Utf8Codec, Utf8Codec)
+
+      // create the data
+      val data = Map(
+        ("key1" -> "val1"),
+        ("key2" -> "val2"),
+        ("key3" -> "val3")
+      )
+      data foreach { case (k, v) =>
+        cf.insert(k, Column("columnName", v)).apply()
+      }
+
+      // validate its there
+      data foreach { case (k, v) =>
+        val col = cf.getColumn(k, "columnName").apply(3.seconds)
+        col.get.value must equal(v)
+      }
+
+      cf.truncate()
+
+      // validate its all gone!
+      data foreach { case (k, v) =>
+        val col = cf.getColumn(k, "columnName").apply(3.seconds)
+        col must be (None)
+      }
+      // and iterate for good measure too
+      val iteratee = cf.rowsIteratee(
+        start = "", end = "", batchSize = 2, columnNames = Collections.singleton("columnName"))
+      var num = 0
+      iteratee foreach { (k, v) => num += 1 }
+      num must equal(0)
     }
   }
 }

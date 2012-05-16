@@ -340,7 +340,13 @@ class FakeCassandra extends Cassandra.Iface {
     }
   }
 
-  def truncate(cfname: String) = throw new UnsupportedOperationException
+  /**
+   * @param cfname name of the column family to truncate in the currentKeyspace.
+   */
+  override def truncate(cfname: String) {
+    val cf = getColumnFamily(cfname)
+    cf.clear()
+  }
 
   def add(key: ByteBuffer, column_parent: ColumnParent, column: CounterColumn,
     consistency_level: ConsistencyLevel) = synchronized {
