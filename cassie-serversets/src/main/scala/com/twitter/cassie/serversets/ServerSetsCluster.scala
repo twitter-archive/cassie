@@ -14,8 +14,11 @@
 
 package com.twitter.cassie
 
+import com.google.common.collect.ImmutableSet
+import com.twitter.thrift.ServiceInstance
 import com.twitter.cassie.connection.CCluster
 import com.twitter.common.quantity.{Amount, Time}
+import com.twitter.common.net.pool.DynamicHostSet._
 import com.twitter.common.zookeeper.{ServerSet, ServerSetImpl, ZooKeeperClient}
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
@@ -48,6 +51,10 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet)
  */
 class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver) extends ClusterBase {
 
+  private class NoOpMonitor extends HostChangeMonitor[ServiceInstance]  {
+    override def onChange(hostSet: ImmutableSet[ServiceInstance]) = {}
+  }
+
   /**
    * Convenience constructor that creates a ZooKeeperClient using the specified hosts and timeout.
    *
@@ -67,6 +74,7 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
    */
   def keyspace(name: String): KeyspaceBuilder = {
     val serverSet = new ServerSetImpl(zkClient, zkPath)
+    serverSet.monitor(new NoOpMonitor()) // will block until serverset ready
     val cluster = new ZookeeperServerSetCCluster(serverSet)
     KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name))
   }
