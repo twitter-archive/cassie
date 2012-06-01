@@ -19,25 +19,25 @@ import com.twitter.conversions.time._
 import com.twitter.logging.Logger
 import java.net.{ SocketAddress, InetSocketAddress }
 import org.apache.cassandra.finagle.thrift
-import org.mockito.Mockito.when
 import org.junit.runner.RunWith
+import org.mockito.Mockito.when
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{ BeforeAndAfterAll, Spec }
+import org.scalatest.{ BeforeAndAfterAll, FunSpec }
 import scala.collection.JavaConversions._
 
 @RunWith(classOf[JUnitRunner])
-class ClusterRemapperTest extends Spec with MustMatchers with BeforeAndAfterAll {
+class ClusterRemapperTest extends FunSpec with MustMatchers with BeforeAndAfterAll {
   // val server = new MockCassandraServer(MockCassandraServer.choosePort())
   // val ring = tr("start", "end", "c1.example.com") ::
   //   tr("start", "end", "c2.example.com") :: Nil
-  // when(server.cassandra.describe_ring("keyspace")).thenReturn(asJavaList(ring))
+  // when(server.cassandra.describe_ring("keyspace")).thenReturn(seqAsJavaList(ring))
   //
   // def tr(start: String, end: String, endpoints: String*): thrift.TokenRange = {
   //   val tr = new thrift.TokenRange()
   //   tr.setStart_token(start)
   //   tr.setEnd_token(end)
-  //   tr.setEndpoints(asJavaList(endpoints))
+  //   tr.setEndpoints(seqAsJavaList(endpoints))
   // }
   //
   // override protected def beforeAll() {

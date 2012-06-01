@@ -292,11 +292,11 @@ class FakeCassandra extends Cassandra.Iface {
     val keySlices: JList[KeySlice] = new JArrayList[KeySlice]
 
     // iterate through and just keep the keys that match the key range
-    cf.asScala.foreach { case (rowId, columns) =>
+    cf.foreach { case (rowId, columns) =>
       if ((range.start_key.remaining() == 0 || comparator.compare(rowId, range.start_key) >= 0)
          && (range.end_key.remaining() == 0 || comparator.compare(rowId, range.end_key) < 0))
       {
-        val filtered = columns.asScala filter { case (k, v) =>
+        val filtered = columns filter { case (k, v) =>
           colNamesPredicate match {
             case None =>
               true

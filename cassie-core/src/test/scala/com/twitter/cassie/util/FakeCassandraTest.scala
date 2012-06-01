@@ -29,7 +29,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable
 
 @RunWith(classOf[JUnitRunner])
-class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class FakeCassandraTest extends FunSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
   def factory() = new FakeCassandra
   var server: FakeCassandra = null
   var client: Cluster = null
@@ -110,7 +110,7 @@ class FakeCassandraTest extends Spec with MustMatchers with BeforeAndAfterAll wi
       keys.add("a")
       keys.add("b")
       keys.add("c")
-      val counts = asJavaMap(Map("a" -> 2, "b" -> 1, "c" -> 0))
+      val counts = mapAsJavaMap(Map("a" -> 2, "b" -> 1, "c" -> 0))
 
       cf.multigetCounts(keys)() must equal(counts)
     }

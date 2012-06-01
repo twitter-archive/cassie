@@ -68,8 +68,8 @@ public final class CassieRun {
     info("getting a set of columns from a set of keys: " + cass.multigetColumns(Set("yay for me", "yay for you"), Set("name", "motto")).apply());
 
     info("Iterating!");
-    Future f = cass.rowsIteratee(2).foreach(new Function2<String, List<Column<String, String>>, Object>() {
-      public Object apply(String key, List<Column<String,String>> columns) {
+    Future f = cass.rowsIteratee(2).foreach(new scala.runtime.AbstractFunction2<String, List<Column<String, String>>, scala.runtime.BoxedUnit>() {
+      public scala.runtime.BoxedUnit apply(String key, List<Column<String,String>> columns) {
         info("Found: " + key);
         return null;
       }
@@ -77,8 +77,8 @@ public final class CassieRun {
 
     f.apply();
 
-    Future f2 = cass.columnsIteratee(2, "yay for me").foreach(new Function<Column<String, String>, Object>() {
-      public Object apply(Column<String,String> column){
+    Future f2 = cass.columnsIteratee(2, "yay for me").foreach(new Function<Column<String, String>, scala.runtime.BoxedUnit>() {
+      public scala.runtime.BoxedUnit apply(Column<String,String> column){
         info("Found Columns Iteratee: " + column);
         return null;
       }

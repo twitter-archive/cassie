@@ -30,7 +30,7 @@ class SuperCounterBatchMutationBuilder[Key, Name, SubName](cf: SuperCounterColum
    */
   def execute(): Future[Void] = {
     if (mutations.isEmpty) {
-      Future.void()
+      Future.Void
     } else {
       Future {
         cf.batch(mutations)

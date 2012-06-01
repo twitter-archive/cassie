@@ -78,11 +78,11 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       val rows: JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]] = new JHashMap(result.size)
-      for (rowEntry <- asScalaIterable(result.entrySet)) {
+      for (rowEntry <- collectionAsScalaIterable(result.entrySet)) {
         val sCols: JMap[Name, JMap[SubName, CounterColumn[SubName]]] = new JHashMap(rowEntry.getValue.size)
-        for (scol <- asScalaIterable(rowEntry.getValue)) {
+        for (scol <- collectionAsScalaIterable(rowEntry.getValue)) {
           val cols: JMap[SubName, CounterColumn[SubName]] = new JHashMap(scol.getCounter_super_column.columns.size)
-          for (counter <- asScalaIterable(scol.getCounter_super_column().columns)) {
+          for (counter <- collectionAsScalaIterable(scol.getCounter_super_column().columns)) {
             val col = CounterColumn.convert(subNameCodec, counter)
             cols.put(col.name, col)
           }

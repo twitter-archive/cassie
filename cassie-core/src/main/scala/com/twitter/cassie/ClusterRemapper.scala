@@ -21,13 +21,11 @@ import com.twitter.concurrent.Spool
 import com.twitter.finagle.builder.{Cluster => FCluster}
 import com.twitter.finagle.ServiceFactory
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
-import com.twitter.finagle.util.Timer
 import com.twitter.finagle.WriteException
 import com.twitter.logging.Logger
-import com.twitter.util.{ Duration, Future, Promise, Return, Time }
+import com.twitter.util.{ Duration, Future, Promise, Return, Time, JavaTimer }
 import java.io.IOException
 import java.net.{ InetSocketAddress, SocketAddress }
-import org.jboss.netty.util.HashedWheelTimer
 import scala.collection.JavaConversions._
 import scala.collection.SeqProxy
 import scala.util.parsing.json.JSON
@@ -50,14 +48,14 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
 
   // Timer keeps updating the host list. Variables "hosts" and "changes" together reflect the cluster consistently
   // at any time
-  private[cassie] var timer = new Timer(new HashedWheelTimer())
+  private[cassie] var timer = new JavaTimer(true)
   timer.schedule(Time.now, remapPeriod) {
     fetchHosts(hosts) onSuccess { ring =>
       log.debug("Received: %s", ring)
       val (added, removed) = synchronized {
         val oldSet = hosts.toSet
         hosts = ring.flatMap { h =>
-          asScalaIterable(h.endpoints).map {
+          collectionAsScalaIterable(h.endpoints).map {
             new InetSocketAddress(_, port)
           }
         }.toSeq

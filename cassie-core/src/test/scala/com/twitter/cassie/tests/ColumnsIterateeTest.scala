@@ -25,12 +25,12 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{ OneInstancePerTest, Spec }
+import org.scalatest.{ OneInstancePerTest, FunSpec }
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnitRunner])
-class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper {
+class ColumnsIterateeTest extends FunSpec with MustMatchers with MockitoSugar with OneInstancePerTest with ColumnFamilyTestHelper {
 
   def co(name: String, value: String, timestamp: Long) = {
     new Column(name, value, Some(timestamp), None)
@@ -52,14 +52,14 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
   describe("iterating through the columns of a row") {
     val (client, cf) = setup
 
-    val columns = asJavaList(List(
+    val columns = seqAsJavaList(List(
       co("first", "1", 1),
       co("second", "2", 2),
       co("third", "3", 3),
       co("fourth", "4", 4)
     ))
 
-    val coscs = asJavaList(columns.map { c => cosc(cf, c) })
+    val coscs = seqAsJavaList(columns.map { c => cosc(cf, c) })
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))).thenReturn(
@@ -68,7 +68,7 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))).thenReturn(
-      Future.value(asJavaList(List(coscs.get(3))))
+      Future.value(seqAsJavaList(List(coscs.get(3))))
     )
 
     val data2 = new ListBuffer[Column[String, String]]()
@@ -79,7 +79,7 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
     f()
 
     it("does a buffered iteration over the columns in the rows in the range") {
-      asJavaList(data2) must equal(columns)
+      seqAsJavaList(data2) must equal(columns)
     }
 
     it("requests data using the last key as the start key until the end is detected") {
@@ -95,28 +95,28 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
   describe("iterating through the columns of a row, with a limit and reversed order") {
     val (client, cf) = setup
 
-    val columns = asJavaList(List(
+    val columns = seqAsJavaList(List(
       co("first", "1", 1),
       co("second", "2", 2),
       co("third", "3", 3),
       co("fourth", "4", 4)
     ))
 
-    val expectedColumns = asJavaList(List(
+    val expectedColumns = seqAsJavaList(List(
       co("third", "3", 3),
       co("second", "2", 2)
     ))
 
-    val coscs = asJavaList(columns.map { c => cosc(cf, c) })
+    val coscs = seqAsJavaList(columns.map { c => cosc(cf, c) })
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("third", "", 1, Order.Reversed)), matchEq(cf.readConsistency.level))).thenReturn(
-      Future.value(asJavaList(List(coscs.get(2))))
+      Future.value(seqAsJavaList(List(coscs.get(2))))
     )
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("third", "", 2, Order.Reversed)), matchEq(cf.readConsistency.level))).thenReturn(
-      Future.value(asJavaList(List(coscs.get(2), coscs.get(1))))
+      Future.value(seqAsJavaList(List(coscs.get(2), coscs.get(1))))
     )
 
     val data2 = new ListBuffer[Column[String, String]]()
@@ -127,18 +127,18 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
     f()
 
     it("does a buffered iteration over the columns in the rows in the range") {
-      asJavaList(data2) must equal(expectedColumns)
+      seqAsJavaList(data2) must equal(expectedColumns)
     }
   }
 
   describe("iterating through the columns of a row, skipping anything outside start and end") {
     val (client, cf) = setup
 
-    val columns1 = asJavaList(List(
+    val columns1 = seqAsJavaList(List(
       co("first", "1", 1),
       co("second", "2", 2)
     ))
-    val columns2 = asJavaList(List(
+    val columns2 = seqAsJavaList(List(
       co("second", "2", 2),
       co("third", "3", 3),
       co("fourth", "4", 4)
@@ -150,8 +150,8 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
       co("fourth", "4", 4)
     )
 
-    val coscs1 = asJavaList(columns1.map { c => cosc(cf, c) })
-    val coscs2 = asJavaList(columns2.map { c => cosc(cf, c) })
+    val coscs1 = seqAsJavaList(columns1.map { c => cosc(cf, c) })
+    val coscs2 = seqAsJavaList(columns2.map { c => cosc(cf, c) })
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("first", "fourth", 2)), matchEq(cf.readConsistency.level))).thenReturn(
@@ -165,7 +165,7 @@ class ColumnsIterateeTest extends Spec with MustMatchers with MockitoSugar with 
 
     when(client.get_slice(matchEq(b("bar")), anyColumnParent,
       matchEq(pred("fourth", "fourth", 3)), matchEq(cf.readConsistency.level))).thenReturn(
-      Future.value(asJavaList(List(coscs2.get(2))))
+      Future.value(seqAsJavaList(List(coscs2.get(2))))
     )
 
     val data2 = new ListBuffer[Column[String, String]]()

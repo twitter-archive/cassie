@@ -163,7 +163,7 @@ case class CounterColumnFamily[Key, Name](
     columnName: Name): Future[JMap[Key, CounterColumn[Name]]] = {
     multigetColumns(keys, singletonJSet(columnName)).map { rows =>
       val cols: JMap[Key, CounterColumn[Name]] = new JHashMap(rows.size)
-      for (rowEntry <- asScalaIterable(rows.entrySet))
+      for (rowEntry <- collectionAsScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty) {
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
         }
@@ -195,9 +195,9 @@ case class CounterColumnFamily[Key, Name](
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       val rows: JMap[Key, JMap[Name, CounterColumn[Name]]] = new JHashMap(result.size)
-      for (rowEntry <- asScalaIterable(result.entrySet)) {
+      for (rowEntry <- collectionAsScalaIterable(result.entrySet)) {
         val cols: JMap[Name, CounterColumn[Name]] = new JHashMap(rowEntry.getValue.size)
-        for (counter <- asScalaIterable(rowEntry.getValue)) {
+        for (counter <- collectionAsScalaIterable(rowEntry.getValue)) {
           val col = CounterColumn.convert(nameCodec, counter.getCounter_column)
           cols.put(col.name, col)
         }

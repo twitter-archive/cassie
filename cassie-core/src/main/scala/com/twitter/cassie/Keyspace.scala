@@ -73,7 +73,7 @@ class Keyspace(val name: String, val provider: ClientProvider, val stats: StatsR
    * @param writeConsistency to write this at
    */
   def execute(batches: Iterable[BatchMutation], writeConsistency: WriteConsistency): Future[Void] = {
-    if (batches.size == 0) return Future.void
+    if (batches.size == 0) return Future.Void
 
     val mutations = new JHashMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]
 

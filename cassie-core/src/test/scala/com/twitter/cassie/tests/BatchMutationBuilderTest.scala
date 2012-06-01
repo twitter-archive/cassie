@@ -22,11 +22,11 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import scala.collection.JavaConversions._
 
 @RunWith(classOf[JUnitRunner])
-class BatchMutationBuilderTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+class BatchMutationBuilderTest extends FunSpec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   val (client, cf) = setup
 

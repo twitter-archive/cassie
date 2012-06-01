@@ -53,7 +53,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) exten
    * @param seedHosts A collection of seed host addresses. The port number is assumed to be 9160
    */
   def this(seedHosts: java.util.Collection[String]) =
-    this(asScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver)
+    this(collectionAsScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver)
 
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.

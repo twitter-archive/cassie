@@ -181,7 +181,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   def multigetColumn(keys: JSet[Key], columnName: Name): Future[JMap[Key, Column[Name, Value]]] = {
     multigetColumns(keys, singletonJSet(columnName)).map { rows =>
       val cols: JMap[Key, Column[Name, Value]] = new JHashMap(rows.size)
-      for (rowEntry <- asScalaIterable(rows.entrySet))
+      for (rowEntry <- collectionAsScalaIterable(rows.entrySet))
         if (!rowEntry.getValue.isEmpty)
           cols.put(rowEntry.getKey, rowEntry.getValue.get(columnName))
       cols
@@ -228,9 +228,9 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
         _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
       }.map { result =>
         val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
-        for (rowEntry <- asScalaIterable(result.entrySet)) {
+        for (rowEntry <- collectionAsScalaIterable(result.entrySet)) {
           val cols = new JHashMap[Name, Column[Name, Value]](rowEntry.getValue.size)
-          for (cosc <- asScalaIterable(rowEntry.getValue)) {
+          for (cosc <- collectionAsScalaIterable(rowEntry.getValue)) {
             val col = Column.convert(nameCodec, valueCodec, cosc)
             cols.put(col.name, col)
           }
@@ -281,7 +281,7 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
       _.multiget_count(encodedKeys, cp, pred, readConsistency.level)
     } map { result =>
       val counts: JMap[Name, java.lang.Integer] = new JHashMap(result.size)
-      for (key <- asScalaIterable(result.keySet)) {
+      for (key <- collectionAsScalaIterable(result.keySet)) {
         counts.put(nameCodec.decode(key), result.get(key))
       }
       counts

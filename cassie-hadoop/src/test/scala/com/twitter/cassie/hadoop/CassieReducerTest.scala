@@ -33,7 +33,7 @@ import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.{ Mapper, Reducer, Job }
 import org.apache.hadoop.util._
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import scala.math._
@@ -108,7 +108,7 @@ class TestScript(port: Int) extends Configured with Tool {
 
 }
 
-class CassieReducerTest extends Spec with MustMatchers {
+class CassieReducerTest extends FunSpec with MustMatchers {
 
   describe("CassieReducer") {
     it("should go through a lifecycle") {

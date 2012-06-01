@@ -23,11 +23,11 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.prop.Checkers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 
 // lifted from http://blog.zilverline.com/2011/04/07/serializing-strings-unicode-and-randomized-testing-using-scalacheck/
 @RunWith(classOf[JUnitRunner])
-class CodecTest extends Spec with MustMatchers with Checkers {
+class CodecTest extends FunSpec with MustMatchers with Checkers {
   val UnicodeLeadingSurrogate = '\uD800' to '\uDBFF'
   val UnicodeTrailingSurrogate = '\uDC00' to '\uDFFF'
   val UnicodeBasicMultilingualPlane = ('\u0000' to '\uFFFF').diff(UnicodeLeadingSurrogate).diff(UnicodeTrailingSurrogate)

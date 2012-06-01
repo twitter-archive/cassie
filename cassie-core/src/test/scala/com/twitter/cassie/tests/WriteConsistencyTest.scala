@@ -19,11 +19,11 @@ import org.apache.cassandra.finagle.thrift.ConsistencyLevel
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 
 
 @RunWith(classOf[JUnitRunner])
-class WriteConsistencyTest extends Spec with MustMatchers {
+class WriteConsistencyTest extends FunSpec with MustMatchers {
   describe("a write consistency of Any") {
     it("is human readable") {
       WriteConsistency.Any.toString must equal("WriteConsistency.Any")

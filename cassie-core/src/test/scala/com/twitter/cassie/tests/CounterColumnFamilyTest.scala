@@ -28,12 +28,12 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnitRunner])
-class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+class CounterColumnFamilyTest extends FunSpec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   describe("getting a columns for a key") {
     val (client, cf) = setupCounters
@@ -86,7 +86,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
-      cf.getRow("key")() must equal(asJavaMap(Map(
+      cf.getRow("key")() must equal(mapAsJavaMap(Map(
         "cats" -> CounterColumn("cats", 2L),
         "dogs" -> CounterColumn("dogs", 4L)
       )))
@@ -114,7 +114,7 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
-      cf.getColumns("key", Set("cats", "dogs"))() must equal(asJavaMap(Map(
+      cf.getColumns("key", Set("cats", "dogs"))() must equal(mapAsJavaMap(Map(
         "cats" -> CounterColumn("cats", 2L),
         "dogs" -> CounterColumn("dogs", 3L)
       )))
@@ -138,13 +138,13 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("us") -> asJavaList(Seq(cc("cats", 2L))),
-        b("jp") -> asJavaList(Seq(cc("cats", 4L)))
+        b("us") -> seqAsJavaList(Seq(cc("cats", 2L))),
+        b("jp") -> seqAsJavaList(Seq(cc("cats", 4L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("us", "jp"), "cats")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("us", "jp"), "cats")() must equal(mapAsJavaMap(Map(
         "us" -> CounterColumn("cats", 2L),
         "jp" -> CounterColumn("cats", 4L)
       )))
@@ -152,13 +152,13 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("does not explode when the column doesn't exist for a key") {
       val results = Map(
-        b("us") -> asJavaList(Seq(cc("cats", 2L))),
-        b("jp") -> (asJavaList(Seq()): ColumnList)
+        b("us") -> seqAsJavaList(Seq(cc("cats", 2L))),
+        b("jp") -> (seqAsJavaList(Seq()): ColumnList)
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("us", "jp"), "cats")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("us", "jp"), "cats")() must equal(mapAsJavaMap(Map(
         "us" -> CounterColumn("cats", 2L)
       )))
     }
@@ -181,20 +181,20 @@ class CounterColumnFamilyTest extends Spec with MustMatchers with MockitoSugar w
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("us") -> asJavaList(Seq(cc("cats", 2L),
+        b("us") -> seqAsJavaList(Seq(cc("cats", 2L),
           cc("dogs", 9L))),
-        b("jp") -> asJavaList(Seq(cc("cats", 4L),
+        b("jp") -> seqAsJavaList(Seq(cc("cats", 4L),
           cc("dogs", 1L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumns(Set("us", "jp"), Set("cats", "dogs"))() must equal(asJavaMap(Map(
-        "us" -> asJavaMap(Map(
+      cf.multigetColumns(Set("us", "jp"), Set("cats", "dogs"))() must equal(mapAsJavaMap(Map(
+        "us" -> mapAsJavaMap(Map(
           "cats" -> CounterColumn("cats", 2L),
           "dogs" -> CounterColumn("dogs", 9L)
         )),
-        "jp" -> asJavaMap(Map(
+        "jp" -> mapAsJavaMap(Map(
           "cats" -> CounterColumn("cats", 4L),
           "dogs" -> CounterColumn("dogs", 1L)
         ))

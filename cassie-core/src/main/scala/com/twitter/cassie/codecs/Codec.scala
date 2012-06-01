@@ -15,7 +15,7 @@
 package com.twitter.cassie.codecs
 
 import java.nio.ByteBuffer
-import scala.collection.JavaConversions.asScalaIterable
+import scala.collection.JavaConversions.collectionAsScalaIterable
 import java.util.{ ArrayList => JArrayList, Set => JSet, List => JList }
 
 /**
@@ -38,7 +38,7 @@ trait Codec[A] {
 
   def encodeSet(values: JSet[A]): JList[ByteBuffer] = {
     val output = new JArrayList[ByteBuffer](values.size)
-    for (value <- asScalaIterable(values))
+    for (value <- collectionAsScalaIterable(values))
       output.add(encode(value))
     output
   }

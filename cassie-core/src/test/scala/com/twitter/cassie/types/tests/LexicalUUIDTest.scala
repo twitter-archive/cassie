@@ -19,10 +19,10 @@ import com.twitter.cassie.types.LexicalUUID
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 
 @RunWith(classOf[JUnitRunner])
-class LexicalUUIDTest extends Spec with MustMatchers {
+class LexicalUUIDTest extends FunSpec with MustMatchers {
   describe("a lexical UUID") {
     val uuid = LexicalUUID(0xFF9281, 0xA0091991)
 

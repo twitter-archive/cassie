@@ -28,12 +28,12 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnitRunner])
-class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
+class ColumnFamilyTest extends FunSpec with MustMatchers with MockitoSugar with ColumnFamilyTestHelper {
 
   describe("page through columns") {
     val (client, cf) = setup
@@ -129,7 +129,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
-      cf.getRow("key")() must equal(asJavaMap(Map(
+      cf.getRow("key")() must equal(mapAsJavaMap(Map(
         "name" -> Column("name", "Coda").timestamp(2292L),
         "age" -> Column("age", "old").timestamp(11919L)
       )))
@@ -172,7 +172,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
       when(client.get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[ColumnList](columns))
 
-      cf.getColumns("key", Set("name", "age"))() must equal(asJavaMap(Map(
+      cf.getColumns("key", Set("name", "age"))() must equal(mapAsJavaMap(Map(
         "name" -> Column("name", "Coda").timestamp(2292L),
         "age" -> Column("age", "old").timestamp(11919L)
       )))
@@ -196,13 +196,13 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("key1") -> asJavaList(Seq(c(cf, "name", "Coda", 2292L))),
-        b("key2") -> asJavaList(Seq(c(cf, "name", "Niki", 422L)))
+        b("key1") -> seqAsJavaList(Seq(c(cf, "name", "Coda", 2292L))),
+        b("key2") -> seqAsJavaList(Seq(c(cf, "name", "Niki", 422L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(mapAsJavaMap(Map(
         "key1" -> Column("name", "Coda").timestamp(2292L),
         "key2" -> Column("name", "Niki").timestamp(422L)
       )))
@@ -210,13 +210,13 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
     it("does not explode when the column doesn't exist for a key") {
       val results = Map(
-        b("key1") -> asJavaList(Seq(c(cf, "name", "Coda", 2292L))),
-        b("key2") -> (asJavaList(Seq()): ColumnList)
+        b("key1") -> seqAsJavaList(Seq(c(cf, "name", "Coda", 2292L))),
+        b("key2") -> (seqAsJavaList(Seq()): ColumnList)
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(asJavaMap(Map(
+      cf.multigetColumn(Set("key1", "key2"), "name")() must equal(mapAsJavaMap(Map(
         "key1" -> Column("name", "Coda").timestamp(2292L)
       )))
     }
@@ -239,20 +239,20 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("key1") -> asJavaList(Seq(c(cf, "name", "Coda", 2292L),
+        b("key1") -> seqAsJavaList(Seq(c(cf, "name", "Coda", 2292L),
           c(cf, "age", "old", 11919L))),
-        b("key2") -> asJavaList(Seq(c(cf, "name", "Niki", 422L),
+        b("key2") -> seqAsJavaList(Seq(c(cf, "name", "Niki", 422L),
           c(cf, "age", "lithe", 129L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(asJavaMap(Map(
-        "key1" -> asJavaMap(Map(
+      cf.multigetColumns(Set("key1", "key2"), Set("name", "age"))() must equal(mapAsJavaMap(Map(
+        "key1" -> mapAsJavaMap(Map(
           "name" -> Column("name", "Coda").timestamp(2292L),
           "age" -> Column("age", "old").timestamp(11919L)
         )),
-        "key2" -> asJavaMap(Map(
+        "key2" -> mapAsJavaMap(Map(
           "name" -> Column("name", "Niki").timestamp(422L),
           "age" -> Column("age", "lithe").timestamp(129L)
         ))
@@ -265,20 +265,20 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
     it("returns a map of keys to a map of column names to columns") {
       val results = Map(
-        b("key1") -> asJavaList(Seq(c(cf, "name", "Coda", 2292L),
+        b("key1") -> seqAsJavaList(Seq(c(cf, "name", "Coda", 2292L),
           c(cf, "age", "old", 11919L))),
-        b("key2") -> asJavaList(Seq(c(cf, "name", "Niki", 422L),
+        b("key2") -> seqAsJavaList(Seq(c(cf, "name", "Niki", 422L),
           c(cf, "age", "lithe", 129L)))
       )
 
       when(client.multiget_slice(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).thenReturn(Future.value[KeyColumnMap](results))
 
-      cf.multigetRows(Set("key1", "key2"), None, None, Order.Normal, 100)() must equal(asJavaMap(Map(
-        "key1" -> asJavaMap(Map(
+      cf.multigetRows(Set("key1", "key2"), None, None, Order.Normal, 100)() must equal(mapAsJavaMap(Map(
+        "key1" -> mapAsJavaMap(Map(
           "name" -> Column("name", "Coda").timestamp(2292L),
           "age" -> Column("age", "old").timestamp(11919L)
         )),
-        "key2" -> asJavaMap(Map(
+        "key2" -> mapAsJavaMap(Map(
           "name" -> Column("name", "Niki").timestamp(422L),
           "age" -> Column("age", "lithe").timestamp(129L)
         ))
@@ -298,14 +298,14 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
     }
 
     it("returns counts for a set of rows") {
-      val results = asJavaMap(Map[java.nio.ByteBuffer, java.lang.Integer](
+      val results = mapAsJavaMap(Map[java.nio.ByteBuffer, java.lang.Integer](
         b("key1") -> 2,
         b("key2") -> 100))
 
       when(client.multiget_count(anyListOf(classOf[ByteBuffer]), anyColumnParent, anySlicePredicate, anyConsistencyLevel)).
         thenReturn(Future.value[CountsMap](results))
 
-      cf.multigetCounts(Set("key1", "key2"))() must equal(asJavaMap(Map(
+      cf.multigetCounts(Set("key1", "key2"))() must equal(mapAsJavaMap(Map(
         "key1" -> 2,
         "key2" -> 100)))
     }
@@ -331,7 +331,7 @@ class ColumnFamilyTest extends Spec with MustMatchers with MockitoSugar with Col
 
     it("performs a remove") {
       when(client.remove(anyByteBuffer(), anyColumnPath(), anyInt(), anyConsistencyLevel()))
-        .thenReturn(Future.void)
+        .thenReturn(Future.Void)
 
       cf.removeRowWithTimestamp("key", 55)
 

@@ -59,7 +59,7 @@ class BatchMutationBuilder[Key, Name, Value](private[cassie] val cf: ColumnFamil
    */
   def execute(): Future[Void] = {
     if (mutations.isEmpty) {
-      Future.void()
+      Future.Void
     } else {
       Future {
         cf.batch(mutations)
