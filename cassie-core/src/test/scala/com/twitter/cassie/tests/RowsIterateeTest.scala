@@ -103,4 +103,29 @@ class RowsIterateeTest extends FunSpec with MustMatchers with MockitoSugar with 
       inOrder.verify(client).get_range_slices(matchEq(cp), anySlicePredicate, matchEq(keyRange("start3", "end", 6)), anyConsistencyLevel)
     }
   }
+
+  describe("map") {
+    val (client, cf) = setup
+
+    when(client.get_range_slices(anyColumnParent, anySlicePredicate, anyKeyRange, anyConsistencyLevel)).thenReturn(
+      Future.value(
+        seqAsJavaList(List(
+          keySlice(cf, "start", List(co("name", "value", 1), co("name1", "value1", 2))),
+          keySlice(cf, "start1", List(co("name", "value", 1), co("name1", "value1", 2))),
+          keySlice(cf, "start2", List(co("name", "value", 1), co("name1", "value1", 2))),
+          keySlice(cf, "start3", List(co("name", "value", 1), co("name1", "value1", 2)))))),
+      Future.value(seqAsJavaList(List(keySlice(cf, "start3", List(co("name", "value", 1), co("name1", "value1", 2))))))
+    )
+
+    val data = cf.rowsIteratee("start", "end", 5, new JHashSet()).map{(k, c) => (k + "foo", c)}()
+
+    it("it maps over the data") {
+      data must equal(ListBuffer(
+        ("startfoo", seqAsJavaList(List(co("name", "value", 1), co("name1", "value1", 2)))),
+        ("start1foo", seqAsJavaList(List(co("name", "value", 1), co("name1", "value1", 2)))),
+        ("start2foo", seqAsJavaList(List(co("name", "value", 1), co("name1", "value1", 2)))),
+        ("start3foo", seqAsJavaList(List(co("name", "value", 1), co("name1", "value1", 2))))
+      ))
+    }
+  }
 }

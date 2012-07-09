@@ -18,6 +18,7 @@ import com.twitter.util.{ Future, Promise }
 import java.util.{ Map => JMap, List => JList, ArrayList => JArrayList }
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
+import scala.collection.mutable.Buffer
 
 /**
  * Async iteration across the columns for a given key.
@@ -41,6 +42,13 @@ trait ColumnsIteratee[Key, Name, Value] {
     val p = new Promise[Unit]
     next map (_.visit(p, f)) handle { case e => p.setException(e) }
     p
+  }
+
+  def map[A](f: Column[Name, Value] => A): Future[Seq[A]] = {
+    val buffer = Buffer.empty[A]
+    foreach { column =>
+      buffer.append(f(column))
+    }.map { _ => buffer }
   }
 
   def visit(p: Promise[Unit], f: Column[Name, Value] => Unit): Unit

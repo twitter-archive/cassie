@@ -188,4 +188,33 @@ class ColumnsIterateeTest extends FunSpec with MustMatchers with MockitoSugar wi
       verify(client, atMost(3)).get_slice(anyByteBuffer, anyColumnParent, anySlicePredicate, anyConsistencyLevel)
     }
   }
+
+  describe("map") {
+    val (client, cf) = setup
+
+    val columns = seqAsJavaList(List(
+      co("first", "1", 1),
+      co("second", "2", 2),
+      co("third", "3", 3),
+      co("fourth", "4", 4)
+    ))
+
+    val coscs = seqAsJavaList(columns.map { c => cosc(cf, c) })
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+      matchEq(pred("", "", 4)), matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(coscs)
+    )
+
+    when(client.get_slice(matchEq(b("bar")), anyColumnParent,
+      matchEq(pred("fourth", "", 5)), matchEq(cf.readConsistency.level))).thenReturn(
+      Future.value(seqAsJavaList(List(coscs.get(3))))
+    )
+
+    val data = cf.columnsIteratee(4, "bar").map { column => column }.apply
+
+    it("does a buffered iteration over the columns in the rows in the range") {
+      seqAsJavaList(data) must equal(columns)
+    }
+  }
 }

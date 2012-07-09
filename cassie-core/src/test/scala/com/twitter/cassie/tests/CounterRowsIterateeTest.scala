@@ -105,4 +105,29 @@ class CounterRowsIterateeTest extends FunSpec with MustMatchers with MockitoSuga
       inOrder.verify(client).get_range_slices(matchEq(cp), anySlicePredicate, matchEq(keyRange("start3", "end", 6)), anyConsistencyLevel)
     }
   }
+
+  describe("map") {
+    val (client, cf) = setup
+
+    when(client.get_range_slices(anyColumnParent, anySlicePredicate, anyKeyRange, anyConsistencyLevel)).thenReturn(
+      Future.value(
+        seqAsJavaList(List(
+          keySlice(cf, "start", List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start1", List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start2", List(c("name", "value", 1), c("name1", "value1", 2))),
+          keySlice(cf, "start3", List(c("name", "value", 1), c("name1", "value1", 2)))))),
+      Future.value(seqAsJavaList(List(keySlice(cf, "start3", List(c("name", "value", 1), c("name1", "value1", 2))))))
+    )
+
+    val data = cf.rowsIteratee("start", "end", 5, new JHashSet()).map{ case(key, columns) => (key + "foo", columns)}.apply
+
+    it("does a buffered iteration over the columns in the rows in the range") {
+      data must equal(ListBuffer(
+        ("startfoo", seqAsJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start1foo", seqAsJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start2foo", seqAsJavaList(List(c("name", "value", 1), c("name1", "value1", 2)))),
+        ("start3foo", seqAsJavaList(List(c("name", "value", 1), c("name1", "value1", 2))))
+      ))
+    }
+  }
 }

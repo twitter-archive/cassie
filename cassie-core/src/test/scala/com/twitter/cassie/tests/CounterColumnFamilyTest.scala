@@ -278,6 +278,27 @@ class CounterColumnFamilyTest extends FunSpec with MustMatchers with MockitoSuga
       done()
       l must equal(List("cat", "name", "radish", "sofa", "xray"))
     }
+
+    it("supports smap") {
+      val key = "trance"
+      val cp = new thrift.ColumnParent("cf")
+
+      val columns1 = Seq(cc("cat", 1), cc("name", 1))
+      val columns2 = Seq(cc("name", 1), cc("radish", 1), cc("sofa", 1))
+      val columns3 = Seq(cc("sofa", 1), cc("xray", 1))
+
+      val pred1 = pred("", "", 2, Order.Normal)
+      when(client.get_slice(b(key), cp, pred1, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns1))
+
+      val pred2 = pred("name", "", 3, Order.Normal)
+      when(client.get_slice(b(key), cp, pred2, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns2))
+
+      val pred3 = pred("sofa", "", 3, Order.Normal)
+      when(client.get_slice(b(key), cp, pred3, thrift.ConsistencyLevel.QUORUM)).thenReturn(Future.value[ColumnList](columns3))
+
+      val l = cf.columnsIteratee(2, key).map { c => c.name }.apply
+      l must equal(List("cat", "name", "radish", "sofa", "xray"))
+    }
   }
 
 }

@@ -19,6 +19,7 @@ import com.twitter.util.{ Future, Promise }
 import java.util.{ List => JList }
 import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
+import scala.collection.mutable.Buffer
 
 /**
  * Given a column family, a key range, a batch size, a slice predicate,
@@ -42,6 +43,12 @@ trait RowsIteratee[Key, Name, Value] {
     val p = new Promise[Unit]
     next map (_.visit(p, f)) handle { case e => p.setException(e) }
     p
+  }
+  def map[A](f: (Key, JList[Column[Name, Value]]) => A): Future[Seq[A]] = {
+    val buffer = Buffer.empty[A]
+    foreach { case(key, columns) =>
+      buffer.append(f(key, columns))
+    }.map { _ => buffer }
   }
   def hasNext(): Boolean
   def next(): Future[RowsIteratee[Key, Name, Value]]
