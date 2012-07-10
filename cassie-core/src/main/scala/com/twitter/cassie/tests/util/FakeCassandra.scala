@@ -95,8 +95,9 @@ class FakeCassandra extends Cassandra.Iface {
 
   @volatile
   var thread: FakeCassandra.ServerThread = null
-  @volatile
-  var currentKeyspace = "default"
+  val currentKeyspace = new ThreadLocal[String] {
+    override def initialValue = "default"
+  }
 
   def port: Option[Int] = if (thread != null) Some(thread.port) else None
 
@@ -113,10 +114,10 @@ class FakeCassandra extends Cassandra.Iface {
     getColumnFamily(cp.getColumn_family)
   private def getColumnFamily(cp: ColumnPath): JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]] = getColumnFamily(cp.getColumn_family)
   private def getColumnFamily(name: String): JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]] = synchronized {
-    var keyspace = data.get(currentKeyspace)
+    var keyspace = data.get(currentKeyspace.get)
     if (keyspace == null) {
       keyspace = new JTreeMap[String, JTreeMap[ByteBuffer, JTreeMap[ByteBuffer, ColumnOrSuperColumn]]]
-      data.put(currentKeyspace, keyspace)
+      data.put(currentKeyspace.get, keyspace)
     }
     var cf = keyspace.get(name)
     if (cf == null) {
@@ -136,7 +137,7 @@ class FakeCassandra extends Cassandra.Iface {
     synchronized { data.clear() }
   }
 
-  def set_keyspace(keyspace: String) { currentKeyspace = keyspace }
+  def set_keyspace(keyspace: String) { currentKeyspace.set(keyspace) }
 
   def insert(key: ByteBuffer, column_parent: ColumnParent, column: Column, consistency_level: ConsistencyLevel) = synchronized {
     val cf = getColumnFamily(column_parent)
