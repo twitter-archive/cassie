@@ -127,7 +127,8 @@ private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
     }
   }
 
-  class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig) {
+  class CassandraThriftFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig)
+  extends ThriftClientFramedCodec(protocolFactory: TProtocolFactory, config: ClientCodecConfig, None, true) {
     override def prepareConnFactory(factory: ServiceFactory[ThriftClientRequest, Array[Byte]]) = {
       val keyspacedSetFactory = factory flatMap { service =>
         val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
