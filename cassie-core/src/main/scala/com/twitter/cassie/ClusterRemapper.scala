@@ -14,18 +14,19 @@
 
 package com.twitter.cassie
 
-import com.google.common.collect.ImmutableSet
 import com.twitter.cassie.connection.CCluster
-import com.twitter.cassie.connection.{ClusterClientProvider, SocketAddressCluster}
+import com.twitter.cassie.connection.{ClusterClientProvider, SocketAddressCluster, RetryPolicy}
 import com.twitter.concurrent.Spool
 import com.twitter.finagle.builder.{Cluster => FCluster}
 import com.twitter.finagle.ServiceFactory
-import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import com.twitter.finagle.WriteException
 import com.twitter.logging.Logger
 import com.twitter.util.{ Duration, Future, Promise, Return, Time, JavaTimer }
 import java.io.IOException
 import java.net.{ InetSocketAddress, SocketAddress }
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.collection.SeqProxy
 import scala.util.parsing.json.JSON
@@ -40,7 +41,14 @@ import scala.util.parsing.json.JSON
 object ClusterRemapper {
   private val log = Logger.get(this.getClass)
 }
-private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], remapPeriod: Duration, port: Int = 9160, statsReceiver: StatsReceiver = NullStatsReceiver) extends CCluster[SocketAddress] {
+private class ClusterRemapper(
+  keyspace: String,
+  seeds: Seq[InetSocketAddress],
+  remapPeriod: Duration,
+  port: Int = 9160,
+  statsReceiver: StatsReceiver,
+  tracerFactory: Tracer.Factory
+) extends CCluster[SocketAddress] {
   import ClusterRemapper._
 
   private[this] var hosts = seeds
@@ -84,9 +92,16 @@ private class ClusterRemapper(keyspace: String, seeds: Seq[InetSocketAddress], r
     val ccp = new ClusterClientProvider(
       new SocketAddressCluster(hosts),
       keyspace,
-      retries = 10 * seeds.size,
+      retries = 5,
+      timeout = Duration(5, TimeUnit.SECONDS),
+      requestTimeout = Duration(1, TimeUnit.SECONDS),
+      connectTimeout = Duration(1, TimeUnit.SECONDS),
+      minConnectionsPerHost = 1,
       maxConnectionsPerHost = 1,
-      statsReceiver = statsReceiver
+      hostConnectionMaxWaiters = 100,
+      statsReceiver = statsReceiver,
+      tracerFactory = tracerFactory,
+      retryPolicy = RetryPolicy.Idempotent
     )
     ccp map {
       log.info("Mapping cluster...")

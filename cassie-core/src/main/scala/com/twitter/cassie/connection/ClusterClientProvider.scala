@@ -38,18 +38,20 @@ object RetryPolicy {
   val NonIdempotent = RetryPolicy()
 }
 
-private[cassie] class ClusterClientProvider(val hosts: CCluster[SocketAddress],
+private[cassie] class ClusterClientProvider(
+  val hosts: CCluster[SocketAddress],
   val keyspace: String,
-  val retries: Int = 5,
-  val timeout: Duration = Duration(5, TimeUnit.SECONDS),
-  val requestTimeout: Duration = Duration(1, TimeUnit.SECONDS),
-  val connectTimeout: Duration = Duration(1, TimeUnit.SECONDS),
-  val minConnectionsPerHost: Int = 1,
-  val maxConnectionsPerHost: Int = 5,
-  val hostConnectionMaxWaiters: Int = 100,
-  val statsReceiver: StatsReceiver = NullStatsReceiver,
-  val tracerFactory: Tracer.Factory = NullTracer.factory,
-  val retryPolicy: RetryPolicy = RetryPolicy.Idempotent) extends ClientProvider {
+  val retries: Int,
+  val timeout: Duration,
+  val requestTimeout: Duration,
+  val connectTimeout: Duration,
+  val minConnectionsPerHost: Int,
+  val maxConnectionsPerHost: Int,
+  val hostConnectionMaxWaiters: Int,
+  val statsReceiver: StatsReceiver,
+  val tracerFactory: Tracer.Factory,
+  val retryPolicy: RetryPolicy = RetryPolicy.Idempotent
+) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
     def schedule(when: Time)(f: => Unit): TimerTask = throw new Exception("illegal use!")

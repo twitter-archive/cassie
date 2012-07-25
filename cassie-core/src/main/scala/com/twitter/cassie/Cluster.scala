@@ -31,7 +31,7 @@ import scala.collection.JavaConversions._
  *        to refresh its host list.
  * @param stats a finagle stats receiver
  */
-class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) extends ClusterBase {
+class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver, tracer: Tracer.Factory) extends ClusterBase {
   private var mapHostsEvery: Duration = 10.minutes
 
   /**
@@ -40,20 +40,20 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) exten
    *                  The port number is assumed to be 9160.
    */
   def this(seedHosts: String, stats: StatsReceiver = NullStatsReceiver) =
-    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, 9160, stats)
+    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, 9160, stats, NullTracer.factory)
 
   /**
    * @param seedHosts A comma separated list of seed hosts for a cluster. The rest of the
    *                  hosts can be found via mapping the cluser. See KeyspaceBuilder.mapHostsEvery.
    */
   def this(seedHosts: String, port: Int) =
-    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, port, NullStatsReceiver)
+    this(seedHosts.split(',').filter { !_.isEmpty }.toSet, port, NullStatsReceiver, NullTracer.factory)
 
   /**
    * @param seedHosts A collection of seed host addresses. The port number is assumed to be 9160
    */
   def this(seedHosts: java.util.Collection[String]) =
-    this(collectionAsScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver)
+    this(collectionAsScalaIterable(seedHosts).toSet, 9160, NullStatsReceiver, NullTracer.factory)
 
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
@@ -64,12 +64,12 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver) exten
     val seedAddresses = seedHosts.map { host => new InetSocketAddress(host, seedPort) }.toSeq
     val cluster = if (mapHostsEvery > 0)
       // either map the cluster for this keyspace
-      new ClusterRemapper(name, seedAddresses, mapHostsEvery, seedPort, statsReceiver = stats.scope("remapper"))
+      new ClusterRemapper(name, seedAddresses, mapHostsEvery, seedPort, stats.scope("remapper"), tracer)
     else
       // or connect directly to the hosts that were given as seeds
       new SocketAddressCluster(seedAddresses)
 
-    KeyspaceBuilder(cluster, name, scopedStats)
+    KeyspaceBuilder(cluster, name, scopedStats, tracer)
   }
 
   /**
@@ -99,6 +99,7 @@ case class KeyspaceBuilder(
   cluster: CCluster[SocketAddress],
   name: String,
   stats: StatsReceiver,
+  tracer: Tracer.Factory,
   _retries: Int = 0,
   _timeout: Int = 5000,
   _requestTimeout: Int = 1000,
@@ -106,7 +107,6 @@ case class KeyspaceBuilder(
   _minConnectionsPerHost: Int = 1,
   _maxConnectionsPerHost: Int = 5,
   _hostConnectionMaxWaiters: Int = 100,
-  _tracerFactory: Tracer.Factory = NullTracer.factory,
   _retryPolicy: RetryPolicy = RetryPolicy.Idempotent
 ) {
 
@@ -134,7 +134,7 @@ case class KeyspaceBuilder(
       _maxConnectionsPerHost,
       _hostConnectionMaxWaiters,
       stats,
-      _tracerFactory,
+      tracer,
       _retryPolicy)
     new Keyspace(name, ccp, stats)
   }
@@ -162,7 +162,7 @@ case class KeyspaceBuilder(
   def reportStatsTo(r: StatsReceiver): KeyspaceBuilder = copy(stats = r)
 
   /** Set a tracer to collect request traces. */
-  def tracerFactory(t: Tracer.Factory): KeyspaceBuilder = copy(_tracerFactory = t)
+  def tracerFactory(t: Tracer.Factory): KeyspaceBuilder = copy(tracer = t)
 
   def hostConnectionMaxWaiters(i: Int): KeyspaceBuilder = copy(_hostConnectionMaxWaiters = i)
 }

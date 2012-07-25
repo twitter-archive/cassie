@@ -19,14 +19,16 @@ import com.twitter.cassie.codecs._
 import com.twitter.cassie._
 import com.twitter.conversions.time._
 import com.twitter.finagle.stats.NullStatsReceiver
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import java.util.{Collections, HashSet}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.MustMatchers
 import org.scalatest._
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
 
 @RunWith(classOf[JUnitRunner])
 class FakeCassandraTest extends FunSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -41,7 +43,7 @@ class FakeCassandraTest extends FunSpec with MustMatchers with BeforeAndAfterAll
     server = factory()
     server.start()
     Thread.sleep(100)
-    client = new Cluster(Set("localhost"), server.port.get, NullStatsReceiver)
+    client = new Cluster(Set("localhost"), server.port.get, NullStatsReceiver, NullTracer.factory)
   }
 
   def keyspace() = {
