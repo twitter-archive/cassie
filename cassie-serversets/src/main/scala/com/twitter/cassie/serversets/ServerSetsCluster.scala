@@ -56,6 +56,9 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
     override def onChange(hostSet: ImmutableSet[ServiceInstance]) = {}
   }
 
+  def this(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver) = 
+    this(zkClient, zkPath, stats, NullTracer.factory)
+
   /**
    * Convenience constructor that creates a ZooKeeperClient using the specified hosts and timeout.
    *
