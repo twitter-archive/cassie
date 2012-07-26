@@ -15,13 +15,14 @@
 package com.twitter.cassie
 
 import com.google.common.collect.ImmutableSet
-import com.twitter.thrift.ServiceInstance
 import com.twitter.cassie.connection.CCluster
-import com.twitter.common.quantity.{Amount, Time}
 import com.twitter.common.net.pool.DynamicHostSet._
+import com.twitter.common.quantity.{Amount, Time}
 import com.twitter.common.zookeeper.{ServerSet, ServerSetImpl, ZooKeeperClient}
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import com.twitter.finagle.zookeeper.ZookeeperServerSetCluster
+import com.twitter.thrift.ServiceInstance
 import java.net.{SocketAddress, InetSocketAddress}
 import scala.collection.JavaConversions
 
@@ -49,7 +50,7 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet)
  * @param zkPath path to node where Cassandra hosts will exist under
  * @param stats a finagle stats receiver
  */
-class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver) extends ClusterBase {
+class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver, tracer: Tracer.Factory) extends ClusterBase {
 
   private class NoOpMonitor extends HostChangeMonitor[ServiceInstance]  {
     override def onChange(hostSet: ImmutableSet[ServiceInstance]) = {}
@@ -66,7 +67,7 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
   def this(zkAddresses: Iterable[InetSocketAddress], zkPath: String, timeoutMillis: Int,
     stats: StatsReceiver = NullStatsReceiver) =
     this(new ZooKeeperClient(Amount.of(timeoutMillis, Time.MILLISECONDS),
-      JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats)
+      JavaConversions.asJavaIterable(zkAddresses)), zkPath, stats, NullTracer.factory)
 
   /**
    * Returns a  [[com.twitter.cassie.KeyspaceBuilder]] instance.
@@ -76,6 +77,6 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
     val serverSet = new ServerSetImpl(zkClient, zkPath)
     serverSet.monitor(new NoOpMonitor()) // will block until serverset ready
     val cluster = new ZookeeperServerSetCCluster(serverSet)
-    KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name))
+    KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name), tracer)
   }
 }
