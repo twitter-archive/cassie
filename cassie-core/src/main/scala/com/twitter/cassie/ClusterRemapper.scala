@@ -22,7 +22,7 @@ import com.twitter.finagle.ServiceFactory
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.finagle.tracing.{ Tracer, NullTracer }
 import com.twitter.finagle.WriteException
-import com.twitter.logging.Logger
+import org.slf4j.LoggerFactory
 import com.twitter.util.{ Duration, Future, Promise, Return, Time, JavaTimer }
 import java.io.IOException
 import java.net.{ InetSocketAddress, SocketAddress }
@@ -39,7 +39,7 @@ import scala.util.parsing.json.JSON
  * @param port the Thrift port of client nodes
  */
 object ClusterRemapper {
-  private val log = Logger.get(this.getClass)
+  private val log = LoggerFactory.getLogger(this.getClass)
 }
 private class ClusterRemapper(
   keyspace: String,
@@ -73,7 +73,7 @@ private class ClusterRemapper(
       added foreach { host => appendChange(FCluster.Add(host)) }
       removed foreach { host => appendChange(FCluster.Rem(host)) }
     } onFailure { error =>
-      log.error(error, "error mapping ring")
+      log.error("error mapping ring", error)
       statsReceiver.counter("ClusterRemapFailure." + error.getClass().getName()).incr
     }
   }

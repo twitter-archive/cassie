@@ -44,17 +44,6 @@
       <artifactId>slf4j-api</artifactId>
       <version>1.6.1</version>
     </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-jdk14</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-nop</artifactId>
-      <version>1.6.1</version>
-      <scope>provided</scope>
-    </dependency>
     <!-- project dependencies -->
     <dependency>
       <groupId>com.twitter</groupId>
@@ -69,11 +58,6 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>util-core</artifactId>
-      <version>5.3.2-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>util-logging</artifactId>
       <version>5.3.2-SNAPSHOT</version>
     </dependency>
   </dependencies>

@@ -16,7 +16,6 @@ package com.twitter.cassie.tests
 
 import com.twitter.cassie.ClusterRemapper
 import com.twitter.conversions.time._
-import com.twitter.logging.Logger
 import java.net.{ SocketAddress, InetSocketAddress }
 import org.apache.cassandra.finagle.thrift
 import org.junit.runner.RunWith

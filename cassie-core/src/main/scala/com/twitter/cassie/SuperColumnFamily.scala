@@ -20,7 +20,7 @@ import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.logging.Logger
+import org.slf4j.LoggerFactory
 import com.twitter.util.Future
 import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
@@ -36,7 +36,7 @@ import scala.collection.JavaConversions._ // TODO get rid of this
  * because we hope that SuperColumns can be obsoleted in the future.
  */
 object SuperColumnFamily {
-  private val log = Logger.get(this.getClass)
+  private implicit val log = LoggerFactory.getLogger(this.getClass)
 }
 
 case class SuperColumnFamily[Key, Name, SubName, Value](
@@ -67,8 +67,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
       val cp = (new thrift.ColumnParent(name)).setSuper_column(nameCodec.encode(superColumn))
       val col = Column.convert(subNameCodec, valueCodec, clock, column)
       val keyEncoded = keyCodec.encode(key)
-      log.debug("insert(%s, %s, %s, %s, %s)", keyspace, key, cp, col, writeConsistency.level)
-      withConnection("insert", Map("key" -> keyEncoded, "col" -> col.name, "writeconsistency" -> writeConsistency.toString)) {
+      withConnection(
+        "insert",
+        Map("key" -> keyEncoded, "col" -> col.name, "writeconsistency" -> writeConsistency.toString),
+        Seq(keyspace, key, cp, col, writeConsistency.level)
+      ) {
         _.insert(keyEncoded, cp, col, writeConsistency.level)
       }
     }.flatten
@@ -101,9 +104,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
       val pred = sliceRangePredicate(start, end, order, size)
       val cp = new thrift.ColumnParent(name)
       val keyEncoded = keyCodec.encode(key)
-      log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-      withConnection("get_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
-        "readconsistency" -> readConsistency.toString)) {
+      withConnection(
+        "get_slice",
+        Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+        Seq(keyspace, key, cp, pred, readConsistency.level)
+      ) {
         _.get_slice(keyEncoded, cp, pred, readConsistency.level)
       } map { result =>
         result.map { cosc =>
@@ -119,9 +124,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     val pred = sliceRangePredicate(start, end, order, size)
     val cp = new thrift.ColumnParent(name)
     val keyEncoded = keyCodec.encodeSet(keys)
-    log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    withConnection("multiget_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "multiget_slice",
+      Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, keys, cp, pred, readConsistency.level)
+    ) {
       _.multiget_slice(keyEncoded, cp, pred, readConsistency.level)
     } map { result =>
       val rows: JMap[Key, Seq[(Name, Seq[Column[SubName, Value]])]] = new JHashMap(result.size)
@@ -140,8 +147,11 @@ case class SuperColumnFamily[Key, Name, SubName, Value](
     val cp = new thrift.ColumnPath(name)
     val ts = clock.timestamp
     val keyEncoded = keyCodec.encode(key)
-    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, ts, writeConsistency.level)
-    withConnection("remove", Map("key" -> keyEncoded, "timestamp" -> ts, "writeconsistency" -> writeConsistency.toString)) {
+    withConnection(
+      "remove",
+      Map("key" -> keyEncoded, "timestamp" -> ts, "writeconsistency" -> writeConsistency.toString),
+      Seq(keyspace, key, cp, ts, writeConsistency.level)
+    ) {
       _.remove(keyEncoded, cp, ts, writeConsistency.level)
     }
   }

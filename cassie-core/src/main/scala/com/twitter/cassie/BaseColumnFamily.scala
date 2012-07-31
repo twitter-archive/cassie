@@ -20,6 +20,7 @@ import com.twitter.cassie.util.FutureUtil
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.finagle.tracing.Trace
 import com.twitter.util.Future
+import org.slf4j.Logger
 import org.apache.cassandra.finagle.thrift
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 
@@ -39,9 +40,21 @@ private[cassie] abstract class BaseColumnFamily(keyspace: String, cf: String, pr
     Trace.recordBinaries(annotations)
   }
 
+  /**
+   * @param name The thrift method name being called
+   * @param traceAnnotations Optional annotations for tracing
+   * @param args A lazily constructed list of the arguments to the thrift method, for debug logging
+   * @param f Function ot receives the connection
+   */
   def withConnection[T](
     name: String,
-    traceAnnotations: Map[String, Any] = Map.empty)(f: ServiceToClient => Future[T]): Future[T] = {
+    traceAnnotations: Map[String, Any] = Map.empty,
+    args: => Seq[Any] = Nil
+  )(f: ServiceToClient => Future[T]
+  )(implicit log: Logger): Future[T] = {
+    if (log.isDebugEnabled) {
+      log.debug(args.mkString(name + "(", ", ", ")"))
+    }
     timeFutureWithFailures(stats, name) {
       // Associate trace annotations with the client span by using a terminal trace id
       Trace.unwind {

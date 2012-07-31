@@ -19,7 +19,7 @@ import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
-import com.twitter.logging.Logger
+import org.slf4j.LoggerFactory
 import com.twitter.util.Future
 import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
@@ -28,7 +28,7 @@ import org.apache.cassandra.finagle.thrift
 import scala.collection.JavaConversions._
 
 object SuperCounterColumnFamily {
-  private val log = Logger.get(this.getClass)
+  private implicit val log = LoggerFactory.getLogger(this.getClass)
 }
 
 /*
@@ -71,10 +71,12 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
 
   private def multigetSlice(keys: JSet[Key], pred: thrift.SlicePredicate): Future[JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]]] = {
     val cp = new thrift.ColumnParent(name)
-    log.debug("multiget_counter_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
     val encodedKeys = keyCodec.encodeSet(keys)
-    withConnection("multiget_slice", Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "multiget_slice",
+      Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, keys, cp, pred, readConsistency.level)
+    ) {
       _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
     }.map { result =>
       val rows: JMap[Key, JMap[Name, JMap[SubName, CounterColumn[SubName]]]] = new JHashMap(result.size)
@@ -98,8 +100,11 @@ case class SuperCounterColumnFamily[Key, Name, SubName](
     new SuperCounterBatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
-    log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    withConnection("batch_mutate", Map("writeconsistency" -> writeConsistency.toString)) {
+    withConnection(
+      "batch_mutate",
+      Map("writeconsistency" -> writeConsistency.toString),
+      Seq(keyspace, mutations, writeConsistency.level)
+    ) {
       _.batch_mutate(mutations, writeConsistency.level)
     }
   }

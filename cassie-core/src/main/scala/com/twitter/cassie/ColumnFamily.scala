@@ -20,7 +20,7 @@ import com.twitter.cassie.connection.ClientProvider
 import com.twitter.cassie.util.ByteBufferUtil.EMPTY
 import com.twitter.cassie.util.FutureUtil.timeFutureWithFailures
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.logging.Logger
+import org.slf4j.LoggerFactory
 import com.twitter.util.Future
 import java.nio.ByteBuffer
 import java.util.Collections.{ singleton => singletonJSet }
@@ -34,7 +34,7 @@ import scala.collection.JavaConversions._ // TODO get rid of this
  * lightweight object: it inherits a connection pool from the Keyspace.
  */
 object ColumnFamily {
-  private val log = Logger.get(this.getClass)
+  private implicit val log = LoggerFactory.getLogger(this.getClass)
 }
 
 case class ColumnFamily[Key, Name, Value](
@@ -222,9 +222,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     Future {
       val cp = new thrift.ColumnParent(name)
       val encodedKeys = keyCodec.encodeSet(keys)
-      log.debug("multiget_slice(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-      withConnection("multiget_slice", Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred),
-        "readconsistency" -> readConsistency.toString)) {
+      withConnection(
+        "multiget_slice",
+        Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+        Seq(keyspace, keys, cp, pred, readConsistency.level)
+      ) {
         _.multiget_slice(encodedKeys, cp, pred, readConsistency.level)
       }.map { result =>
         val rows: JMap[Key, JMap[Name, Column[Name, Value]]] = new JHashMap(result.size)
@@ -255,9 +257,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
     val cp = new thrift.ColumnParent(name)
     val encodedKey = keyCodec.encode(key)
-    log.debug("get_count(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    withConnection("get_count", Map("key" -> encodedKey, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "get_count",
+      Map("key" -> encodedKey, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, key, cp, pred, readConsistency.level)
+    ) {
       _.get_count(encodedKey, cp, pred, readConsistency.level)
     }
   }
@@ -275,9 +279,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     val pred = sliceRangePredicate(None, None, Order.Normal, Int.MaxValue)
     val cp = new thrift.ColumnParent(name)
     val encodedKeys = keyCodec.encodeSet(keys)
-    log.debug("multiget_count(%s, %s, %s, %s, %s)", keyspace, keys, cp, pred, readConsistency.level)
-    withConnection("multiget_count", Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "multiget_count",
+      Map("keys" -> encodedKeys, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, keys, cp, pred, readConsistency.level)
+    ) {
       _.multiget_count(encodedKeys, cp, pred, readConsistency.level)
     } map { result =>
       val counts: JMap[Name, java.lang.Integer] = new JHashMap(result.size)
@@ -302,9 +308,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
       val cp = new thrift.ColumnParent(name)
       val col = Column.convert(nameCodec, valueCodec, clock, column)
       val keyEncoded = keyCodec.encode(key)
-      log.debug("insert(%s, %s, %s, %s, %s)", keyspace, keyEncoded, cp, col, writeConsistency.level)
-      withConnection("insert", Map("key" -> keyEncoded, "column" -> col.name,
-        "writeconsistency" -> writeConsistency.toString)) {
+      withConnection(
+        "insert",
+        Map("key" -> keyEncoded, "column" -> col.name, "writeconsistency" -> writeConsistency.toString),
+        Seq(keyspace, key, cp, col, writeConsistency.level)
+      ) {
         _.insert(keyEncoded, cp, col, writeConsistency.level)
       }
     }.flatten
@@ -332,9 +340,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
       val cp = new thrift.ColumnPath(name).setColumn(nameCodec.encode(columnName))
       val timestamp = clock.timestamp
       val keyEncoded = keyCodec.encode(key)
-      log.debug("remove(%s, %s, %s, %d, %s)", keyspace, keyEncoded, cp, timestamp, writeConsistency.level)
-      withConnection("remove", Map("key" -> keyEncoded, "column" -> cp.column,
-        "writeconsistency" -> writeConsistency.toString)) {
+      withConnection(
+        "remove",
+        Map("key" -> keyEncoded, "column" -> cp.column, "writeconsistency" -> writeConsistency.toString),
+        Seq(keyspace, key, cp, timestamp, writeConsistency.level)
+      ) {
         _.remove(keyEncoded, cp, timestamp, writeConsistency.level)
       }
     }.flatten
@@ -394,9 +404,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   def removeRowWithTimestamp(key: Key, timestamp: Long): Future[Void] = {
     val cp = new thrift.ColumnPath(name)
     val keyEncoded = keyCodec.encode(key)
-    log.debug("remove(%s, %s, %s, %d, %s)", keyspace, key, cp, timestamp, writeConsistency.level)
-    withConnection("remove", Map("key" -> keyEncoded, "timestamp" -> timestamp.toString,
-      "writeconsistency" -> writeConsistency.toString)) {
+    withConnection(
+      "remove",
+      Map("key" -> keyEncoded, "timestamp" -> timestamp.toString, "writeconsistency" -> writeConsistency.toString),
+      Seq(keyspace, key, cp, timestamp, writeConsistency.level)
+    ) {
       _.remove(keyEncoded, cp, timestamp, writeConsistency.level)
     }
   }
@@ -407,8 +419,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   def batch(): BatchMutationBuilder[Key, Name, Value] = new BatchMutationBuilder(this)
 
   private[cassie] def batch(mutations: JMap[ByteBuffer, JMap[String, JList[thrift.Mutation]]]) = {
-    log.debug("batch_mutate(%s, %s, %s", keyspace, mutations, writeConsistency.level)
-    withConnection("batch_mutate", Map("writeconsistency" -> writeConsistency.level.toString)) {
+    withConnection(
+      "batch_mutate",
+      Map("writeconsistency" -> writeConsistency.level.toString),
+      Seq(keyspace, mutations, writeConsistency.level)
+    ) {
       _.batch_mutate(mutations, writeConsistency.level)
     }
   }
@@ -521,9 +536,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     pred: thrift.SlicePredicate): Future[JMap[Name, Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     val keyEncoded = keyCodec.encode(key)
-    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    withConnection("get_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "get_slice",
+      Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, key, cp, pred, readConsistency.level)
+    ) {
       _.get_slice(keyEncoded, cp, pred, readConsistency.level)
     } map { result =>
       val cols: JMap[Name, Column[Name, Value]] = new JHashMap(result.size)
@@ -538,9 +555,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
   private[cassie] def getOrderedSlice(key: Key, pred: thrift.SlicePredicate): Future[Seq[Column[Name, Value]]] = {
     val cp = new thrift.ColumnParent(name)
     val keyEncoded = keyCodec.encode(key)
-    log.debug("get_slice(%s, %s, %s, %s, %s)", keyspace, key, cp, pred, readConsistency.level)
-    withConnection("get_slice", Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.level.toString)) {
+    withConnection(
+      "get_slice",
+      Map("key" -> keyEncoded, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.level.toString),
+      Seq(keyspace, key, cp, pred, readConsistency.level)
+    ) {
       _.get_slice(keyEncoded, cp, pred, readConsistency.level)
     } map { result =>
       result.map { cosc =>
@@ -554,10 +573,11 @@ extends BaseColumnFamily(keyspace, name, provider, stats) {
     val startKeyEncoded = keyCodec.encode(start)
     val endKeyEncoded = keyCodec.encode(end)
     val range = new thrift.KeyRange(count).setStart_key(startKeyEncoded).setEnd_key(endKeyEncoded)
-    log.debug("get_range_slices(%s, %s, %s, %s, %s)", keyspace, cp, pred, range, readConsistency.level)
-    withConnection("get_range_slices", Map("startkey" -> startKeyEncoded,"endkey" -> endKeyEncoded,
-      "count" -> count.toString, "predicate" -> annPredCodec.encode(pred),
-      "readconsistency" -> readConsistency.toString)) {
+    withConnection(
+      "get_range_slices",
+      Map("startkey" -> startKeyEncoded, "endkey" -> endKeyEncoded, "count" -> count.toString, "predicate" -> annPredCodec.encode(pred), "readconsistency" -> readConsistency.toString),
+      Seq(keyspace, cp, pred, range, readConsistency.level)
+    ) {
       _.get_range_slices(cp, pred, range, readConsistency.level)
     } map { slices =>
       val buf: JList[(Key, JList[Column[Name, Value]])] = new JArrayList[(Key, JList[Column[Name, Value]])](slices.size)

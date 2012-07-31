@@ -18,8 +18,8 @@ import com.twitter.cassie.connection.{ CCluster, ClusterClientProvider, RetryPol
 import com.twitter.conversions.time._
 import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
 import com.twitter.finagle.tracing.{ Tracer, NullTracer }
-import com.twitter.logging.Logger
 import com.twitter.util.Duration
+import org.slf4j.LoggerFactory
 import java.net.{ SocketAddress, InetSocketAddress }
 import scala.collection.JavaConversions._
 
@@ -91,7 +91,7 @@ trait ClusterBase {
 }
 
 object KeyspaceBuilder {
-  private val log = Logger.get(this.getClass)
+  private val log = LoggerFactory.getLogger(this.getClass)
 }
 
 

@@ -20,10 +20,10 @@ import com.twitter.cassie.types.LexicalUUID
 // TODO: unfortunate
 import scala.collection.JavaConversions._
 
-import com.twitter.logging.Logger
+import org.slf4j.LoggerFactory
 
 object CassieRun {
-  private val log = Logger.get(this.getClass)
+  private val log = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]) {
     // create a cluster with a single seed from which to map keyspaces
