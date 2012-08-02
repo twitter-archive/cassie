@@ -48,17 +48,17 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-core</artifactId>
-      <version>5.3.4-SNAPSHOT</version>
+      <version>5.3.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-thrift</artifactId>
-      <version>5.3.4-SNAPSHOT</version>
+      <version>5.3.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>util-core</artifactId>
-      <version>5.3.6-SNAPSHOT</version>
+      <version>5.3.7-SNAPSHOT</version>
     </dependency>
   </dependencies>
   <build>
