@@ -107,7 +107,8 @@ case class KeyspaceBuilder(
   _minConnectionsPerHost: Int = 1,
   _maxConnectionsPerHost: Int = 5,
   _hostConnectionMaxWaiters: Int = 100,
-  _retryPolicy: RetryPolicy = RetryPolicy.Idempotent
+  _retryPolicy: RetryPolicy = RetryPolicy.Idempotent,
+  _failFast: Boolean = false
 ) {
 
   import KeyspaceBuilder._
@@ -138,6 +139,12 @@ case class KeyspaceBuilder(
       _retryPolicy)
     new Keyspace(name, ccp, stats)
   }
+
+  /**
+   * In general, it is recommended that you set this to true.
+   * It is likely to become the default behavior in Finagle in the not too distant future.
+   */
+  def failFast(ff: Boolean): KeyspaceBuilder = copy(_failFast = ff)
 
   def timeout(t: Int): KeyspaceBuilder = copy(_timeout = t)
   def retries(r: Int): KeyspaceBuilder = copy(_retries = r)

@@ -15,17 +15,14 @@ package com.twitter.cassie.connection
 // limitations under the License.
 
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.{Service, ServiceFactory}
+import com.twitter.finagle.ServiceFactory
 import com.twitter.finagle.service.{ Backoff, RetryPolicy => FinagleRetryPolicy }
-import com.twitter.finagle.stats.{ StatsReceiver, NullStatsReceiver }
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.finagle.thrift.{ ThriftClientRequest, ThriftClientFramedCodec }
-import com.twitter.finagle.tracing.{ Tracer, NullTracer }
-import com.twitter.finagle.{ ChannelException, CodecFactory, Codec, ClientCodecConfig, RequestTimeoutException, WriteException }
-import com.twitter.util.Duration
+import com.twitter.finagle.tracing.Tracer
+import com.twitter.finagle.{ ChannelException, CodecFactory, ClientCodecConfig, RequestTimeoutException, WriteException }
 import com.twitter.util.{ Duration, Future, Throw, Timer, TimerTask, Time, Try }
-import com.twitter.util.{ Future, Throw, Timer, TimerTask, Time, Try }
-import java.net.InetSocketAddress
-import java.net.{ SocketAddress }
+import java.net.SocketAddress
 import java.util.concurrent.TimeUnit
 import org.apache.cassandra.finagle.thrift.Cassandra.ServiceToClient
 import org.apache.cassandra.finagle.thrift.{ UnavailableException, TimedOutException }
@@ -50,7 +47,8 @@ private[cassie] class ClusterClientProvider(
   val hostConnectionMaxWaiters: Int,
   val statsReceiver: StatsReceiver,
   val tracerFactory: Tracer.Factory,
-  val retryPolicy: RetryPolicy = RetryPolicy.Idempotent
+  val retryPolicy: RetryPolicy = RetryPolicy.Idempotent,
+  val failFast: Boolean = true
 ) extends ClientProvider {
 
   implicit val fakeTimer = new Timer {
@@ -61,7 +59,7 @@ private[cassie] class ClusterClientProvider(
 
   /** Record the given exception, and return true. */
   private def recordRetryable(e: Exception): Boolean = {
-    statsReceiver.counter(e.getClass.getSimpleName()).incr
+    statsReceiver.counter(e.getClass.getSimpleName()).incr()
     true
   }
 
@@ -85,7 +83,7 @@ private[cassie] class ClusterClientProvider(
       }
   }
 
-  private var service = ClientBuilder()
+  private val service = ClientBuilder()
     .cluster(hosts)
     .name("cassie")
     .codec(CassandraThriftFramedCodec())
@@ -99,6 +97,7 @@ private[cassie] class ClusterClientProvider(
     .reportTo(statsReceiver)
     .tracerFactory(tracerFactory)
     .hostConnectionMaxWaiters(hostConnectionMaxWaiters)
+    .expFailFast(failFast)
     .build()
 
   private val client = new ServiceToClient(service, new TBinaryProtocol.Factory())
