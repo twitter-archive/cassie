@@ -136,7 +136,8 @@ case class KeyspaceBuilder(
       _hostConnectionMaxWaiters,
       stats,
       tracer,
-      _retryPolicy)
+      _retryPolicy,
+      _failFast)
     new Keyspace(name, ccp, stats)
   }
 
