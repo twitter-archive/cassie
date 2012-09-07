@@ -58,7 +58,7 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>util-core</artifactId>
-      <version>5.3.10</version>
+      <version>5.3.11-SNAPSHOT</version>
     </dependency>
   </dependencies>
   <build>
