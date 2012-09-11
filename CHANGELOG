@@ -1,3 +1,7 @@
+# 0.24.0
+* upgrade to finagle 5.3.9
+* upgrade to util 5.3.10
+
 # 0.23.0
 * Expose expFailFast on ClientBuilder
 
