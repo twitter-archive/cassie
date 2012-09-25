@@ -4,7 +4,7 @@
   <groupId>com.twitter</groupId>
   <artifactId>cassie-stress</artifactId>
   <packaging>jar</packaging>
-  <version>0.24.2</version>
+  <version>0.24.3</version>
   <parent>
     <groupId>com.twitter</groupId>
     <artifactId>scala-parent-292</artifactId>
@@ -25,12 +25,12 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-ostrich4</artifactId>
-      <version>5.3.11</version>
+      <version>5.3.12</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-stress</artifactId>
-      <version>5.3.11</version>
+      <version>5.3.12</version>
     </dependency>
   </dependencies>
 </project>
