@@ -45,16 +45,24 @@ class ZookeeperServerSetCCluster(serverSet: ServerSet)
  *  val cluster = new ServerSetsCluster(zkHosts, zkPath, timeoutMillis, stats)
  *  val keyspace = cluster.keyspace(keyspace).connect()
  *
- *
- * @param zkClient existing ZooKeeperClient
- * @param zkPath path to node where Cassandra hosts will exist under
+ * @param serverSet zookeeper ServerSet
  * @param stats a finagle stats receiver
  */
-class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver, tracer: Tracer.Factory) extends ClusterBase {
+class ServerSetsCluster(serverSet: ServerSet, stats: StatsReceiver, tracer: Tracer.Factory) extends ClusterBase {
 
   private class NoOpMonitor extends HostChangeMonitor[ServiceInstance]  {
     override def onChange(hostSet: ImmutableSet[ServiceInstance]) = {}
   }
+
+  /**
+   * Constructor that takes an existing ZooKeeperClient and explicit zk path to a list of servers
+   *
+   * @param zkClient existing ZooKeeperClient
+   * @param zkPath path to node where Cassandra hosts will exist under
+   * @param stats a finagle stats receiver
+   */
+  def this(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver, tracer: Tracer.Factory) =
+    this(new ServerSetImpl(zkClient, zkPath), stats, tracer)
 
   def this(zkClient: ZooKeeperClient, zkPath: String, stats: StatsReceiver) = 
     this(zkClient, zkPath, stats, NullTracer.factory)
@@ -77,7 +85,6 @@ class ServerSetsCluster(zkClient: ZooKeeperClient, zkPath: String, stats: StatsR
    * @param name the keyspace's name
    */
   def keyspace(name: String): KeyspaceBuilder = {
-    val serverSet = new ServerSetImpl(zkClient, zkPath)
     serverSet.monitor(new NoOpMonitor()) // will block until serverset ready
     val cluster = new ZookeeperServerSetCCluster(serverSet)
     KeyspaceBuilder(cluster, name, stats.scope("cassie").scope(name), tracer)
