@@ -2,10 +2,11 @@ package com.twitter.cassie.types
 
 import java.nio.ByteBuffer
 import scala.collection.mutable
+import com.twitter.cassie.codecs.Codec
 
-class Composite {
+class Composite[A](codec: Codec[A]) {
 
-  private var _components = new mutable.ListBuffer[Component]
+  private var _components = new mutable.ListBuffer[Component[A]]
 
   def apply(idx: Int) = _components(idx)
 
@@ -15,21 +16,23 @@ class Composite {
 
   def components = _components.toSeq
 
-  def addComponent(component: Component) : Composite = {
+  def addComponent(component: Component[A]) : Composite[A] = {
     _components += component
     this
   }
 
   def encode : ByteBuffer = {
-    val totalLength = _components.foldLeft(0)(_ + 2 + _.value.remaining + 1)  //each component has 2-byte length + value + terminator
+    //each component has 2-byte length + value + terminator
+    val totalLength = _components.foldLeft(0) { (acc, c) => acc + 2 + codec.encode(c.value).remaining + 1 }
     val encoded = ByteBuffer.allocate(totalLength)
 
     _components.foreach { component =>
-      val length = component.value.remaining
+      val encComp = codec.encode(component.value)
+      val length = encComp.remaining
       // add length
       encoded.putShort(length.toShort)
       // add value
-      encoded.put(component.value)
+      encoded.put(encComp)
       // add terminator
       encoded.put(component.equality)
     }
@@ -41,24 +44,24 @@ class Composite {
 
 object Composite {
 
-  def apply(components: Component*) : Composite = {
-    val composite = new Composite
+  def apply[A](codec: Codec[A], components: Component[A]*) : Composite[A] = {
+    val composite = new Composite(codec)
     components.foreach(composite.addComponent(_))
     composite
   }
 
-  def decode(encoded: ByteBuffer) : Composite = apply(getComponents(encoded).reverse:_*)
+  def decode[A](encoded: ByteBuffer, codec: Codec[A]) : Composite[A] = apply(codec, getComponents(encoded, codec).reverse:_*)
 
-  private def getComponents(encoded: ByteBuffer, acc: Seq[Component] = Seq()) : Seq[Component] =
+  private def getComponents[A](encoded: ByteBuffer, codec: Codec[A], acc: Seq[Component[A]] = Seq()) : Seq[Component[A]] =
     if (encoded.remaining == 0) acc
-    else getComponents(encoded, componentFromByteBuffer(encoded) +: acc)
+    else getComponents(encoded, codec, componentFromByteBuffer[A](encoded, codec) +: acc)
 
-  private def componentFromByteBuffer(buf: ByteBuffer) = {
+  private def componentFromByteBuffer[A](buf: ByteBuffer, codec: Codec[A]) = {
     val length = buf.getShort
     val value = new Array[Byte](length)
     buf.get(value)
     val equality = ComponentEquality.fromByte(buf.get)
-    Component(ByteBuffer.wrap(value), equality)
+    Component[A](codec.decode(ByteBuffer.wrap(value)), equality)
   }
 
 }
@@ -78,4 +81,4 @@ object ComponentEquality {
 
 }
 
-case class Component(value: ByteBuffer, equality: ComponentEquality.ComponentEquality = ComponentEquality.EQ)
+case class Component[A](value: A, equality: ComponentEquality.ComponentEquality = ComponentEquality.EQ)

@@ -3,9 +3,11 @@ package com.twitter.cassie.codecs
 import com.twitter.cassie.types.Composite
 import java.nio.ByteBuffer
 
-object CompositeCodec extends Codec[Composite] {
+object CompositeCodec {
+  def apply[A](codec: Codec[A]) : CompositeCodec[A] = new CompositeCodec(codec)
+}
 
-  def encode(composite: Composite) = composite.encode
-  def decode(buf: ByteBuffer) = Composite.decode(buf)
-
+class CompositeCodec[A](codec: Codec[A]) extends Codec[Composite[A]] {
+  def encode(composite: Composite[A]) = composite.encode
+  def decode(buf: ByteBuffer) = Composite.decode(buf, codec)
 }
