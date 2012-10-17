@@ -48,12 +48,12 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-core</artifactId>
-      <version>5.3.19-SNAPSHOT</version>
+      <version>5.3.20-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-thrift</artifactId>
-      <version>5.3.19-SNAPSHOT</version>
+      <version>5.3.20-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
