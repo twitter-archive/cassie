@@ -6,7 +6,7 @@ import com.twitter.cassie.codecs.Codec
 
 class Composite[A](codec: Codec[A]) {
 
-  private var _components = new mutable.ListBuffer[Component[A]]
+  private[this] val _components = new mutable.ListBuffer[Component[A]]
 
   def apply(idx: Int) = _components(idx)
 
@@ -16,12 +16,12 @@ class Composite[A](codec: Codec[A]) {
 
   def components = _components.toSeq
 
-  def addComponent(component: Component[A]) : Composite[A] = {
+  def addComponent(component: Component[A]): Composite[A] = {
     _components += component
     this
   }
 
-  def encode : ByteBuffer = {
+  def encode: ByteBuffer = {
     //each component has 2-byte length + value + terminator
     val totalLength = _components.foldLeft(0) { (acc, c) => acc + 2 + codec.encode(c.value).remaining + 1 }
     val encoded = ByteBuffer.allocate(totalLength)
@@ -44,24 +44,24 @@ class Composite[A](codec: Codec[A]) {
 
 object Composite {
 
-  def apply[A](codec: Codec[A], components: Component[A]*) : Composite[A] = {
+  def apply[A](codec: Codec[A], components: Component[A]*): Composite[A] = {
     val composite = new Composite(codec)
     components.foreach(composite.addComponent(_))
     composite
   }
 
-  def decode[A](encoded: ByteBuffer, codec: Codec[A]) : Composite[A] = apply(codec, getComponents(encoded, codec).reverse:_*)
+  def decode[A](encoded: ByteBuffer, codec: Codec[A]): Composite[A] = apply(codec, getComponents(encoded, codec).reverse:_*)
 
-  private def getComponents[A](encoded: ByteBuffer, codec: Codec[A], acc: Seq[Component[A]] = Seq()) : Seq[Component[A]] =
+  private def getComponents[A](encoded: ByteBuffer, codec: Codec[A], acc: Seq[Component[A]] = Seq()): Seq[Component[A]] =
     if (encoded.remaining == 0) acc
-    else getComponents(encoded, codec, componentFromByteBuffer[A](encoded, codec) +: acc)
+    else getComponents(encoded, codec, componentFromByteBuffer(encoded, codec) +: acc)
 
   private def componentFromByteBuffer[A](buf: ByteBuffer, codec: Codec[A]) = {
     val length = buf.getShort
     val value = new Array[Byte](length)
     buf.get(value)
     val equality = ComponentEquality.fromByte(buf.get)
-    Component[A](codec.decode(ByteBuffer.wrap(value)), equality)
+    Component(codec.decode(ByteBuffer.wrap(value)), equality)
   }
 
 }
