@@ -4,7 +4,7 @@ import com.twitter.cassie.types.Composite
 import java.nio.ByteBuffer
 
 object CompositeCodec {
-  def apply[A](codec: Codec[A]) : CompositeCodec[A] = new CompositeCodec(codec)
+  def apply[A](codec: Codec[A]): CompositeCodec[A] = new CompositeCodec(codec)
 }
 
 class CompositeCodec[A](codec: Codec[A]) extends Codec[Composite[A]] {
