@@ -62,7 +62,7 @@ class Cluster(seedHosts: Set[String], seedPort: Int, stats: StatsReceiver, trace
   def keyspace(name: String): KeyspaceBuilder = {
     val scopedStats = stats.scope("cassie").scope(name)
     val seedAddresses = seedHosts.map { host => new InetSocketAddress(host, seedPort) }.toSeq
-    val cluster = if (mapHostsEvery > 0)
+    val cluster = if (mapHostsEvery > 0.seconds)
       // either map the cluster for this keyspace
       new ClusterRemapper(name, seedAddresses, mapHostsEvery, seedPort, stats.scope("remapper"), tracer)
     else
