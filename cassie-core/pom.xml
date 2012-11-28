@@ -4,7 +4,7 @@
   <groupId>com.twitter</groupId>
   <artifactId>cassie-core</artifactId>
   <packaging>jar</packaging>
-  <version>0.25.0</version>
+  <version>0.25.1-SNAPSHOT</version>
   <parent>
     <groupId>com.twitter</groupId>
     <artifactId>scala-parent-292</artifactId>
@@ -48,17 +48,17 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-core</artifactId>
-      <version>6.0.1</version>
+      <version>6.0.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>finagle-thrift</artifactId>
-      <version>6.0.1</version>
+      <version>6.0.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>util-core</artifactId>
-      <version>6.0.1</version>
+      <version>6.0.2-SNAPSHOT</version>
     </dependency>
   </dependencies>
   <build>
