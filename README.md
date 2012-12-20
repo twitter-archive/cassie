@@ -58,7 +58,7 @@ connection pools and do retries:
 
 (If you have some nodes with dramatically different latency—e.g., in another
 data center–or if you have a huge cluster, you can disable keyspace mapping
-via `mapHostsEvery(0.minutes)""" in which case clients will connect directly to
+via `mapHostsEvery(0.minutes)` in which case clients will connect directly to
 the seed hosts passed to "new Cluster".)
 "
 A Quick Note On Timestamps
