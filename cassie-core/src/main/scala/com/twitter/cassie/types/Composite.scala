@@ -92,23 +92,23 @@ case class DecodedComposite5[A, B, C, D, E](_1: Component[A], _2: Component[B], 
 
 object Decoder {
 
-  def convert[T](c: Component[ByteBuffer], codec: Codec[T]) : Component[T] = Component(codec.decode(c.value), codec, c.equality)
+  def convert[T](c: Component[ByteBuffer], codec: Codec[T]): Component[T] = Component(codec.decode(c.value), codec, c.equality)
 
   def apply[A, B](codecA: Codec[A], codecB: Codec[B]) = new {
-    def decode(composite: Composite) : DecodedComposite2[A, B] =
+    def decode(composite: Composite): DecodedComposite2[A, B] =
       DecodedComposite2(convert(composite(0).asInstanceOf[Component[ByteBuffer]], codecA),
                         convert(composite(1).asInstanceOf[Component[ByteBuffer]], codecB))
   }
 
   def apply[A, B, C](codecA: Codec[A], codecB: Codec[B], codecC: Codec[C]) = new {
-    def decode(composite: Composite) : DecodedComposite3[A, B, C] =
+    def decode(composite: Composite): DecodedComposite3[A, B, C] =
       DecodedComposite3(convert(composite(0).asInstanceOf[Component[ByteBuffer]], codecA),
                         convert(composite(1).asInstanceOf[Component[ByteBuffer]], codecB),
                         convert(composite(2).asInstanceOf[Component[ByteBuffer]], codecC))
   }
 
   def apply[A, B, C, D](codecA: Codec[A], codecB: Codec[B], codecC: Codec[C], codecD: Codec[D]) = new {
-    def decode(composite: Composite) : DecodedComposite4[A, B, C, D] =
+    def decode(composite: Composite): DecodedComposite4[A, B, C, D] =
       DecodedComposite4(convert(composite(0).asInstanceOf[Component[ByteBuffer]], codecA),
                         convert(composite(1).asInstanceOf[Component[ByteBuffer]], codecB),
                         convert(composite(2).asInstanceOf[Component[ByteBuffer]], codecC),
@@ -116,7 +116,7 @@ object Decoder {
   }
 
   def apply[A, B, C, D, E](codecA: Codec[A], codecB: Codec[B], codecC: Codec[C], codecD: Codec[D], codecE: Codec[E]) = new {
-    def decode(composite: Composite) : DecodedComposite5[A, B, C, D, E] =
+    def decode(composite: Composite): DecodedComposite5[A, B, C, D, E] =
       DecodedComposite5(convert(composite(0).asInstanceOf[Component[ByteBuffer]], codecA),
                         convert(composite(1).asInstanceOf[Component[ByteBuffer]], codecB),
                         convert(composite(2).asInstanceOf[Component[ByteBuffer]], codecC),
