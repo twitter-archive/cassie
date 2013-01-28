@@ -6,7 +6,7 @@ import com.twitter.cassie.codecs.{ByteArrayCodec, Codec}
 
 class Composite {
 
-  private[this] var _components = new mutable.ListBuffer[Component[_]]
+  private[this] val _components = new mutable.ListBuffer[Component[_]]
 
   def apply(idx: Int) = _components(idx)
 
