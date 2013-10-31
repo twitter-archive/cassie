@@ -5,6 +5,37 @@
   <artifactId>cassie-core</artifactId>
   <packaging>jar</packaging>
   <version>0.25.1-SNAPSHOT</version>
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Maven Repository Switchboard</name>
+      <layout>default</layout>
+      <url>http://repo1.maven.org/maven2</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>typesafe</id>
+      <name>Typesafe Central Repository</name>
+      <layout>default</layout>
+      <url>http://repo.typesafe.com/typesafe/releases</url>
+      <snapshots>
+       <enabled>true</enabled>
+      </snapshots>
+     </repository>
+
+     <repository>
+       <id>typesafe-repo</id>
+       <name>TypeSafe cache repo</name>
+       <layout>default</layout>
+       <url>http://repo.typesafe.com/typesafe/repo/</url>
+       <snapshots>
+         <enabled>false</enabled>
+       </snapshots>
+     </repository>
+  </repositories>
   <parent>
     <groupId>com.twitter</groupId>
     <artifactId>scala-parent-292</artifactId>
