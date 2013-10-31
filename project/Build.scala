@@ -2,11 +2,21 @@ import sbt._
 import Keys._
 import Tests._
 import com.twitter.sbt._
+import com.twitter.scrooge.ScroogeSBT
 import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object Cassie extends Build {
   
    val finagleVersion = "6.7.4";
+    
+   val thriftLibs = Seq(
+      "org.apache.thrift" % "libthrift" % "0.5.0" intransitive(),
+      "org.slf4j"   % "slf4j-nop" % "1.5.8" % "provided"
+   )
+  
+   val scroogeLibs = thriftLibs ++ Seq(
+       "com.twitter" %% "scrooge-runtime" % "3.9.1"
+   )
     
    val sharedSettings: Seq[sbt.Project.Setting[_]] = Seq(
        organization := "com.twitter",
@@ -28,7 +38,7 @@ object Cassie extends Build {
        scalacOptions ++= Seq(
            "-language:postfixOps",
            "-language:implicitConversions",
-           "-language:reflectiveCalls"
+           "-language:reflectiveCalls",
            "-deprecation",
            "-feature",
            "-unchecked"
@@ -42,6 +52,7 @@ object Cassie extends Build {
      id = "cassie",
      base = file("."),
      settings = Project.defaultSettings ++ sharedSettings ++ VersionManagement.newSettings   
+   ).settings(
    ).aggregate(
      cassieCore,
      cassieHadoop,
