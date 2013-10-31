@@ -13,3 +13,6 @@ project/plugins/src_managed/
 .project
 .scala_dependencies
 sbt
+.settings
+.metadata
+.project

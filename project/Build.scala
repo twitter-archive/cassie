@@ -40,7 +40,7 @@ object Cassie extends Build {
    lazy val cassie = Project(
      id = "cassie",
      base = file("."),
-     settings = Project.defaultSettings ++ VersionManagement.newSettings   
+     settings = Project.defaultSettings ++ sharedSettings ++ VersionManagement.newSettings   
    ).aggregate(
      cassieCore,
      cassieHadoop,
@@ -56,8 +56,8 @@ object Cassie extends Build {
      name := "cassie-core",
      libraryDependencies ++= Seq(
        "com.novocode"               % "junit-interface"                    % "0.7"            % "test",
-       "org.scala-tools.testings"   %% "scalacheck"                        % "1.9"            % "test",
-       "org.scalatest"              % "scalatest"                          % "2.0M8"          % "test",
+       "org.scalacheck"             %% "scalacheck"                        % "1.10.1"         % "test",
+       "org.scalatest"              %% "scalatest"                         % "2.0.M8"         % "test",
        "commons-codec"              % "commons-codec"                      % "1.5",
        "com.twitter"                %% "finagle"                           % finagleVersion,
        "com.twitter"                %% "finagle-core"                      % finagleVersion,
@@ -72,9 +72,9 @@ object Cassie extends Build {
    ).settings(
      name :="cassie-hadoop",
      libraryDependencies ++= Seq(
-        "com.novocode"               % "junit-interface"                    % "0.7"            % "test",
-        "org.scalatest"              % "scalatest"                          % "2.0M8"          % "test",
-        "org.apache.hadoop"          % "hadoop-core"                        % "0.20.2"    
+        "com.novocode"               %   "junit-interface"                    % "0.7"            % "test",
+        "org.scalatest"              %%  "scalatest"                          % "2.0.M8"          % "test",
+        "org.apache.hadoop"          %   "hadoop-core"                        % "0.20.2"    
      )
    ).dependsOn(
       cassieCore    
