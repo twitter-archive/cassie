@@ -28,6 +28,7 @@ object Cassie extends Build {
        scalacOptions ++= Seq(
            "-language:postfixOps",
            "-language:implicitConversions",
+           "-language:reflectiveCalls"
            "-deprecation",
            "-feature",
            "-unchecked"
