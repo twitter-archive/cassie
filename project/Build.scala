@@ -14,6 +14,16 @@ object Cassie extends Build {
       "org.slf4j"   % "slf4j-nop" % "1.5.8" % "provided"
    )
   
+   
+   scalacOptions ++= Seq(
+     "-deprecation",
+     "-language:postfixOps",
+     "-language.higherKinds",
+     "-language:implicitConversions",
+     "-encoding",
+     "utf8"
+   )
+   
    val scroogeLibs = thriftLibs ++ Seq(
        "com.twitter" %% "scrooge-runtime" % "3.9.1"
    )
@@ -45,7 +55,7 @@ object Cassie extends Build {
        ),
        EclipseKeys.withSource := true,
        EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource
-    )
+    ) ++ ScroogeSBT.newSettings
     
     
    lazy val cassie = Project(
