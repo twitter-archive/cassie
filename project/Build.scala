@@ -42,7 +42,8 @@ object Cassie extends Build {
 
        ),
        libraryDependencies ++= Seq(
-         "ch.qos.logback"          %  "logback-classic"                   % "1.0.13"
+         "ch.qos.logback"          %  "logback-classic"                   % "1.0.13",
+         "com.twitter"             %% "scrooge-core"                      % "3.10.2"
        ),
        unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
        scalacOptions ++= Seq(
